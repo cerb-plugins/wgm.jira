@@ -102,6 +102,15 @@
 						{$result.$column|devblocks_prettytime}&nbsp;
 					{/if}
 				</td>
+			{elseif $column=="j_jira_key"}
+				<td>
+					{$base_url = DevblocksPlatform::getPluginSetting('wgm.jira','base_url','')}
+					{if !empty($base_url)}
+						<a href="{$base_url}/browse/{$result.j_jira_key}" target="_blank">{$result.$column}</a>
+					{else}
+						{$result.$column}
+					{/if}
+				</td>
 			{else}
 				<td>{$result.$column}</td>
 			{/if}
@@ -136,8 +145,10 @@
 	
 	{if $total}
 	<div style="float:left;" id="{$view->id}_actions">
+		{*
 		<button type="button" class="action-always-show action-explore" onclick="this.form.explore_from.value=$(this).closest('form').find('tbody input:checkbox:checked:first').val();this.form.a.value='viewExplore';this.form.submit();"><span class="cerb-sprite sprite-media_play_green"></span> {'common.explore'|devblocks_translate|lower}</button>
 		{if 1||$active_worker->hasPriv('example.actions.update_all')}<button type="button" class="action-always-show action-bulkupdate" onclick="genericAjaxPopup('peek','c=example.objects&a=showBulkUpdatePopup&view_id={$view->id}&ids=' + Devblocks.getFormEnabledCheckboxValues('viewForm{$view->id}','row_id[]'),null,false,'500');"><span class="cerb-sprite2 sprite-folder-gear"></span> {'common.bulk_update'|devblocks_translate|lower}</button>{/if}
+		*}
 	</div>
 	{/if}
 </div>
