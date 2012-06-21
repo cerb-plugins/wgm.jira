@@ -86,10 +86,11 @@ class WgmJira_API {
 		return $this->_get(sprintf("/rest/api/2/project/%s", $key));
 	}
 	
-	function getIssues($jql, $maxResults=100, $fields=null) {
+	function getIssues($jql, $maxResults=100, $fields=null, $startAt=0) {
 		$params = array(
 			'jql' => $jql,
 			'maxResults' => $maxResults,
+			'startAt' => $startAt,
 		);
 		
 		if(!empty($fields) && is_string($fields))
@@ -202,61 +203,106 @@ class WgmJira_IssueProfileSection extends Extension_PageSection {
 				$local_project = DAO_JiraProject::get($local_id); 
 			}
 
-			// Resume from last sync date
+			$startAt = 0;
+			$maxResults = 500;
+			$last_updated_date = $local_project->last_synced_at;
+			$last_unique_updated_date = $last_updated_date;
 			
-			if(false == ($response = $jira->getIssues(
-					sprintf("project='%s' AND updated > %d000 ORDER BY updated ASC", $local_project->jira_key, date('U', $local_project->last_synced_at)),
-					100,
-					'summary,created,updated,description,status,issuetype,fixVersions'
-					)
-				))
-				continue;
-			
-			if(!isset($response->issues) || !is_array($response->issues))
-				continue;
-			
-			// $response->startAt
-			// $response->maxResults
-			// $response->total
-			
-			//var_dump($response->issues);
+			/*
+			 * This should track if we've pulled more than one page, and if so we
+			 * should bail out as soon as we have a subsequent row which has a different
+			 * updated date.
+			 */
+			$is_overflow = false;
 
-			$last_updated_date = 0;
-			
-			if(isset($response->issues) && is_array($response->issues))
-			foreach($response->issues as $object) {
-				$last_updated_date = strtotime($object->fields->updated);
-			
-				$fields = array(
-					DAO_JiraIssue::JIRA_ID => $object->id,
-					DAO_JiraIssue::JIRA_KEY => $object->key,
-					DAO_JiraIssue::JIRA_STATUS_ID => $object->fields->status->id,
-					DAO_JiraIssue::JIRA_TYPE_ID => $object->fields->issuetype->id,
-					//DAO_JiraIssue::JIRA_VERSION_ID => $object->fields->version->id,
-					DAO_JiraIssue::PROJECT_ID => $local_project->id,
-					DAO_JiraIssue::SUMMARY => $object->fields->summary,
-					DAO_JiraIssue::CREATED => strtotime($object->fields->created),
-					DAO_JiraIssue::UPDATED => $last_updated_date,
-				);
+			// Resume from last sync date
+			do {
+				//var_dump('New batch...');
 				
-				$local_issue = DAO_JiraIssue::getByJiraId($object->id);
-				
-				if(!empty($local_issue)) {
-					$local_issue_id = $local_issue->id;
-					DAO_JiraIssue::update($local_issue_id, $fields);
-					
-				} else {
-					$local_issue_id = DAO_JiraIssue::create($fields);
+				if(false == ($response = $jira->getIssues(
+						sprintf("project='%s' AND updated > %d000 ORDER BY updated ASC", $local_project->jira_key, date('U', $local_project->last_synced_at)),
+						$maxResults,
+						'summary,created,updated,description,status,issuetype,fixVersions',
+						$startAt
+						)
+					)) {
+					$is_overflow = false;
+					continue;
 				}
 				
-				// [TODO] Store description content
-			}
+				if(!isset($response->issues) || !is_array($response->issues) || empty($response->issues)) {
+					$is_overflow = false;
+					continue;
+				}
+				
+				$num_issues = count($response->issues);
+				//var_dump($num_issues);
+				
+				$num_processed = 0;
+				
+				foreach($response->issues as $object) {
+					$current_updated_date = strtotime($object->fields->updated);
+					$num_processed++;
+
+					if($current_updated_date != $last_updated_date)
+						$last_unique_updated_date = $last_updated_date;
+					
+					//var_dump($num_processed);
+
+					if(!$is_overflow && $num_processed >= floor($maxResults * 0.90)) {
+						//var_dump("We're overflowing...");
+						$is_overflow = true;
+					}
+
+					if($is_overflow && $current_updated_date == $last_updated_date) {
+						$is_overflow = false;
+						$num_issues = 0;
+						//var_dump("We stopped overflowing");
+						break;
+					}
+					
+					$fields = array(
+						DAO_JiraIssue::JIRA_ID => $object->id,
+						DAO_JiraIssue::JIRA_KEY => $object->key,
+						DAO_JiraIssue::JIRA_STATUS_ID => $object->fields->status->id,
+						DAO_JiraIssue::JIRA_TYPE_ID => $object->fields->issuetype->id,
+						//DAO_JiraIssue::JIRA_VERSION_ID => $object->fields->version->id,
+						DAO_JiraIssue::PROJECT_ID => $local_project->id,
+						DAO_JiraIssue::SUMMARY => $object->fields->summary,
+						DAO_JiraIssue::CREATED => strtotime($object->fields->created),
+						DAO_JiraIssue::UPDATED => $current_updated_date,
+					);
+					
+					$local_issue = DAO_JiraIssue::getByJiraId($object->id);
+					
+					if(!empty($local_issue)) {
+						$local_issue_id = $local_issue->id;
+						DAO_JiraIssue::update($local_issue_id, $fields);
+						
+					} else {
+						$local_issue_id = DAO_JiraIssue::create($fields);
+					}
+					
+					// [TODO] Store description content
+					
+					$last_updated_date = $current_updated_date;
+				}
+				
+				// If we finished everything, move the date cursor to past the last row
+				if($num_issues < $maxResults && $num_processed == $num_issues)
+					$last_unique_updated_date = $last_updated_date;
+
+				// If we need to get another page, move the row cursor
+				$startAt += $maxResults;
+
+			} while($is_overflow);
+
+			//var_dump($last_unique_updated_date);
 			
 			// Set the last updated date on the project
-			
-			if(!empty($last_updated_date)) {
+			if(!empty($last_unique_updated_date)) {
 				DAO_JiraProject::update($local_project->id, array(
-					DAO_JiraProject::LAST_SYNCED_AT => $last_updated_date,
+					DAO_JiraProject::LAST_SYNCED_AT => $last_unique_updated_date,
 				));
 			}
 		}
