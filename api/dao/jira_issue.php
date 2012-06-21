@@ -429,23 +429,14 @@ class View_JiraIssue extends C4_AbstractView {
 		$tpl = DevblocksPlatform::getTemplateService();
 		$tpl->assign('id', $this->id);
 
-		// [TODO] Move the fields into the proper data type
 		switch($field) {
-			case SearchFields_JiraIssue::ID:
-			case SearchFields_JiraIssue::PROJECT_ID:
-			case SearchFields_JiraIssue::JIRA_ID:
 			case SearchFields_JiraIssue::JIRA_KEY:
-			case SearchFields_JiraIssue::JIRA_TYPE_ID:
-			case SearchFields_JiraIssue::JIRA_VERSION_ID:
-			case SearchFields_JiraIssue::JIRA_STATUS_ID:
 			case SearchFields_JiraIssue::SUMMARY:
-			case SearchFields_JiraIssue::CREATED:
-			case SearchFields_JiraIssue::UPDATED:
-			case 'placeholder_string':
 				$tpl->display('devblocks:cerberusweb.core::internal/views/criteria/__string.tpl');
 				break;
 				
-			case 'placeholder_number':
+			case SearchFields_JiraIssue::ID:
+			case SearchFields_JiraIssue::JIRA_ID:
 				$tpl->display('devblocks:cerberusweb.core::internal/views/criteria/__number.tpl');
 				break;
 				
@@ -453,8 +444,65 @@ class View_JiraIssue extends C4_AbstractView {
 				$tpl->display('devblocks:cerberusweb.core::internal/views/criteria/__bool.tpl');
 				break;
 				
-			case 'placeholder_date':
+			case SearchFields_JiraIssue::CREATED:
+			case SearchFields_JiraIssue::UPDATED:
 				$tpl->display('devblocks:cerberusweb.core::internal/views/criteria/__date.tpl');
+				break;
+				
+			case SearchFields_JiraIssue::PROJECT_ID:
+				$options = array();
+				
+				$projects = DAO_JiraProject::getWhere();
+				if(is_array($projects))
+				foreach($projects as $project_id => $project) {
+					$options[$project_id] = $project->name;
+				}
+				
+				asort($options);
+				$tpl->assign('options', $options);
+				
+				$tpl->display('devblocks:cerberusweb.core::internal/views/criteria/__list.tpl');
+				break;
+				
+			case SearchFields_JiraIssue::JIRA_STATUS_ID:
+				$options = array();
+				
+				$projects = DAO_JiraProject::getWhere();
+				$project = array_shift($projects);
+				
+				if(isset($project->statuses) && is_array($project->statuses))
+				foreach($project->statuses as $k => $v) {
+					$options[$k] = $v['name']; 
+				}
+				
+				asort($options);
+				$tpl->assign('options', $options);
+				
+				$tpl->display('devblocks:cerberusweb.core::internal/views/criteria/__list.tpl');
+				break;
+				
+			case SearchFields_JiraIssue::JIRA_TYPE_ID:
+				$options = array();
+				
+				$projects = DAO_JiraProject::getWhere();
+				if(is_array($projects))
+				foreach($projects as $project) {
+					if(is_array($project->issue_types))
+					foreach($project->issue_types as $k => $v) {
+						$options[$k] = sprintf("%s: %s", $project->name, $v['name']);
+					}
+				}
+				
+				asort($options);
+				$tpl->assign('options', $options);
+				
+				$tpl->display('devblocks:cerberusweb.core::internal/views/criteria/__list.tpl');
+				break;
+				
+			case SearchFields_JiraIssue::JIRA_VERSION_ID:
+				$options = array();
+				$tpl->assign('options', $options);
+				$tpl->display('devblocks:cerberusweb.core::internal/views/criteria/__list.tpl');
 				break;
 				
 			/*
@@ -475,6 +523,50 @@ class View_JiraIssue extends C4_AbstractView {
 		$values = !is_array($param->value) ? array($param->value) : $param->value;
 
 		switch($field) {
+			case SearchFields_JiraIssue::PROJECT_ID:
+				$strings = array();
+				$projects = DAO_JiraProject::getWhere();
+				
+				foreach($values as $v) {
+					if(isset($projects[$v]))
+						$strings[] = $projects[$v]->name;
+				}
+				
+				echo implode(' or ', $strings);
+				break;
+				
+			case SearchFields_JiraIssue::JIRA_STATUS_ID:
+				$strings = array();
+				$projects = DAO_JiraProject::getWhere();
+				$project = array_shift($projects);
+				
+				foreach($values as $v) {
+					if(isset($project->statuses[$v]))
+						$strings[] = $project->statuses[$v]['name'];
+				}
+				
+				echo implode(' or ', $strings);
+				break;
+				
+			case SearchFields_JiraIssue::JIRA_TYPE_ID:
+				$strings = array();
+				$projects = DAO_JiraProject::getWhere();
+				
+				foreach($values as $v) {
+					foreach($projects as $project) {
+						if(isset($project->issue_types[$v]))
+							$strings[] = $project->issue_types[$v]['name'];
+					}
+				}
+				
+				echo implode(' or ', $strings);
+				break;
+				
+			case SearchFields_JiraIssue::JIRA_VERSION_ID:
+				$strings = array();
+				echo implode(' or ', $strings);
+				break;
+			
 			default:
 				parent::renderCriteriaParam($param);
 				break;
@@ -497,33 +589,34 @@ class View_JiraIssue extends C4_AbstractView {
 	function doSetCriteria($field, $oper, $value) {
 		$criteria = null;
 
-		// [TODO] Move fields into the right data type
 		switch($field) {
-			case SearchFields_JiraIssue::ID:
-			case SearchFields_JiraIssue::PROJECT_ID:
-			case SearchFields_JiraIssue::JIRA_ID:
 			case SearchFields_JiraIssue::JIRA_KEY:
-			case SearchFields_JiraIssue::JIRA_TYPE_ID:
-			case SearchFields_JiraIssue::JIRA_VERSION_ID:
-			case SearchFields_JiraIssue::JIRA_STATUS_ID:
 			case SearchFields_JiraIssue::SUMMARY:
-			case SearchFields_JiraIssue::CREATED:
-			case SearchFields_JiraIssue::UPDATED:
-			case 'placeholder_string':
 				$criteria = $this->_doSetCriteriaString($field, $oper, $value);
 				break;
 				
-			case 'placeholder_number':
+			case SearchFields_JiraIssue::ID:
+			case SearchFields_JiraIssue::JIRA_ID:
 				$criteria = new DevblocksSearchCriteria($field,$oper,$value);
 				break;
 				
-			case 'placeholder_date':
+			case SearchFields_JiraIssue::CREATED:
+			case SearchFields_JiraIssue::UPDATED:
 				$criteria = $this->_doSetCriteriaDate($field, $oper);
 				break;
 				
 			case 'placeholder_bool':
 				@$bool = DevblocksPlatform::importGPC($_REQUEST['bool'],'integer',1);
 				$criteria = new DevblocksSearchCriteria($field,$oper,$bool);
+				break;
+				
+			case SearchFields_JiraIssue::PROJECT_ID:
+			case SearchFields_JiraIssue::JIRA_STATUS_ID:
+			case SearchFields_JiraIssue::JIRA_TYPE_ID:
+			case SearchFields_JiraIssue::JIRA_VERSION_ID:
+				@$options = DevblocksPlatform::importGPC($_REQUEST['options'],'array',array());
+				$options = DevblocksPlatform::sanitizeArray($options, 'integer', array('nonzero','unique'));
+				$criteria = new DevblocksSearchCriteria($field,$oper,$options);
 				break;
 				
 			/*

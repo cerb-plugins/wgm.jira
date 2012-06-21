@@ -69,7 +69,7 @@
 			</td>
 			<td colspan="{$smarty.foreach.headers.total}">
 				<input type="checkbox" name="row_id[]" value="{$result.j_id}" style="display:none;">
-				<a href="{devblocks_url}c=profiles&type=example_object&id={$result.j_id}{/devblocks_url}" class="subject">{$result.j_summary}</a>
+				<a href="{devblocks_url}c=profiles&type=jira_issue&id={$result.j_id}{/devblocks_url}" class="subject">{$result.j_summary}</a>
 				<button type="button" class="peek" style="visibility:hidden;padding:1px;margin:0px 5px;" onclick="genericAjaxPopup('peek','c=internal&a=showEntryPopup&context={$view_context}&context_id={$result.j_id}&view_id={$view->id}',null,false,'500');"><span class="cerb-sprite2 sprite-document-search-result" style="margin-left:2px" title="{$translate->_('views.peek')}"></span></button> 
 			</td>
 		</tr>

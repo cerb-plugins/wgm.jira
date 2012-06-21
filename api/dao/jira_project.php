@@ -393,7 +393,10 @@ class View_JiraProject extends C4_AbstractView {
 		
 		$this->addParamsHidden(array(
 			SearchFields_JiraProject::ID,
+			SearchFields_JiraProject::ISSUETYPES_JSON,
 			SearchFields_JiraProject::JIRA_ID,
+			SearchFields_JiraProject::STATUSES_JSON,
+			SearchFields_JiraProject::VERSIONS_JSON,
 		));
 		
 		$this->doResetCriteria();
@@ -438,19 +441,15 @@ class View_JiraProject extends C4_AbstractView {
 		$tpl = DevblocksPlatform::getTemplateService();
 		$tpl->assign('id', $this->id);
 
-		// [TODO] Move the fields into the proper data type
 		switch($field) {
-			case SearchFields_JiraProject::ID:
-			case SearchFields_JiraProject::JIRA_ID:
 			case SearchFields_JiraProject::JIRA_KEY:
 			case SearchFields_JiraProject::NAME:
 			case SearchFields_JiraProject::URL:
-			case SearchFields_JiraProject::LAST_SYNCED_AT:
-			case 'placeholder_string':
 				$tpl->display('devblocks:cerberusweb.core::internal/views/criteria/__string.tpl');
 				break;
 				
-			case 'placeholder_number':
+			case SearchFields_JiraProject::ID:
+			case SearchFields_JiraProject::JIRA_ID:
 				$tpl->display('devblocks:cerberusweb.core::internal/views/criteria/__number.tpl');
 				break;
 				
@@ -458,7 +457,7 @@ class View_JiraProject extends C4_AbstractView {
 				$tpl->display('devblocks:cerberusweb.core::internal/views/criteria/__bool.tpl');
 				break;
 				
-			case 'placeholder_date':
+			case SearchFields_JiraProject::LAST_SYNCED_AT:
 				$tpl->display('devblocks:cerberusweb.core::internal/views/criteria/__date.tpl');
 				break;
 				
@@ -502,23 +501,19 @@ class View_JiraProject extends C4_AbstractView {
 	function doSetCriteria($field, $oper, $value) {
 		$criteria = null;
 
-		// [TODO] Move fields into the right data type
 		switch($field) {
-			case SearchFields_JiraProject::ID:
-			case SearchFields_JiraProject::JIRA_ID:
 			case SearchFields_JiraProject::JIRA_KEY:
 			case SearchFields_JiraProject::NAME:
 			case SearchFields_JiraProject::URL:
-			case SearchFields_JiraProject::LAST_SYNCED_AT:
-			case 'placeholder_string':
 				$criteria = $this->_doSetCriteriaString($field, $oper, $value);
 				break;
 				
-			case 'placeholder_number':
+			case SearchFields_JiraProject::ID:
+			case SearchFields_JiraProject::JIRA_ID:
 				$criteria = new DevblocksSearchCriteria($field,$oper,$value);
 				break;
 				
-			case 'placeholder_date':
+			case SearchFields_JiraProject::LAST_SYNCED_AT:
 				$criteria = $this->_doSetCriteriaDate($field, $oper);
 				break;
 				
