@@ -90,6 +90,20 @@ class DAO_JiraProject extends C4_ORMHelper {
 		return null;
 	}
 	
+	static function getAllTypes() {
+		$results = array();
+		
+		$projects = DAO_JiraProject::getWhere();
+		
+		foreach($projects as $project) {
+			foreach($project->issue_types as $type_id => $type) {
+				$results[$type_id] = $type;
+			}
+		}
+		
+		return $results;
+	}
+	
 	/**
 	 * @param resource $rs
 	 * @return Model_JiraProject[]
@@ -364,7 +378,7 @@ class Model_JiraProject {
 	public $last_synced_at;
 };
 
-class View_JiraProject extends C4_AbstractView {
+class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotals {
 	const DEFAULT_ID = 'jira_projects';
 
 	function __construct() {
@@ -423,6 +437,73 @@ class View_JiraProject extends C4_AbstractView {
 		return $this->_doGetDataSample('DAO_JiraProject', $size);
 	}
 
+	function getSubtotalFields() {
+		$all_fields = $this->getParamsAvailable();
+		
+		$fields = array();
+
+		if(is_array($all_fields))
+		foreach($all_fields as $field_key => $field_model) {
+			$pass = false;
+			
+			switch($field_key) {
+				// Fields
+				case SearchFields_JiraProject::URL:
+					$pass = true;
+					break;
+					
+				// Virtuals
+// 				case SearchFields_JiraProject::VIRTUAL_CONTEXT_LINK:
+// 				case SearchFields_JiraProject::VIRTUAL_WATCHERS:
+// 					$pass = true;
+// 					break;
+					
+				// Valid custom fields
+				default:
+					if('cf_' == substr($field_key,0,3))
+						$pass = $this->_canSubtotalCustomField($field_key);
+					break;
+			}
+			
+			if($pass)
+				$fields[$field_key] = $field_model;
+		}
+		
+		return $fields;
+	}
+	
+	function getSubtotalCounts($column) {
+		$counts = array();
+		$fields = $this->getFields();
+
+		if(!isset($fields[$column]))
+			return array();
+		
+		switch($column) {
+			case SearchFields_JiraProject::URL:
+				$counts = $this->_getSubtotalCountForStringColumn('DAO_JiraProject', $column);
+				break;
+				
+// 			case SearchFields_JiraProject::VIRTUAL_CONTEXT_LINK:
+// 				$counts = $this->_getSubtotalCountForContextLinkColumn('DAO_JiraProject', 'cerberusweb.contexts.jira.project', $column);
+// 				break;
+				
+// 			case SearchFields_JiraProject::VIRTUAL_WATCHERS:
+// 				$counts = $this->_getSubtotalCountForWatcherColumn('DAO_JiraProject', $column);
+// 				break;
+			
+			default:
+				// Custom fields
+				if('cf_' == substr($column,0,3)) {
+					$counts = $this->_getSubtotalCountForCustomColumn('DAO_JiraProject', $column, 'jira_project.id');
+				}
+				
+				break;
+		}
+		
+		return $counts;
+	}	
+	
 	function render() {
 		$this->_sanitize();
 		
@@ -434,7 +515,8 @@ class View_JiraProject extends C4_AbstractView {
 		//$custom_fields = DAO_CustomField::getByContext(CerberusContexts::XXX);
 		//$tpl->assign('custom_fields', $custom_fields);
 
-		$tpl->display('devblocks:wgm.jira::project/view.tpl');
+		$tpl->assign('view_template', 'devblocks:wgm.jira::project/view.tpl');
+		$tpl->display('devblocks:cerberusweb.core::internal/views/subtotals_and_view.tpl');
 	}
 
 	function renderCriteria($field) {
