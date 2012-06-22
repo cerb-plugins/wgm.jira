@@ -453,7 +453,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals 
 			case SearchFields_JiraIssue::PROJECT_ID:
 				$label_map = array();
 				
-				$projects = DAO_JiraProject::getWhere();
+				$projects = DAO_JiraProject::getAll();
 				foreach($projects as $project_id => $project)
 					$label_map[$project_id] = $project->name;
 				
@@ -463,7 +463,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals 
 			case SearchFields_JiraIssue::JIRA_STATUS_ID:
 				$label_map = array();
 				
-				$projects = DAO_JiraProject::getWhere();
+				$projects = DAO_JiraProject::getAll();
 				$project = current($projects);
 				
 				if(isset($project->statuses))
@@ -525,7 +525,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals 
 
 		// Projects
 		
-		$projects = DAO_JiraProject::getWhere();
+		$projects = DAO_JiraProject::getAll();
 		$tpl->assign('projects', $projects);
 		
 		// Template
@@ -561,7 +561,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals 
 			case SearchFields_JiraIssue::PROJECT_ID:
 				$options = array();
 				
-				$projects = DAO_JiraProject::getWhere();
+				$projects = DAO_JiraProject::getAll();
 				if(is_array($projects))
 				foreach($projects as $project_id => $project) {
 					$options[$project_id] = $project->name;
@@ -576,7 +576,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals 
 			case SearchFields_JiraIssue::JIRA_STATUS_ID:
 				$options = array();
 				
-				$projects = DAO_JiraProject::getWhere();
+				$projects = DAO_JiraProject::getAll();
 				$project = array_shift($projects);
 				
 				if(isset($project->statuses) && is_array($project->statuses))
@@ -593,7 +593,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals 
 			case SearchFields_JiraIssue::JIRA_TYPE_ID:
 				$options = array();
 				
-				$projects = DAO_JiraProject::getWhere();
+				$projects = DAO_JiraProject::getAll();
 				if(is_array($projects))
 				foreach($projects as $project) {
 					if(is_array($project->issue_types))
@@ -634,7 +634,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals 
 		switch($field) {
 			case SearchFields_JiraIssue::PROJECT_ID:
 				$strings = array();
-				$projects = DAO_JiraProject::getWhere();
+				$projects = DAO_JiraProject::getAll();
 				
 				foreach($values as $v) {
 					if(isset($projects[$v]))
@@ -646,7 +646,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals 
 				
 			case SearchFields_JiraIssue::JIRA_STATUS_ID:
 				$strings = array();
-				$projects = DAO_JiraProject::getWhere();
+				$projects = DAO_JiraProject::getAll();
 				$project = array_shift($projects);
 				
 				foreach($values as $v) {
@@ -659,7 +659,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals 
 				
 			case SearchFields_JiraIssue::JIRA_TYPE_ID:
 				$strings = array();
-				$projects = DAO_JiraProject::getWhere();
+				$projects = DAO_JiraProject::getAll();
 				
 				foreach($values as $v) {
 					foreach($projects as $project) {

@@ -1,5 +1,7 @@
 <?php
 class DAO_JiraProject extends C4_ORMHelper {
+	const _CACHE_ALL = 'cache_jira_project_all';
+	
 	const ID = 'id';
 	const JIRA_ID = 'jira_id';
 	const JIRA_KEY = 'jira_key';
@@ -26,11 +28,27 @@ class DAO_JiraProject extends C4_ORMHelper {
 		parent::_update($ids, 'jira_project', $fields);
 		
 		// Log the context update
-	    //DevblocksPlatform::markContextChanged('example.context', $ids);
+	    DevblocksPlatform::markContextChanged('cerberusweb.contexts.jira.project', $ids);
+	    
+	    self::clearCache();
 	}
 	
 	static function updateWhere($fields, $where) {
 		parent::_updateWhere('jira_project', $fields, $where);
+	}
+	
+	/**
+	 * @param bool $nocache
+	 * @return Model_JiraProject[]
+	 */
+	static function getAll($nocache=false) {
+	    $cache = DevblocksPlatform::getCacheService();
+	    if($nocache || null === ($projects = $cache->load(self::_CACHE_ALL))) {
+    	    $projects = self::getWhere(null, DAO_JiraProject::NAME, true);
+    	    $cache->save($projects, self::_CACHE_ALL);
+	    }
+	    
+	    return $projects;
 	}
 	
 	/**
@@ -62,13 +80,10 @@ class DAO_JiraProject extends C4_ORMHelper {
 	 * @return Model_JiraProject	 
 	 */
 	static function get($id) {
-		$objects = self::getWhere(sprintf("%s = %d",
-			self::ID,
-			$id
-		));
+		$projects = DAO_JiraProject::getAll();
 		
-		if(isset($objects[$id]))
-			return $objects[$id];
+		if(isset($projects[$id]))
+			return $projects[$id];
 		
 		return null;
 	}
@@ -79,8 +94,7 @@ class DAO_JiraProject extends C4_ORMHelper {
 	 * @return Model_JiraProject|null
 	 */
 	static function getByJiraId($remote_id) {
-		// [TODO] Cache!!
-		$projects = self::getWhere();
+		$projects = DAO_JiraProject::getAll();
 		
 		foreach($projects as $project_id => $project) { /* @var $project Model_JiraProject */
 			if($project->jira_id == $remote_id)
@@ -93,7 +107,7 @@ class DAO_JiraProject extends C4_ORMHelper {
 	static function getAllTypes() {
 		$results = array();
 		
-		$projects = DAO_JiraProject::getWhere();
+		$projects = DAO_JiraProject::getAll();
 		
 		foreach($projects as $project) {
 			foreach($project->issue_types as $type_id => $type) {
@@ -152,18 +166,18 @@ class DAO_JiraProject extends C4_ORMHelper {
 		$db->Execute(sprintf("DELETE FROM jira_project WHERE id IN (%s)", $ids_list));
 		
 		// Fire event
-		/*
 	    $eventMgr = DevblocksPlatform::getEventService();
 	    $eventMgr->trigger(
 	        new Model_DevblocksEvent(
 	            'context.delete',
                 array(
-                	'context' => 'cerberusweb.contexts.',
+                	'context' => 'cerberusweb.contexts.jira.project',
                 	'context_ids' => $ids
                 )
             )
 	    );
-	    */
+		
+		self::clearCache();
 		
 		return true;
 	}
@@ -319,6 +333,11 @@ class DAO_JiraProject extends C4_ORMHelper {
 		return array($results,$total);
 	}
 
+	static public function clearCache() {
+		$cache = DevblocksPlatform::getCacheService();
+		$cache->remove(self::_CACHE_ALL);
+	}
+	
 };
 
 class SearchFields_JiraProject implements IDevblocksSearchFields {
