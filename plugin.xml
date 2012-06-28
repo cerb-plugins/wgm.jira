@@ -129,7 +129,7 @@
 		<!-- Scheduled Jobs -->
 		
 		<extension point="cerberusweb.cron">
-			<id>wgmjiura.cron</id>
+			<id>wgmjira.cron</id>
 			<name>JIRA Synchronization</name>
 			<class>
 				<file>api/App.php</file>
