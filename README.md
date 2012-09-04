@@ -1,4 +1,4 @@
-Cerb6 Plugins - wgm.jira
+Cerb Plugins - wgm.jira
 ===========================================
 Copyright (C) 2012 WebGroup Media, LLC.  
 [http://www.cerberusweb.com/](http://www.cerberusweb.com/)  

@@ -5,20 +5,20 @@
 	<description>This plugin provides integration with Atlassian JIRA via their REST API.  It is intended to be a bridge used by other plugins to communicate with JIRA services.</description>
 	<author>WebGroup Media, LLC.</author>
 	<version>0.0.1</version>
-	<link>http://www.cerbweb.com/</link>
+	<link>http://www.cerbweb.com/book/latest/plugins/wgm.jira.html</link>
 	<image>plugin.png</image>
  
  	<!-- Requirements -->
 
 	<requires>
-		<app_version min="6.0" max="6.0.99" />
+		<app_version min="6.1" max="6.1.99" />
 		<php_extension name="curl" />
 	</requires>
  
 	<!-- Plugin Dependencies -->
 	
 	<dependencies>
-		<require plugin_id="cerberusweb.core" version="6.0.0" />
+		<require plugin_id="cerberusweb.core" version="6.1.0" />
 	</dependencies>
 
 	<!-- Patches -->
@@ -62,6 +62,7 @@
 			</class>
 			<params>
 				<param key="alias" value="jira_issue" />
+				<param key="dao_class" value="DAO_JiraIssue" />
 				<param key="view_class" value="View_JiraIssue" />
 				<param key="options">
 					<value>
@@ -84,6 +85,7 @@
 			</class>
 			<params>
 				<param key="alias" value="jira_project" />
+				<param key="dao_class" value="DAO_JiraProject" />
 				<param key="view_class" value="View_JiraProject" />
 				<param key="options">
 					<value>
