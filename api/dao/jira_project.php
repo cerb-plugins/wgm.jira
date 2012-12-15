@@ -25,12 +25,44 @@ class DAO_JiraProject extends C4_ORMHelper {
 	}
 	
 	static function update($ids, $fields) {
-		parent::_update($ids, 'jira_project', $fields);
+		if(!is_array($ids))
+			$ids = array($ids);
 		
-		// Log the context update
-	    DevblocksPlatform::markContextChanged('cerberusweb.contexts.jira.project', $ids);
-	    
-	    self::clearCache();
+		// Make a diff for the requested objects in batches
+		
+		$chunks = array_chunk($ids, 100, true);
+		while($batch_ids = array_shift($chunks)) {
+			if(empty($batch_ids))
+				continue;
+			
+			// Get state before changes
+			$object_changes = parent::_getUpdateDeltas($batch_ids, $fields, get_class());
+
+			// Make changes
+			parent::_update($batch_ids, 'jira_project', $fields);
+			
+			// Send events
+			if(!empty($object_changes)) {
+				// Local events
+				//self::_processUpdateEvents($object_changes);
+				
+				// Trigger an event about the changes
+				$eventMgr = DevblocksPlatform::getEventService();
+				$eventMgr->trigger(
+					new Model_DevblocksEvent(
+						'dao.jira_project.update',
+						array(
+							'objects' => $object_changes,
+						)
+					)
+				);
+				
+				// Log the context update
+				DevblocksPlatform::markContextChanged('cerberusweb.contexts.jira.project', $batch_ids);
+			}
+		}
+		
+		self::clearCache();
 	}
 	
 	static function updateWhere($fields, $where) {
@@ -77,7 +109,7 @@ class DAO_JiraProject extends C4_ORMHelper {
 
 	/**
 	 * @param integer $id
-	 * @return Model_JiraProject	 
+	 * @return Model_JiraProject
 	 */
 	static function get($id) {
 		$projects = DAO_JiraProject::getAll();
@@ -89,7 +121,7 @@ class DAO_JiraProject extends C4_ORMHelper {
 	}
 	
 	/**
-	 * 
+	 *
 	 * @param unknown_type $remote_id
 	 * @return Model_JiraProject|null
 	 */
@@ -297,7 +329,7 @@ class DAO_JiraProject extends C4_ORMHelper {
 		$has_multiple_values = $query_parts['has_multiple_values'];
 		$sort_sql = $query_parts['sort'];
 		
-		$sql = 
+		$sql =
 			$select_sql.
 			$join_sql.
 			$where_sql.
@@ -325,7 +357,7 @@ class DAO_JiraProject extends C4_ORMHelper {
 
 		// [JAS]: Count all
 		if($withCounts) {
-			$count_sql = 
+			$count_sql =
 				($has_multiple_values ? "SELECT COUNT(DISTINCT jira_project.id) " : "SELECT COUNT(jira_project.id) ").
 				$join_sql.
 				$where_sql;
@@ -385,7 +417,7 @@ class SearchFields_JiraProject implements IDevblocksSearchFields {
 		// Sort by label (translation-conscious)
 		DevblocksPlatform::sortObjects($columns, 'db_label');
 
-		return $columns;		
+		return $columns;
 	}
 };
 
@@ -525,7 +557,7 @@ class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotal
 		}
 		
 		return $counts;
-	}	
+	}
 	
 	function render() {
 		$this->_sanitize();
@@ -707,7 +739,7 @@ class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotal
 		}
 
 		unset($ids);
-	}			
+	}
 };
 
 class Context_JiraProject extends Extension_DevblocksContext {
@@ -807,7 +839,7 @@ class Context_JiraProject extends Extension_DevblocksContext {
 		}
 		
 		return $values;
-	}	
+	}
 	
 	function getChooserView($view_id=null) {
 		$active_worker = CerberusApplication::getActiveWorker();
@@ -842,7 +874,7 @@ class Context_JiraProject extends Extension_DevblocksContext {
 		$view_id = str_replace('.','_',$this->id);
 		
 		$defaults = new C4_AbstractViewModel();
-		$defaults->id = $view_id; 
+		$defaults->id = $view_id;
 		$defaults->class_name = $this->getViewClass();
 		$view = C4_AbstractViewLoader::getView($view_id, $defaults);
 		
