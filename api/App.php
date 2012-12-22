@@ -40,7 +40,7 @@ class WgmJira_Setup extends Extension_PluginSetup {
 		} catch (Exception $e) {
 			$errors[] = $e->getMessage();
 			return false;
-		}		
+		}
 	}
 };
 endif;
@@ -132,7 +132,7 @@ class WgmJira_API {
 		
 		curl_close($ch);
 		return $json;
-	} 
+	}
 };
 
 if(class_exists('Extension_PageSection')):
@@ -141,10 +141,26 @@ class WgmJira_IssueProfileSection extends Extension_PageSection {
 	
 	function render() {
 	}
-	
-	function syncAction() {
-		$jira = WgmJira_API::getInstance();
+};
+endif;
 
+class WgmJira_Cron extends CerberusCronPageExtension {
+	const ID = 'wgmjira.cron';
+
+	public function run() {
+		$logger = DevblocksPlatform::getConsoleLog("JIRA");
+		$logger->info("Started");
+		
+		$this->_synchronize();
+
+		$logger->info("Finished");
+	}
+
+	// [TODO] Synchronize versions
+		
+	private function _synchronize() {
+		$jira = WgmJira_API::getInstance();
+		
 		// Sync statuses
 		if(false == ($results = $jira->getStatuses()))
 			return;
@@ -152,37 +168,37 @@ class WgmJira_IssueProfileSection extends Extension_PageSection {
 		$statuses = array();
 		
 		if(is_array($results))
-		foreach($results as $object) {
+			foreach($results as $object) {
 			unset($object->description);
 			unset($object->iconUrl);
 			unset($object->self);
 			$statuses[$object->id] = $object;
 		}
 		
-		// Sync projects		
+		// Sync projects
 		if(false == ($projects = $jira->getProjects()))
 			return;
 		
 		if(is_array($projects))
-		foreach($projects as $project_meta) {
+			foreach($projects as $project_meta) {
 			if(false == ($project = $jira->getProject($project_meta->key)))
 				continue;
-			
+				
 			$issue_types = array();
 			$versions = array();
-			
+				
 			if(isset($project->issueTypes) && is_array($project->issueTypes))
-			foreach($project->issueTypes as $object) {
+				foreach($project->issueTypes as $object) {
 				unset($object->self);
 				$issue_types[$object->id] = $object;
 			}
-			
+				
 			if(isset($project->versions) && is_array($project->versions))
-			foreach($project->versions as $object) {
+				foreach($project->versions as $object) {
 				unset($object->self);
 				$versions[$object->id] = $object;
 			}
-			
+				
 			$fields = array(
 				DAO_JiraProject::JIRA_ID => $project->id,
 				DAO_JiraProject::JIRA_KEY => $project->key,
@@ -197,12 +213,12 @@ class WgmJira_IssueProfileSection extends Extension_PageSection {
 			
 			if(!empty($local_project)) {
 				DAO_JiraProject::update($local_project->id, $fields);
-				
+		
 			} else {
 				$local_id = DAO_JiraProject::create($fields);
-				$local_project = DAO_JiraProject::get($local_id); 
+				$local_project = DAO_JiraProject::get($local_id);
 			}
-
+		
 			$startAt = 0;
 			$maxResults = 500;
 			$last_updated_date = $local_project->last_synced_at;
@@ -210,50 +226,50 @@ class WgmJira_IssueProfileSection extends Extension_PageSection {
 			
 			/*
 			 * This should track if we've pulled more than one page, and if so we
-			 * should bail out as soon as we have a subsequent row which has a different
-			 * updated date.
-			 */
+			* should bail out as soon as we have a subsequent row which has a different
+			* updated date.
+			*/
 			$is_overflow = false;
-
+		
 			// Resume from last sync date
 			do {
 				//var_dump('New batch...');
-				
+		
 				if(false == ($response = $jira->getIssues(
-						sprintf("project='%s' AND updated > %d000 ORDER BY updated ASC", $local_project->jira_key, date('U', $local_project->last_synced_at)),
-						$maxResults,
-						'summary,created,updated,description,status,issuetype,fixVersions',
-						$startAt
-						)
-					)) {
+					sprintf("project='%s' AND updated > %d000 ORDER BY updated ASC", $local_project->jira_key, date('U', $local_project->last_synced_at)),
+					$maxResults,
+					'summary,created,updated,description,status,issuetype,fixVersions',
+					$startAt
+				)
+				)) {
 					$is_overflow = false;
 					continue;
 				}
-				
+		
 				if(!isset($response->issues) || !is_array($response->issues) || empty($response->issues)) {
 					$is_overflow = false;
 					continue;
 				}
-				
+		
 				$num_issues = count($response->issues);
 				//var_dump($num_issues);
-				
+		
 				$num_processed = 0;
-				
+		
 				foreach($response->issues as $object) {
 					$current_updated_date = strtotime($object->fields->updated);
 					$num_processed++;
-
+		
 					if($current_updated_date != $last_updated_date)
 						$last_unique_updated_date = $last_updated_date;
-					
+						
 					//var_dump($num_processed);
-
+		
 					if(!$is_overflow && $num_processed >= floor($maxResults * 0.90)) {
 						//var_dump("We're overflowing...");
 						$is_overflow = true;
 					}
-
+		
 					if($is_overflow && $current_updated_date == $last_updated_date) {
 						$is_overflow = false;
 						$num_issues = 0;
@@ -262,15 +278,15 @@ class WgmJira_IssueProfileSection extends Extension_PageSection {
 					}
 					
 					$fields = array(
-						DAO_JiraIssue::JIRA_ID => $object->id,
-						DAO_JiraIssue::JIRA_KEY => $object->key,
-						DAO_JiraIssue::JIRA_STATUS_ID => $object->fields->status->id,
-						DAO_JiraIssue::JIRA_TYPE_ID => $object->fields->issuetype->id,
-						//DAO_JiraIssue::JIRA_VERSION_ID => $object->fields->version->id,
-						DAO_JiraIssue::PROJECT_ID => $local_project->id,
-						DAO_JiraIssue::SUMMARY => $object->fields->summary,
-						DAO_JiraIssue::CREATED => strtotime($object->fields->created),
-						DAO_JiraIssue::UPDATED => $current_updated_date,
+							DAO_JiraIssue::JIRA_ID => $object->id,
+							DAO_JiraIssue::JIRA_KEY => $object->key,
+							DAO_JiraIssue::JIRA_STATUS_ID => $object->fields->status->id,
+							DAO_JiraIssue::JIRA_TYPE_ID => $object->fields->issuetype->id,
+							//DAO_JiraIssue::JIRA_VERSION_ID => $object->fields->version->id,
+							DAO_JiraIssue::PROJECT_ID => $local_project->id,
+							DAO_JiraIssue::SUMMARY => $object->fields->summary,
+							DAO_JiraIssue::CREATED => strtotime($object->fields->created),
+							DAO_JiraIssue::UPDATED => $current_updated_date,
 					);
 					
 					$local_issue = DAO_JiraIssue::getByJiraId($object->id);
@@ -278,7 +294,7 @@ class WgmJira_IssueProfileSection extends Extension_PageSection {
 					if(!empty($local_issue)) {
 						$local_issue_id = $local_issue->id;
 						DAO_JiraIssue::update($local_issue_id, $fields);
-						
+		
 					} else {
 						$local_issue_id = DAO_JiraIssue::create($fields);
 					}
@@ -287,25 +303,60 @@ class WgmJira_IssueProfileSection extends Extension_PageSection {
 					
 					$last_updated_date = $current_updated_date;
 				}
-				
+		
 				// If we finished everything, move the date cursor to past the last row
 				if($num_issues < $maxResults && $num_processed == $num_issues)
 					$last_unique_updated_date = $last_updated_date;
-
+		
 				// If we need to get another page, move the row cursor
 				$startAt += $maxResults;
-
+		
 			} while($is_overflow);
-
+		
 			//var_dump($last_unique_updated_date);
-			
+				
 			// Set the last updated date on the project
 			if(!empty($last_unique_updated_date)) {
 				DAO_JiraProject::update($local_project->id, array(
-					DAO_JiraProject::LAST_SYNCED_AT => $last_unique_updated_date,
+				DAO_JiraProject::LAST_SYNCED_AT => $last_unique_updated_date,
 				));
 			}
 		}
 	}
+	
+	public function configure($instance) {
+		$tpl = DevblocksPlatform::getTemplateService();
+		$tpl->cache_lifetime = "0";
+
+		// Load settings
+		/*
+		$clients_updated_from = $this->getParam('clients.updated_from', 0);
+		if(empty($clients_updated_from))
+			$clients_updated_from = gmmktime(0,0,0,1,1,2000);
+
+		$invoices_updated_from = $this->getParam('invoices.updated_from', 0);
+		if(empty($invoices_updated_from))
+			$invoices_updated_from = gmmktime(0,0,0,1,1,2000);
+
+		$tpl->assign('clients_updated_from', $clients_updated_from);
+
+		$tpl->display('devblocks:wgm.freshbooks::config/cron.tpl');
+		*/
+	}
+
+	public function saveConfigurationAction() {
+		/*
+		@$clients_updated_from = DevblocksPlatform::importGPC($_POST['clients_updated_from'], 'string', '');
+		@$invoices_updated_from = DevblocksPlatform::importGPC($_POST['invoices_updated_from'], 'string', '');
+
+		// Save settings
+		$clients_timestamp = intval(@strtotime($clients_updated_from));
+		if(!empty($clients_timestamp))
+			$this->setParam('clients.updated_from', $clients_timestamp);
+
+		$invoices_timestamp = intval(@strtotime($invoices_updated_from));
+		if(!empty($invoices_timestamp))
+			$this->setParam('invoices.updated_from', $invoices_timestamp);
+		*/
+	}
 };
-endif;

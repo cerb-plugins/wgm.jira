@@ -135,10 +135,10 @@
 			<name>JIRA Synchronization</name>
 			<class>
 				<file>api/App.php</file>
-				<name>Cron_WgmJiraSync</name>
+				<name>WgmJira_Cron</name>
 			</class>
 			<params />
 		</extension>
 		
-    </extensions> 
+	</extensions>
 </plugin>
