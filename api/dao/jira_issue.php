@@ -1,5 +1,5 @@
 <?php
-class DAO_JiraIssue extends C4_ORMHelper {
+class DAO_JiraIssue extends Cerb_ORMHelper {
 	const ID = 'id';
 	const PROJECT_ID = 'project_id';
 	const JIRA_ID = 'jira_id';

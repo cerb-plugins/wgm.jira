@@ -1,5 +1,5 @@
 <?php
-class DAO_JiraProject extends C4_ORMHelper {
+class DAO_JiraProject extends Cerb_ORMHelper {
 	const _CACHE_ALL = 'cache_jira_project_all';
 	
 	const ID = 'id';
