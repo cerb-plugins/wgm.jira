@@ -885,7 +885,9 @@ class Context_JiraIssue extends Extension_DevblocksContext {
 		// Token labels
 		$token_labels = array(
 			'id' => $prefix.$translate->_('common.id'),
-			//'record_url' => $prefix.$translate->_('common.url.record'),
+			'jira_key' => $prefix.$translate->_('dao.jira_issue.jira_key'),
+			'summary' => $prefix.$translate->_('dao.jira_issue.summary'),
+			'record_url' => $prefix.$translate->_('common.url.record'),
 		);
 		
 		// Custom field/fieldset token labels
@@ -901,10 +903,12 @@ class Context_JiraIssue extends Extension_DevblocksContext {
 			$token_values['_loaded'] = true;
 			$token_values['_label'] = '[' . $issue->jira_key . '] ' . $issue->summary;
 			$token_values['id'] = $issue->id;
+			$token_values['jira_key'] = $issue->jira_key;
+			$token_values['summary'] = $issue->summary;
 			
 			// URL
-			//$url_writer = DevblocksPlatform::getUrlService();
-			//$token_values['record_url'] = $url_writer->writeNoProxy(sprintf("c=example.object&id=%d-%s",$issue->id, DevblocksPlatform::strToPermalink($issue->name)), true);
+			$url_writer = DevblocksPlatform::getUrlService();
+			$token_values['record_url'] = $url_writer->writeNoProxy(sprintf("c=profiles&a=jira_issue&id=%d-%s", $issue->id, DevblocksPlatform::strToPermalink($issue->summary)), true);
 		}
 
 		return true;

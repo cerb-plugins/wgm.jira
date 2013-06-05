@@ -782,7 +782,7 @@ class Context_JiraProject extends Extension_DevblocksContext {
 		// Token labels
 		$token_labels = array(
 			'id' => $prefix.$translate->_('common.id'),
-			//'record_url' => $prefix.$translate->_('common.url.record'),
+			'record_url' => $prefix.$translate->_('common.url.record'),
 		);
 		
 		// Custom field/fieldset token labels
@@ -800,8 +800,8 @@ class Context_JiraProject extends Extension_DevblocksContext {
 			$token_values['id'] = $project->id;
 			
 			// URL
-			//$url_writer = DevblocksPlatform::getUrlService();
-			//$token_values['record_url'] = $url_writer->writeNoProxy(sprintf("c=example.object&id=%d-%s",$project->id, DevblocksPlatform::strToPermalink($project->name)), true);
+			$url_writer = DevblocksPlatform::getUrlService();
+			$token_values['record_url'] = $url_writer->writeNoProxy(sprintf("c=profiles&w=jira_project&id=%d-%s",$project->id, DevblocksPlatform::strToPermalink($project->name)), true);
 		}
 
 		return true;
