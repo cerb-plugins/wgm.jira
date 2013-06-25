@@ -7,8 +7,9 @@ class WgmJira_Setup extends Extension_PluginSetup {
 		$tpl = DevblocksPlatform::getTemplateService();
 
 		$params = array(
-			//'api_token' => DevblocksPlatform::getPluginSetting('wgm.jira','api_token',''),
 			'base_url' => DevblocksPlatform::getPluginSetting('wgm.jira','base_url',''),
+			'jira_user' => DevblocksPlatform::getPluginSetting('wgm.jira','jira_user',''),
+			'jira_password' => DevblocksPlatform::getPluginSetting('wgm.jira','jira_password',''),
 		);
 		$tpl->assign('params', $params);
 		
@@ -17,8 +18,9 @@ class WgmJira_Setup extends Extension_PluginSetup {
 	
 	function save(&$errors) {
 		try {
-			//@$api_token = DevblocksPlatform::importGPC($_REQUEST['api_token'],'string','');
 			@$base_url = DevblocksPlatform::importGPC($_REQUEST['base_url'],'string','');
+			@$jira_user = DevblocksPlatform::importGPC($_REQUEST['jira_user'],'string','');
+			@$jira_password = DevblocksPlatform::importGPC($_REQUEST['jira_password'],'string','');
 			
 			if(empty($base_url))
 				throw new Exception("The base URL is required.");
@@ -34,6 +36,8 @@ class WgmJira_Setup extends Extension_PluginSetup {
 				throw new Exception($jira->getLastError());
 			
 			DevblocksPlatform::setPluginSetting('wgm.jira','base_url',$base_url);
+			DevblocksPlatform::setPluginSetting('wgm.jira','jira_user',$jira_user);
+			DevblocksPlatform::setPluginSetting('wgm.jira','jira_password',$jira_password);
 
 			return true;
 			
@@ -48,6 +52,8 @@ endif;
 class WgmJira_API {
 	private static $_instance = null;
 	private $_base_url = '';
+	private $_user = '';
+	private $_password = '';
 	private $_errors = array();
 	
 	/**
@@ -63,11 +69,20 @@ class WgmJira_API {
 	
 	private function __construct() {
 		$base_url = DevblocksPlatform::getPluginSetting('wgm.jira','base_url','');
+		$user = DevblocksPlatform::getPluginSetting('wgm.jira','jira_user','');
+		$password = DevblocksPlatform::getPluginSetting('wgm.jira','jira_password','');
+		
 		$this->setBaseUrl($base_url);
+		$this->setAuth($user, $password);
 	}
 
 	public function setBaseUrl($url) {
 		$this->_base_url = rtrim($url,'/');
+	}
+	
+	public function setAuth($user, $password) {
+		$this->_user = $user;
+		$this->_password = $password;
 	}
 	
 	function getServerInfo() {
@@ -99,8 +114,63 @@ class WgmJira_API {
 		return $this->_get('/rest/api/2/search', $params);
 	}
 	
+	function getCreateMeta() {
+		$params = array();
+		return $this->_get('/rest/api/2/issue/createmeta', $params);
+	}
+	
+	function postCreateIssueJson($json) {
+		return $this->_postJson('/rest/api/2/issue', null, $json);
+	}
+	
 	function getLastError() {
 		return current($this->_errors);
+	}
+	
+	private function _postJson($path, $params=array(), $json=null) {
+		if(empty($this->_base_url))
+			return false;
+		
+		$url = $this->_base_url . $path;
+		
+		if(!empty($params) && is_array($params))
+			$url .= '?' . http_build_query($params);
+		
+		$ch = curl_init($url);
+		
+		$headers = array();
+		
+		$headers[] = 'Content-Type: application/json';
+		
+		if(!empty($this->_user)) {
+			$headers[]= 'Authorization: Basic ' . base64_encode(sprintf("%s:%s", $this->_user, $this->_password));
+		}
+		
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		
+		if(!empty($headers))
+			curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+		
+		curl_setopt($ch, CURLOPT_POSTFIELDS, $json);
+		
+		$out = curl_exec($ch);
+
+		$info = curl_getinfo($ch);
+		
+		// [TODO] This can fail without HTTPS
+		
+		if(curl_errno($ch)) {
+			$this->_errors = array(curl_error($ch));
+			$json = false;
+		} elseif(false == ($json = json_decode($out))) {
+			$this->_errors = array('The Base URL does not point to a valid JIRA installation.');
+			$json = false;
+		} else {
+			$this->_errors = array();
+		}
+		
+		curl_close($ch);
+		return $json;
 	}
 	
 	private function _get($path, $params=array()) {
@@ -113,6 +183,13 @@ class WgmJira_API {
 			$url .= '?' . http_build_query($params);
 		
 		$ch = curl_init($url);
+		
+		if(!empty($this->_user)) {
+			curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+				'Authorization: Basic ' . base64_encode(sprintf("%s:%s", $this->_user, $this->_password)),
+			));
+		}
+		
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 		$out = curl_exec($ch);
 
