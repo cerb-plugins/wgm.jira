@@ -550,7 +550,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals 
 		
 		// Template
 		
-		$tpl->assign('view_template', 'devblocks:wgm.jira::issue/view.tpl');
+		$tpl->assign('view_template', 'devblocks:wgm.jira::jira_issue/view.tpl');
 		$tpl->display('devblocks:cerberusweb.core::internal/views/subtotals_and_view.tpl');
 	}
 
