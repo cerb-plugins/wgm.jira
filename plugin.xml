@@ -155,5 +155,24 @@
 			<params />
 		</extension>
 		
+		<!-- Event Actions -->
+		
+		<extension point="devblocks.event.action">
+			<id>wgmjira.event.action.create_issue</id>
+			<name>Create JIRA Issue</name>
+			<class>
+				<file>api/App.php</file>
+				<name>WgmJira_EventActionCreateIssue</name>
+			</class>
+			<params>
+				<param key="label" value="Create an issue in JIRA" />
+				<param key="events">
+					<value>
+						<data key="*" />
+					</value>
+				</param>
+			</params>
+		</extension>
+		
 	</extensions>
 </plugin>
