@@ -54,29 +54,6 @@
 		<!-- Contexts -->
 
 		<extension point="devblocks.context">
-			<id>cerberusweb.contexts.jira.issue</id>
-			<name>JIRA Issue</name>
-			<class>
-				<file>api/dao/jira_issue.php</file>
-				<name>Context_JiraIssue</name>
-			</class>
-			<params>
-				<param key="alias" value="jira_issue" />
-				<param key="dao_class" value="DAO_JiraIssue" />
-				<param key="view_class" value="View_JiraIssue" />
-				<param key="options">
-					<value>
-						<!--<data key="create" />-->
-						<data key="find" />
-						<!--<data key="snippets" />-->
-						<data key="workspace" />
-						<data key="va_variable" />
-					</value>
-				</param>
-			</params>
-		</extension>
-
-		<extension point="devblocks.context">
 			<id>cerberusweb.contexts.jira.project</id>
 			<name>JIRA Project</name>
 			<class>
@@ -90,10 +67,35 @@
 				<param key="options">
 					<value>
 						<!--<data key="create" />-->
+						<data key="custom_fields" />
 						<data key="find" />
 						<!--<data key="snippets" />-->
-						<data key="workspace" />
 						<data key="va_variable" />
+						<data key="workspace" />
+					</value>
+				</param>
+			</params>
+		</extension>
+
+		<extension point="devblocks.context">
+			<id>cerberusweb.contexts.jira.issue</id>
+			<name>Jira Issue</name>
+			<class>
+				<file>api/dao/jira_issue.php</file>
+				<name>Context_JiraIssue</name>
+			</class>
+			<params>
+				<param key="alias" value="jira_issue" />
+				<param key="dao_class" value="DAO_JiraIssue" />
+				<param key="view_class" value="View_JiraIssue" />
+				<param key="options">
+					<value>
+						<!-- <data key="create" /> -->
+						<data key="custom_fields" />
+						<data key="find" />
+						<!--<data key="snippets" />-->
+						<data key="va_variable" />
+						<data key="workspace" />
 					</value>
 				</param>
 			</params>
@@ -129,18 +131,18 @@
 		</extension>
 		
 		<extension point="cerberusweb.ui.page.section">
-			<id>cerberusweb.profiles.jira.issue</id>
-			<name>JIRA Issue Profile Section</name>
+			<id>jira.page.profiles.jira_issue</id>
+			<name>Jira Issue Section</name>
 			<class>
-				<file>api/App.php</file>
-				<name>WgmJira_IssueProfileSection</name>
+				<file>api/profile/jira_issue.php</file>
+				<name>PageSection_ProfilesJiraIssue</name>
 			</class>
 			<params>
 				<param key="page_id" value="core.page.profiles" />
 				<param key="uri" value="jira_issue" />
 			</params>
 		</extension>
-		
+
 		<!-- Scheduled Jobs -->
 		
 		<extension point="cerberusweb.cron">

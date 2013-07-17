@@ -1,8 +1,11 @@
-{$view_context = Context_JiraIssue::ID}
+{$view_context = 'cerberusweb.contexts.jira.issue'}
 {$view_fields = $view->getColumnsAvailable()}
 {assign var=results value=$view->getData()}
 {assign var=total value=$results[1]}
 {assign var=data value=$results[0]}
+
+{include file="devblocks:cerberusweb.core::internal/views/view_marquee.tpl" view=$view}
+
 <table cellpadding="0" cellspacing="0" border="0" class="worklist" width="100%">
 	<tr>
 		<td nowrap="nowrap"><span class="title">{$view->name}</span></td>
@@ -25,8 +28,10 @@
 <form id="viewForm{$view->id}" name="viewForm{$view->id}" action="{devblocks_url}{/devblocks_url}" method="post">
 <input type="hidden" name="view_id" value="{$view->id}">
 <input type="hidden" name="context_id" value="{$view_context}">
-<input type="hidden" name="c" value="example.objects">
-<input type="hidden" name="a" value="">
+<input type="hidden" name="c" value="profiles">
+<input type="hidden" name="a" value="handleSectionAction">
+<input type="hidden" name="section" value="jira_issue">
+<input type="hidden" name="action" value="">
 <input type="hidden" name="explore_from" value="0">
 <table cellpadding="1" cellspacing="0" border="0" width="100%" class="worklistBody">
 
@@ -68,12 +73,12 @@
 	<tbody style="cursor:pointer;">
 		<tr class="{$tableRowClass}">
 			<td align="center" rowspan="2" nowrap="nowrap" style="padding:5px;">
+				<input type="checkbox" name="row_id[]" value="{$result.j_id}" style="display:none;">
 				{include file="devblocks:cerberusweb.core::internal/watchers/context_follow_button.tpl" context=$view_context context_id=$result.j_id}
 			</td>
 			<td colspan="{$smarty.foreach.headers.total}">
-				<input type="checkbox" name="row_id[]" value="{$result.j_id}" style="display:none;">
-				<a href="{devblocks_url}c=profiles&type=jira_issue&id={$result.j_id}{/devblocks_url}" class="subject">{$result.j_summary}</a>
-				<button type="button" class="peek" style="visibility:hidden;padding:1px;margin:0px 5px;" onclick="genericAjaxPopup('peek','c=internal&a=showEntryPopup&context={$view_context}&context_id={$result.j_id}&view_id={$view->id}',null,false,'500');"><span class="cerb-sprite2 sprite-document-search-result" style="margin-left:2px" title="{$translate->_('views.peek')}"></span></button> 
+				<a href="{devblocks_url}c=profiles&type=jira_issue&id={$result.j_id}-{$result.j_summary|devblocks_permalink}{/devblocks_url}" class="subject">{$result.j_summary}</a>
+				<button type="button" class="peek" style="visibility:hidden;padding:1px;margin:0px 5px;" onclick="genericAjaxPopup('peek','c=internal&a=showPeekPopup&context={$view_context}&context_id={$result.j_id}&view_id={$view->id}',null,false,'550');"><span class="cerb-sprite2 sprite-document-search-result" style="margin-left:2px" title="{$translate->_('views.peek')}"></span></button>
 			</td>
 		</tr>
 		
@@ -167,13 +172,12 @@ $frm = $('#viewForm{$view->id}');
 
 {if $pref_keyboard_shortcuts}
 $frm.bind('keyboard_shortcut',function(event) {
-	//console.log("{$view->id} received " + (indirect ? 'indirect' : 'direct') + " keyboard event for: " + event.keypress_event.which);
-	
 	$view_actions = $('#{$view->id}_actions');
 	
 	hotkey_activated = true;
 
 	switch(event.keypress_event.which) {
+		{*
 		case 98: // (b) bulk update
 			$btn = $view_actions.find('button.action-bulkupdate');
 		
@@ -184,6 +188,7 @@ $frm.bind('keyboard_shortcut',function(event) {
 				$btn.click();
 			}
 			break;
+		*}
 		
 		case 101: // (e) explore
 			$btn = $view_actions.find('button.action-explore');

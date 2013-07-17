@@ -212,15 +212,6 @@ class WgmJira_API {
 	}
 };
 
-if(class_exists('Extension_PageSection')):
-class WgmJira_IssueProfileSection extends Extension_PageSection {
-	const ID = 'cerberusweb.profiles.jira.issue';
-	
-	function render() {
-	}
-};
-endif;
-
 class WgmJira_Cron extends CerberusCronPageExtension {
 	const ID = 'wgmjira.cron';
 
