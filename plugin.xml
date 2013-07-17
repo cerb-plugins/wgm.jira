@@ -116,6 +116,19 @@
 		<!-- Profile Page Sections -->
 		
 		<extension point="cerberusweb.ui.page.section">
+			<id>jira.page.profiles.jira_project</id>
+			<name>Jira Project Section</name>
+			<class>
+				<file>api/profile/jira_project.php</file>
+				<name>PageSection_ProfilesJiraProject</name>
+			</class>
+			<params>
+				<param key="page_id" value="core.page.profiles" />
+				<param key="uri" value="jira_project" />
+			</params>
+		</extension>
+		
+		<extension point="cerberusweb.ui.page.section">
 			<id>cerberusweb.profiles.jira.issue</id>
 			<name>JIRA Issue Profile Section</name>
 			<class>

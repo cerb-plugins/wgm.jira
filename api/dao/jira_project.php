@@ -74,13 +74,13 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 	 * @return Model_JiraProject[]
 	 */
 	static function getAll($nocache=false) {
-	    $cache = DevblocksPlatform::getCacheService();
-	    if($nocache || null === ($projects = $cache->load(self::_CACHE_ALL))) {
-    	    $projects = self::getWhere(null, DAO_JiraProject::NAME, true);
-    	    $cache->save($projects, self::_CACHE_ALL);
-	    }
-	    
-	    return $projects;
+		$cache = DevblocksPlatform::getCacheService();
+		if($nocache || null === ($projects = $cache->load(self::_CACHE_ALL))) {
+			$projects = self::getWhere(null, DAO_JiraProject::NAME, true);
+			$cache->save($projects, self::_CACHE_ALL);
+		}
+		
+		return $projects;
 	}
 	
 	/**
@@ -198,16 +198,16 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 		$db->Execute(sprintf("DELETE FROM jira_project WHERE id IN (%s)", $ids_list));
 		
 		// Fire event
-	    $eventMgr = DevblocksPlatform::getEventService();
-	    $eventMgr->trigger(
-	        new Model_DevblocksEvent(
-	            'context.delete',
-                array(
-                	'context' => 'cerberusweb.contexts.jira.project',
-                	'context_ids' => $ids
-                )
-            )
-	    );
+		$eventMgr = DevblocksPlatform::getEventService();
+		$eventMgr->trigger(
+			new Model_DevblocksEvent(
+				'context.delete',
+				array(
+					'context' => 'cerberusweb.contexts.jira.project',
+					'context_ids' => $ids
+				)
+			)
+		);
 		
 		self::clearCache();
 		
@@ -221,7 +221,7 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 		if('*'==substr($sortBy,0,1) || !isset($fields[$sortBy]))
 			$sortBy=null;
 
-        list($tables,$wheres) = parent::_parseSearchParams($params, $columns, $fields, $sortBy);
+		list($tables,$wheres) = parent::_parseSearchParams($params, $columns, $fields, $sortBy);
 		
 		$select_sql = sprintf("SELECT ".
 			"jira_project.id as %s, ".
@@ -247,14 +247,13 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 		$join_sql = "FROM jira_project ";
 		
 		// Custom field joins
-		//list($select_sql, $join_sql, $has_multiple_values) = self::_appendSelectJoinSqlForCustomFieldTables(
-		//	$tables,
-		//	$params,
-		//	'jira_project.id',
-		//	$select_sql,
-		//	$join_sql
-		//);
-		$has_multiple_values = false; // [TODO] Temporary when custom fields disabled
+		list($select_sql, $join_sql, $has_multiple_values) = self::_appendSelectJoinSqlForCustomFieldTables(
+			$tables,
+			$params,
+			'jira_project.id',
+			$select_sql,
+			$join_sql
+		);
 				
 		$where_sql = "".
 			(!empty($wheres) ? sprintf("WHERE %s ",implode(' AND ',$wheres)) : "WHERE 1 ");
@@ -290,35 +289,42 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 		if(!is_a($param, 'DevblocksSearchCriteria'))
 			return;
 			
-		//$from_context = CerberusContexts::CONTEXT_EXAMPLE;
-		//$from_index = 'example.id';
+		$from_context = 'cerberusweb.contexts.jira.project';
+		$from_index = 'jira_project.id';
 		
 		$param_key = $param->field;
 		settype($param_key, 'string');
 		
 		switch($param_key) {
-			/*
-			case SearchFields_EXAMPLE::VIRTUAL_WATCHERS:
+			case SearchFields_JiraProject::VIRTUAL_CONTEXT_LINK:
+				$args['has_multiple_values'] = true;
+				self::_searchComponentsVirtualContextLinks($param, $from_context, $from_index, $args['join_sql'], $args['where_sql']);
+				break;
+		
+			case SearchFields_JiraProject::VIRTUAL_HAS_FIELDSET:
+				self::_searchComponentsVirtualHasFieldset($param, $from_context, $from_index, $args['join_sql'], $args['where_sql']);
+				break;
+		
+			case SearchFields_JiraProject::VIRTUAL_WATCHERS:
 				$args['has_multiple_values'] = true;
 				self::_searchComponentsVirtualWatchers($param, $from_context, $from_index, $args['join_sql'], $args['where_sql'], $args['tables']);
 				break;
-			*/
 		}
 	}
 	
-    /**
-     * Enter description here...
-     *
-     * @param array $columns
-     * @param DevblocksSearchCriteria[] $params
-     * @param integer $limit
-     * @param integer $page
-     * @param string $sortBy
-     * @param boolean $sortAsc
-     * @param boolean $withCounts
-     * @return array
-     */
-    static function search($columns, $params, $limit=10, $page=0, $sortBy=null, $sortAsc=null, $withCounts=true) {
+	/**
+	 * Enter description here...
+	 *
+	 * @param array $columns
+	 * @param DevblocksSearchCriteria[] $params
+	 * @param integer $limit
+	 * @param integer $page
+	 * @param string $sortBy
+	 * @param boolean $sortAsc
+	 * @param boolean $withCounts
+	 * @return array
+	 */
+	static function search($columns, $params, $limit=10, $page=0, $sortBy=null, $sortAsc=null, $withCounts=true) {
 		$db = DevblocksPlatform::getDatabaseService();
 		
 		// Build search queries
@@ -338,10 +344,10 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 			$sort_sql;
 			
 		if($limit > 0) {
-    		$rs = $db->SelectLimit($sql,$limit,$page*$limit) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+			$rs = $db->SelectLimit($sql,$limit,$page*$limit) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
 		} else {
-		    $rs = $db->Execute($sql) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
-            $total = mysql_num_rows($rs);
+			$rs = $db->Execute($sql) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+			$total = mysql_num_rows($rs);
 		}
 		
 		$results = array();
@@ -387,6 +393,13 @@ class SearchFields_JiraProject implements IDevblocksSearchFields {
 	const STATUSES_JSON = 'j_statuses_json';
 	const VERSIONS_JSON = 'j_versions_json';
 	const LAST_SYNCED_AT = 'j_last_synced_at';
+
+	const VIRTUAL_CONTEXT_LINK = '*_context_link';
+	const VIRTUAL_HAS_FIELDSET = '*_has_fieldset';
+	const VIRTUAL_WATCHERS = '*_workers';
+	
+	const CONTEXT_LINK = 'cl_context_from';
+	const CONTEXT_LINK_ID = 'cl_context_from_id';
 	
 	/**
 	 * @return DevblocksSearchField[]
@@ -404,17 +417,23 @@ class SearchFields_JiraProject implements IDevblocksSearchFields {
 			self::STATUSES_JSON => new DevblocksSearchField(self::STATUSES_JSON, 'jira_project', 'statuses_json', $translate->_('dao.jira_project.statuses_json'), null),
 			self::VERSIONS_JSON => new DevblocksSearchField(self::VERSIONS_JSON, 'jira_project', 'versions_json', $translate->_('dao.jira_project.versions_json'), null),
 			self::LAST_SYNCED_AT => new DevblocksSearchField(self::LAST_SYNCED_AT, 'jira_project', 'last_synced_at', $translate->_('dao.jira_project.last_synced_at'), Model_CustomField::TYPE_DATE),
+
+			self::VIRTUAL_CONTEXT_LINK => new DevblocksSearchField(self::VIRTUAL_CONTEXT_LINK, '*', 'context_link', $translate->_('common.links'), null),
+			self::VIRTUAL_HAS_FIELDSET => new DevblocksSearchField(self::VIRTUAL_HAS_FIELDSET, '*', 'has_fieldset', $translate->_('common.fieldset'), null),
+			self::VIRTUAL_WATCHERS => new DevblocksSearchField(self::VIRTUAL_WATCHERS, '*', 'workers', $translate->_('common.watchers'), 'WS'),
+			
+			self::CONTEXT_LINK => new DevblocksSearchField(self::CONTEXT_LINK, 'context_link', 'from_context', null),
+			self::CONTEXT_LINK_ID => new DevblocksSearchField(self::CONTEXT_LINK_ID, 'context_link', 'from_context_id', null),
 		);
 		
-		// Custom fields with fieldsets
-		
+		// Custom Fields
 		$custom_columns = DevblocksSearchField::getCustomSearchFieldsByContexts(array(
 			'cerberusweb.contexts.jira.project',
 		));
 		
-		if(is_array($custom_columns))
+		if(!empty($custom_columns))
 			$columns = array_merge($columns, $custom_columns);
-		
+
 		// Sort by label (translation-conscious)
 		DevblocksPlatform::sortObjects($columns, 'db_label');
 
@@ -459,6 +478,9 @@ class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotal
 			SearchFields_JiraProject::JIRA_ID,
 			SearchFields_JiraProject::STATUSES_JSON,
 			SearchFields_JiraProject::VERSIONS_JSON,
+			SearchFields_JiraProject::VIRTUAL_CONTEXT_LINK,
+			SearchFields_JiraProject::VIRTUAL_HAS_FIELDSET,
+			SearchFields_JiraProject::VIRTUAL_WATCHERS,
 		));
 		
 		$this->addParamsHidden(array(
@@ -509,10 +531,11 @@ class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotal
 					break;
 					
 				// Virtuals
-// 				case SearchFields_JiraProject::VIRTUAL_CONTEXT_LINK:
-// 				case SearchFields_JiraProject::VIRTUAL_WATCHERS:
-// 					$pass = true;
-// 					break;
+				case SearchFields_JiraProject::VIRTUAL_CONTEXT_LINK:
+				case SearchFields_JiraProject::VIRTUAL_HAS_FIELDSET:
+				case SearchFields_JiraProject::VIRTUAL_WATCHERS:
+					$pass = true;
+					break;
 					
 				// Valid custom fields
 				default:
@@ -540,13 +563,17 @@ class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotal
 				$counts = $this->_getSubtotalCountForStringColumn('DAO_JiraProject', $column);
 				break;
 				
-// 			case SearchFields_JiraProject::VIRTUAL_CONTEXT_LINK:
-// 				$counts = $this->_getSubtotalCountForContextLinkColumn('DAO_JiraProject', 'cerberusweb.contexts.jira.project', $column);
-// 				break;
+			case SearchFields_JiraProject::VIRTUAL_CONTEXT_LINK:
+				$counts = $this->_getSubtotalCountForContextLinkColumn('DAO_JiraProject', 'cerberusweb.contexts.jira.project', $column);
+				break;
 				
-// 			case SearchFields_JiraProject::VIRTUAL_WATCHERS:
-// 				$counts = $this->_getSubtotalCountForWatcherColumn('DAO_JiraProject', $column);
-// 				break;
+			case SearchFields_JiraProject::VIRTUAL_HAS_FIELDSET:
+				$counts = $this->_getSubtotalCountForHasFieldsetColumn('DAO_JiraProject', 'cerberusweb.contexts.jira.project', $column);
+				break;
+				
+			case SearchFields_JiraProject::VIRTUAL_WATCHERS:
+				$counts = $this->_getSubtotalCountForWatcherColumn('DAO_JiraProject', $column);
+				break;
 			
 			default:
 				// Custom fields
@@ -568,10 +595,10 @@ class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotal
 		$tpl->assign('view', $this);
 
 		// Custom fields
-		//$custom_fields = DAO_CustomField::getByContext(CerberusContexts::XXX);
-		//$tpl->assign('custom_fields', $custom_fields);
+		$custom_fields = DAO_CustomField::getByContext('cerberusweb.contexts.jira.project');
+		$tpl->assign('custom_fields', $custom_fields);
 
-		$tpl->assign('view_template', 'devblocks:wgm.jira::project/view.tpl');
+		$tpl->assign('view_template', 'devblocks:wgm.jira::jira_project/view.tpl');
 		$tpl->display('devblocks:cerberusweb.core::internal/views/subtotals_and_view.tpl');
 	}
 
@@ -599,7 +626,20 @@ class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotal
 				$tpl->display('devblocks:cerberusweb.core::internal/views/criteria/__date.tpl');
 				break;
 				
-			/*
+			case SearchFields_JiraProject::VIRTUAL_CONTEXT_LINK:
+				$contexts = Extension_DevblocksContext::getAll(false);
+				$tpl->assign('contexts', $contexts);
+				$tpl->display('devblocks:cerberusweb.core::internal/views/criteria/__context_link.tpl');
+				break;
+				
+			case SearchFields_JiraProject::VIRTUAL_HAS_FIELDSET:
+				$this->_renderCriteriaHasFieldset($tpl, 'cerberusweb.contexts.jira.project');
+				break;
+				
+			case SearchFields_JiraProject::VIRTUAL_WATCHERS:
+				$tpl->display('devblocks:cerberusweb.core::internal/views/criteria/__context_worker.tpl');
+				break;
+				
 			default:
 				// Custom Fields
 				if('cf_' == substr($field,0,3)) {
@@ -608,7 +648,6 @@ class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotal
 					echo ' ';
 				}
 				break;
-			*/
 		}
 	}
 
@@ -629,6 +668,17 @@ class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotal
 		$translate = DevblocksPlatform::getTranslationService();
 		
 		switch($key) {
+			case SearchFields_JiraProject::VIRTUAL_CONTEXT_LINK:
+				$this->_renderVirtualContextLinks($param);
+				break;
+				
+			case SearchFields_JiraProject::VIRTUAL_HAS_FIELDSET:
+				$this->_renderVirtualHasFieldset($param);
+				break;
+			
+			case SearchFields_JiraProject::VIRTUAL_WATCHERS:
+				$this->_renderVirtualWatchers($param);
+				break;
 		}
 	}
 
@@ -660,14 +710,27 @@ class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotal
 				$criteria = new DevblocksSearchCriteria($field,$oper,$bool);
 				break;
 				
-			/*
+			case SearchFields_JiraProject::VIRTUAL_CONTEXT_LINK:
+				@$context_links = DevblocksPlatform::importGPC($_REQUEST['context_link'],'array',array());
+				$criteria = new DevblocksSearchCriteria($field,DevblocksSearchCriteria::OPER_IN,$context_links);
+				break;
+				
+			case SearchFields_JiraProject::VIRTUAL_HAS_FIELDSET:
+				@$options = DevblocksPlatform::importGPC($_REQUEST['options'],'array',array());
+				$criteria = new DevblocksSearchCriteria($field,DevblocksSearchCriteria::OPER_IN,$options);
+				break;
+				
+			case SearchFields_JiraProject::VIRTUAL_WATCHERS:
+				@$worker_ids = DevblocksPlatform::importGPC($_REQUEST['worker_id'],'array',array());
+				$criteria = new DevblocksSearchCriteria($field,$oper,$worker_ids);
+				break;
+				
 			default:
 				// Custom Fields
 				if(substr($field,0,3)=='cf_') {
 					$criteria = $this->_doSetCriteriaCustomField($field, substr($field,3));
 				}
 				break;
-			*/
 		}
 
 		if(!empty($criteria)) {
@@ -697,14 +760,13 @@ class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotal
 				case 'example':
 					//$change_fields[DAO_JiraProject::EXAMPLE] = 'some value';
 					break;
-				/*
+
 				default:
 					// Custom fields
 					if(substr($k,0,3)=="cf_") {
 						$custom_fields[substr($k,3)] = $v;
 					}
 					break;
-				*/
 			}
 		}
 
@@ -734,7 +796,7 @@ class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotal
 			}
 
 			// Custom Fields
-			//self::_doBulkSetCustomFields(ChCustomFieldSource_JiraProject::ID, $custom_fields, $batch_ids);
+			self::_doBulkSetCustomFields('cerberusweb.contexts.jira.project', $custom_fields, $batch_ids);
 			
 			unset($batch_ids);
 		}
@@ -743,45 +805,60 @@ class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotal
 	}
 };
 
-class Context_JiraProject extends Extension_DevblocksContext {
+class Context_JiraProject extends Extension_DevblocksContext implements IDevblocksContextProfile, IDevblocksContextPeek {
 	const ID = 'cerberusweb.contexts.jira.project';
 	
 	function getRandom() {
 		//return DAO_JiraProject::random();
 	}
 	
+	function profileGetUrl($context_id) {
+		if(empty($context_id))
+			return '';
+	
+		$url_writer = DevblocksPlatform::getUrlService();
+		$url = $url_writer->writeNoProxy('c=profiles&type=jira_project&id='.$context_id, true);
+		return $url;
+	}
+	
 	function getMeta($context_id) {
-		$project = DAO_JiraProject::get($context_id);
+		$jira_project = DAO_JiraProject::get($context_id);
 		$url_writer = DevblocksPlatform::getUrlService();
 		
-		//$friendly = DevblocksPlatform::strToPermalink($example->name);
+		$url = $this->profileGetUrl($context_id);
+		$friendly = DevblocksPlatform::strToPermalink($jira_project->name);
+		
+		if(!empty($friendly))
+			$url .= '-' . $friendly;
 		
 		return array(
-			'id' => $project->id,
-			'name' => $project->name,
-			'permalink' => $url_writer->writeNoProxy(sprintf("c=profiles&=type=jira_project&id=%d",$context_id), true),
+			'id' => $jira_project->id,
+			'name' => $jira_project->name,
+			'permalink' => $url,
 		);
 	}
 	
-	function getContext($project, &$token_labels, &$token_values, $prefix=null) {
+	function getContext($jira_project, &$token_labels, &$token_values, $prefix=null) {
 		if(is_null($prefix))
-			$prefix = 'JIRA Project:';
+			$prefix = 'Jira Project:';
 		
 		$translate = DevblocksPlatform::getTranslationService();
-		$fields = DAO_CustomField::getByContext(Context_JiraProject::ID);
+		$fields = DAO_CustomField::getByContext('cerberusweb.contexts.jira.project');
 
 		// Polymorph
-		if(is_numeric($project)) {
-			$project = DAO_JiraProject::get($project);
-		} elseif($project instanceof Model_JiraProject) {
+		if(is_numeric($jira_project)) {
+			$jira_project = DAO_JiraProject::get($jira_project);
+		} elseif($jira_project instanceof Model_JiraProject) {
 			// It's what we want already.
 		} else {
-			$project = null;
+			$jira_project = null;
 		}
 		
 		// Token labels
 		$token_labels = array(
 			'id' => $prefix.$translate->_('common.id'),
+			'name' => $prefix.$translate->_('common.name'),
+			'updated_at|date' => $prefix.$translate->_('common.updated'),
 			'record_url' => $prefix.$translate->_('common.url.record'),
 		);
 		
@@ -792,18 +869,20 @@ class Context_JiraProject extends Extension_DevblocksContext {
 		// Token values
 		$token_values = array();
 		
-		$token_values['_context'] = Context_JiraProject::ID;
+		$token_values['_context'] = 'cerberusweb.contexts.jira.project';
 		
-		if($project) {
+		if($jira_project) {
 			$token_values['_loaded'] = true;
-			$token_values['_label'] = $project->name;
-			$token_values['id'] = $project->id;
+			$token_values['_label'] = $jira_project->name;
+			$token_values['id'] = $jira_project->id;
+			$token_values['name'] = $jira_project->name;
+			$token_values['updated_at'] = $jira_project->updated_at;
 			
 			// URL
 			$url_writer = DevblocksPlatform::getUrlService();
-			$token_values['record_url'] = $url_writer->writeNoProxy(sprintf("c=profiles&w=jira_project&id=%d-%s",$project->id, DevblocksPlatform::strToPermalink($project->name)), true);
+			$token_values['record_url'] = $url_writer->writeNoProxy(sprintf("c=profiles&type=jira_project&id=%d-%s",$jira_project->id, DevblocksPlatform::strToPermalink($jira_project->name)), true);
 		}
-
+		
 		return true;
 	}
 
@@ -811,7 +890,7 @@ class Context_JiraProject extends Extension_DevblocksContext {
 		if(!isset($dictionary['id']))
 			return;
 		
-		$context = Context_JiraProject::ID;
+		$context = 'cerberusweb.contexts.jira.project';
 		$context_id = $dictionary['id'];
 		
 		@$is_loaded = $dictionary['_loaded'];
@@ -840,7 +919,7 @@ class Context_JiraProject extends Extension_DevblocksContext {
 		
 		return $values;
 	}
-	
+
 	function getChooserView($view_id=null) {
 		$active_worker = CerberusApplication::getActiveWorker();
 
@@ -853,19 +932,22 @@ class Context_JiraProject extends Extension_DevblocksContext {
 		$defaults->is_ephemeral = true;
 		$defaults->class_name = $this->getViewClass();
 		$view = C4_AbstractViewLoader::getView($view_id, $defaults);
+		$view->name = 'Jira Project';
 		$view->view_columns = array(
 			SearchFields_JiraProject::NAME,
-			SearchFields_JiraProject::JIRA_KEY,
-			SearchFields_JiraProject::URL,
-			SearchFields_JiraProject::LAST_SYNCED_AT,
+			SearchFields_JiraProject::UPDATED_AT,
 		);
+		/*
 		$view->addParams(array(
+			SearchFields_JiraProject::UPDATED_AT => new DevblocksSearchCriteria(SearchFields_JiraProject::UPDATED_AT,'=',0),
 		), true);
-		$view->renderSortBy = SearchFields_JiraProject::NAME;
-		$view->renderSortAsc = true;
+		*/
+		$view->renderSortBy = SearchFields_JiraProject::UPDATED_AT;
+		$view->renderSortAsc = false;
 		$view->renderLimit = 10;
-		$view->renderTemplate = 'contextlinks_chooser';
 		$view->renderFilters = false;
+		$view->renderTemplate = 'contextlinks_chooser';
+		
 		C4_AbstractViewLoader::setView($view_id, $view);
 		return $view;
 	}
@@ -877,6 +959,7 @@ class Context_JiraProject extends Extension_DevblocksContext {
 		$defaults->id = $view_id;
 		$defaults->class_name = $this->getViewClass();
 		$view = C4_AbstractViewLoader::getView($view_id, $defaults);
+		$view->name = 'Jira Project';
 		
 		$params_req = array();
 		
@@ -892,5 +975,31 @@ class Context_JiraProject extends Extension_DevblocksContext {
 		$view->renderTemplate = 'context';
 		C4_AbstractViewLoader::setView($view_id, $view);
 		return $view;
+	}
+	
+	function renderPeekPopup($context_id=0, $view_id='') {
+		$tpl = DevblocksPlatform::getTemplateService();
+		$tpl->assign('view_id', $view_id);
+		
+		if(!empty($context_id) && null != ($jira_project = DAO_JiraProject::get($context_id))) {
+			$tpl->assign('model', $jira_project);
+		}
+		
+		$custom_fields = DAO_CustomField::getByContext('cerberusweb.contexts.jira.project', false);
+		$tpl->assign('custom_fields', $custom_fields);
+		
+		if(!empty($context_id)) {
+			$custom_field_values = DAO_CustomFieldValue::getValuesByContextIds('cerberusweb.contexts.jira.project', $context_id);
+			if(isset($custom_field_values[$context_id]))
+				$tpl->assign('custom_field_values', $custom_field_values[$context_id]);
+		}
+
+		// Comments
+		$comments = DAO_Comment::getByContext('cerberusweb.contexts.jira.project', $context_id);
+		$last_comment = array_shift($comments);
+		unset($comments);
+		$tpl->assign('last_comment', $last_comment);
+		
+		$tpl->display('devblocks:wgm.jira::jira_project/peek.tpl');
 	}
 };
