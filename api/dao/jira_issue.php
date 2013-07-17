@@ -1040,13 +1040,6 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 		$defaults->is_ephemeral = true;
 		$defaults->class_name = $this->getViewClass();
 		$view = C4_AbstractViewLoader::getView($view_id, $defaults);
-		$view->view_columns = array(
-			SearchFields_JiraIssue::JIRA_KEY,
-			SearchFields_JiraIssue::PROJECT_ID,
-			SearchFields_JiraIssue::JIRA_TYPE_ID,
-			SearchFields_JiraIssue::JIRA_STATUS_ID,
-			SearchFields_JiraIssue::UPDATED,
-		);
 		$view->addParams(array(
 		), true);
 		$view->renderSortBy = SearchFields_JiraIssue::UPDATED;

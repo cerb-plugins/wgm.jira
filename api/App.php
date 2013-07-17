@@ -162,7 +162,7 @@ class WgmJira_API {
 		if(curl_errno($ch)) {
 			$this->_errors = array(curl_error($ch));
 			$json = false;
-		} elseif(false == ($json = json_decode($out))) {
+		} elseif(false == ($json = json_decode($out, true))) {
 			$this->_errors = array('The Base URL does not point to a valid JIRA installation.');
 			$json = false;
 		} else {
