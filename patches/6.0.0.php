@@ -38,6 +38,7 @@ if(!isset($tables['jira_issue'])) {
 			jira_key VARCHAR(32) DEFAULT '',
 			jira_type_id SMALLINT UNSIGNED NOT NULL DEFAULT 0,
 			jira_status_id SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+			jira_versions VARCHAR(255) NOT NULL DEFAULT '',
 			summary VARCHAR(255) DEFAULT '',
 			created INT UNSIGNED NOT NULL DEFAULT 0,
 			updated INT UNSIGNED NOT NULL DEFAULT 0,
@@ -64,6 +65,10 @@ list($columns, $indexes) = $db->metaTable('jira_issue');
 
 if(isset($columns['jira_version_id'])) {
 	$db->Execute("ALTER TABLE jira_issue DROP COLUMN jira_version_id");
+}
+
+if(!isset($columns['jira_versions'])) {
+	$db->Execute("ALTER TABLE jira_issue ADD COLUMN jira_versions VARCHAR(255) NOT NULL DEFAULT ''");
 }
 
 // ===========================================================================

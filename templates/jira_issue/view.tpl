@@ -104,6 +104,8 @@
 						{if !empty($status)}{$status.name}{/if}
 					{/if}
 				</td>
+			{elseif $column=="j_jira_versions"}
+				<td>{$result.$column}</td>
 			{elseif $column=="j_created" || $column=="j_updated"}
 				<td title="{$result.$column|devblocks_date}">
 					{if !empty($result.$column)}

@@ -345,10 +345,18 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 						break;
 					}
 					
+					$fix_versions = array();
+					
+					if(is_array($object->fields->fixVersions))
+					foreach($object->fields->fixVersions as $fix_version) {
+						$fix_versions[$fix_version->id] = $fix_version->name;
+					}
+					
 					$fields = array(
 						DAO_JiraIssue::JIRA_ID => $object->id,
 						DAO_JiraIssue::JIRA_KEY => $object->key,
 						DAO_JiraIssue::JIRA_STATUS_ID => $object->fields->status->id,
+						DAO_JiraIssue::JIRA_VERSIONS => implode(', ', $fix_versions),
 						DAO_JiraIssue::JIRA_TYPE_ID => $object->fields->issuetype->id,
 						DAO_JiraIssue::PROJECT_ID => $local_project->id,
 						DAO_JiraIssue::SUMMARY => $object->fields->summary,
@@ -365,6 +373,8 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 					} else {
 						$local_issue_id = DAO_JiraIssue::create($fields);
 					}
+
+					DAO_JiraIssue::setVersions($local_issue_id, array_keys($fix_versions));
 					
 					// [TODO] Store description content
 					

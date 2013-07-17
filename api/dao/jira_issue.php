@@ -5,6 +5,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 	const JIRA_ID = 'jira_id';
 	const JIRA_KEY = 'jira_key';
 	const JIRA_TYPE_ID = 'jira_type_id';
+	const JIRA_VERSIONS = 'jira_versions';
 	const JIRA_STATUS_ID = 'jira_status_id';
 	const SUMMARY = 'summary';
 	const CREATED = 'created';
@@ -78,7 +79,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 		list($where_sql, $sort_sql, $limit_sql) = self::_getWhereSQL($where, $sortBy, $sortAsc, $limit);
 		
 		// SQL
-		$sql = "SELECT id, project_id, jira_id, jira_key, jira_type_id, jira_status_id, summary, created, updated ".
+		$sql = "SELECT id, project_id, jira_id, jira_key, jira_versions, jira_type_id, jira_status_id, summary, created, updated ".
 			"FROM jira_issue ".
 			$where_sql.
 			$sort_sql.
@@ -113,6 +114,22 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 		return current($results);
 	}
 	
+	static function setVersions($issue_id, $fix_version_ids) {
+		if(!is_array($fix_version_ids)) $fix_version_ids = array($fix_version_ids);
+		$db = DevblocksPlatform::getDatabaseService();
+		
+		$db->Execute(sprintf("DELETE FROM jira_issue_to_version WHERE jira_issue_id = %d", $issue_id));
+		
+		foreach($fix_version_ids as $fix_version_id) {
+			$db->Execute(sprintf("INSERT INTO jira_issue_to_version (jira_issue_id, jira_version_id) VALUES (%d, %d)",
+				$issue_id,
+				$fix_version_id
+			));
+		}
+		
+		return TRUE;
+	}
+	
 	/**
 	 * @param resource $rs
 	 * @return Model_JiraIssue[]
@@ -126,6 +143,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 			$object->project_id = $row['project_id'];
 			$object->jira_id = $row['jira_id'];
 			$object->jira_key = $row['jira_key'];
+			$object->jira_versions = $row['jira_versions'];
 			$object->jira_type_id = $row['jira_type_id'];
 			$object->jira_status_id = $row['jira_status_id'];
 			$object->summary = $row['summary'];
@@ -181,6 +199,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 			"jira_issue.project_id as %s, ".
 			"jira_issue.jira_id as %s, ".
 			"jira_issue.jira_key as %s, ".
+			"jira_issue.jira_versions as %s, ".
 			"jira_issue.jira_type_id as %s, ".
 			"jira_issue.jira_status_id as %s, ".
 			"jira_issue.summary as %s, ".
@@ -190,6 +209,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 				SearchFields_JiraIssue::PROJECT_ID,
 				SearchFields_JiraIssue::JIRA_ID,
 				SearchFields_JiraIssue::JIRA_KEY,
+				SearchFields_JiraIssue::JIRA_VERSIONS,
 				SearchFields_JiraIssue::JIRA_TYPE_ID,
 				SearchFields_JiraIssue::JIRA_STATUS_ID,
 				SearchFields_JiraIssue::SUMMARY,
@@ -336,6 +356,7 @@ class SearchFields_JiraIssue implements IDevblocksSearchFields {
 	const PROJECT_ID = 'j_project_id';
 	const JIRA_ID = 'j_jira_id';
 	const JIRA_KEY = 'j_jira_key';
+	const JIRA_VERSIONS = 'j_jira_versions';
 	const JIRA_TYPE_ID = 'j_jira_type_id';
 	const JIRA_STATUS_ID = 'j_jira_status_id';
 	const SUMMARY = 'j_summary';
@@ -360,6 +381,7 @@ class SearchFields_JiraIssue implements IDevblocksSearchFields {
 			self::PROJECT_ID => new DevblocksSearchField(self::PROJECT_ID, 'jira_issue', 'project_id', $translate->_('dao.jira_issue.project_id'), null),
 			self::JIRA_ID => new DevblocksSearchField(self::JIRA_ID, 'jira_issue', 'jira_id', $translate->_('dao.jira_issue.jira_id'), null),
 			self::JIRA_KEY => new DevblocksSearchField(self::JIRA_KEY, 'jira_issue', 'jira_key', $translate->_('dao.jira_issue.jira_key'), Model_CustomField::TYPE_SINGLE_LINE),
+			self::JIRA_VERSIONS => new DevblocksSearchField(self::JIRA_VERSIONS, 'jira_issue', 'jira_versions', $translate->_('dao.jira_issue.jira_versions'), Model_CustomField::TYPE_SINGLE_LINE),
 			self::JIRA_TYPE_ID => new DevblocksSearchField(self::JIRA_TYPE_ID, 'jira_issue', 'jira_type_id', $translate->_('dao.jira_issue.jira_type_id'), null),
 			self::JIRA_STATUS_ID => new DevblocksSearchField(self::JIRA_STATUS_ID, 'jira_issue', 'jira_status_id', $translate->_('dao.jira_issue.jira_status_id'), null),
 			self::SUMMARY => new DevblocksSearchField(self::SUMMARY, 'jira_issue', 'summary', $translate->_('dao.jira_issue.summary'), Model_CustomField::TYPE_SINGLE_LINE),
@@ -395,6 +417,7 @@ class Model_JiraIssue {
 	public $project_id;
 	public $jira_id;
 	public $jira_key;
+	public $jira_versions;
 	public $jira_type_id;
 	public $jira_status_id;
 	public $summary;
@@ -417,6 +440,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals 
 		$this->view_columns = array(
 			SearchFields_JiraIssue::JIRA_KEY,
 			SearchFields_JiraIssue::PROJECT_ID,
+			SearchFields_JiraIssue::JIRA_VERSIONS,
 			SearchFields_JiraIssue::JIRA_TYPE_ID,
 			SearchFields_JiraIssue::JIRA_STATUS_ID,
 			SearchFields_JiraIssue::UPDATED,
@@ -471,6 +495,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals 
 				case SearchFields_JiraIssue::PROJECT_ID:
 				case SearchFields_JiraIssue::JIRA_STATUS_ID:
 				case SearchFields_JiraIssue::JIRA_TYPE_ID:
+				case SearchFields_JiraIssue::JIRA_VERSIONS:
 					$pass = true;
 					break;
 					
@@ -503,6 +528,10 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals 
 			return array();
 		
 		switch($column) {
+			case SearchFields_JiraIssue::JIRA_VERSIONS:
+				$counts = $this->_getSubtotalCountForStringColumn('DAO_JiraIssue', $column);
+				break;
+				
 			case SearchFields_JiraIssue::PROJECT_ID:
 				$label_map = array();
 				
@@ -588,6 +617,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals 
 
 		switch($field) {
 			case SearchFields_JiraIssue::JIRA_KEY:
+			case SearchFields_JiraIssue::JIRA_VERSIONS:
 			case SearchFields_JiraIssue::SUMMARY:
 				$tpl->display('devblocks:cerberusweb.core::internal/views/criteria/__string.tpl');
 				break;
@@ -760,6 +790,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals 
 
 		switch($field) {
 			case SearchFields_JiraIssue::JIRA_KEY:
+			case SearchFields_JiraIssue::JIRA_VERSIONS:
 			case SearchFields_JiraIssue::SUMMARY:
 				$criteria = $this->_doSetCriteriaString($field, $oper, $value);
 				break;
