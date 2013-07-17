@@ -5,7 +5,6 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 	const JIRA_ID = 'jira_id';
 	const JIRA_KEY = 'jira_key';
 	const JIRA_TYPE_ID = 'jira_type_id';
-	const JIRA_VERSION_ID = 'jira_version_id';
 	const JIRA_STATUS_ID = 'jira_status_id';
 	const SUMMARY = 'summary';
 	const CREATED = 'created';
@@ -79,7 +78,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 		list($where_sql, $sort_sql, $limit_sql) = self::_getWhereSQL($where, $sortBy, $sortAsc, $limit);
 		
 		// SQL
-		$sql = "SELECT id, project_id, jira_id, jira_key, jira_type_id, jira_version_id, jira_status_id, summary, created, updated ".
+		$sql = "SELECT id, project_id, jira_id, jira_key, jira_type_id, jira_status_id, summary, created, updated ".
 			"FROM jira_issue ".
 			$where_sql.
 			$sort_sql.
@@ -128,7 +127,6 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 			$object->jira_id = $row['jira_id'];
 			$object->jira_key = $row['jira_key'];
 			$object->jira_type_id = $row['jira_type_id'];
-			$object->jira_version_id = $row['jira_version_id'];
 			$object->jira_status_id = $row['jira_status_id'];
 			$object->summary = $row['summary'];
 			$object->created = $row['created'];
@@ -184,7 +182,6 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 			"jira_issue.jira_id as %s, ".
 			"jira_issue.jira_key as %s, ".
 			"jira_issue.jira_type_id as %s, ".
-			"jira_issue.jira_version_id as %s, ".
 			"jira_issue.jira_status_id as %s, ".
 			"jira_issue.summary as %s, ".
 			"jira_issue.created as %s, ".
@@ -194,7 +191,6 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 				SearchFields_JiraIssue::JIRA_ID,
 				SearchFields_JiraIssue::JIRA_KEY,
 				SearchFields_JiraIssue::JIRA_TYPE_ID,
-				SearchFields_JiraIssue::JIRA_VERSION_ID,
 				SearchFields_JiraIssue::JIRA_STATUS_ID,
 				SearchFields_JiraIssue::SUMMARY,
 				SearchFields_JiraIssue::CREATED,
@@ -333,7 +329,6 @@ class SearchFields_JiraIssue implements IDevblocksSearchFields {
 	const JIRA_ID = 'j_jira_id';
 	const JIRA_KEY = 'j_jira_key';
 	const JIRA_TYPE_ID = 'j_jira_type_id';
-	const JIRA_VERSION_ID = 'j_jira_version_id';
 	const JIRA_STATUS_ID = 'j_jira_status_id';
 	const SUMMARY = 'j_summary';
 	const CREATED = 'j_created';
@@ -351,7 +346,6 @@ class SearchFields_JiraIssue implements IDevblocksSearchFields {
 			self::JIRA_ID => new DevblocksSearchField(self::JIRA_ID, 'jira_issue', 'jira_id', $translate->_('dao.jira_issue.jira_id'), null),
 			self::JIRA_KEY => new DevblocksSearchField(self::JIRA_KEY, 'jira_issue', 'jira_key', $translate->_('dao.jira_issue.jira_key'), Model_CustomField::TYPE_SINGLE_LINE),
 			self::JIRA_TYPE_ID => new DevblocksSearchField(self::JIRA_TYPE_ID, 'jira_issue', 'jira_type_id', $translate->_('dao.jira_issue.jira_type_id'), null),
-			self::JIRA_VERSION_ID => new DevblocksSearchField(self::JIRA_VERSION_ID, 'jira_issue', 'jira_version_id', $translate->_('dao.jira_issue.jira_version_id'), null),
 			self::JIRA_STATUS_ID => new DevblocksSearchField(self::JIRA_STATUS_ID, 'jira_issue', 'jira_status_id', $translate->_('dao.jira_issue.jira_status_id'), null),
 			self::SUMMARY => new DevblocksSearchField(self::SUMMARY, 'jira_issue', 'summary', $translate->_('dao.jira_issue.summary'), Model_CustomField::TYPE_SINGLE_LINE),
 			self::CREATED => new DevblocksSearchField(self::CREATED, 'jira_issue', 'created', $translate->_('common.created'), Model_CustomField::TYPE_DATE),
@@ -380,7 +374,6 @@ class Model_JiraIssue {
 	public $jira_id;
 	public $jira_key;
 	public $jira_type_id;
-	public $jira_version_id;
 	public $jira_status_id;
 	public $summary;
 	public $created;
@@ -453,7 +446,6 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals 
 				case SearchFields_JiraIssue::PROJECT_ID:
 				case SearchFields_JiraIssue::JIRA_STATUS_ID:
 				case SearchFields_JiraIssue::JIRA_TYPE_ID:
-				case SearchFields_JiraIssue::JIRA_VERSION_ID:
 					$pass = true;
 					break;
 					
@@ -516,13 +508,6 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals 
 				foreach($types as $type_id => $type) {
 					$label_map[$type_id] = $type['name'];
 				}
-				
-				$counts = $this->_getSubtotalCountForStringColumn('DAO_JiraIssue', $column, $label_map, 'in', 'options[]');
-				break;
-				
-			case SearchFields_JiraIssue::JIRA_VERSION_ID:
-				$label_map = array();
-				
 				
 				$counts = $this->_getSubtotalCountForStringColumn('DAO_JiraIssue', $column, $label_map, 'in', 'options[]');
 				break;
@@ -643,13 +628,6 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals 
 				$tpl->display('devblocks:cerberusweb.core::internal/views/criteria/__list.tpl');
 				break;
 				
-			case SearchFields_JiraIssue::JIRA_VERSION_ID:
-				$options = array();
-				$tpl->assign('options', $options);
-				$tpl->display('devblocks:cerberusweb.core::internal/views/criteria/__list.tpl');
-				break;
-				
-			/*
 			default:
 				// Custom Fields
 				if('cf_' == substr($field,0,3)) {
@@ -658,7 +636,6 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals 
 					echo ' ';
 				}
 				break;
-			*/
 		}
 	}
 
@@ -706,11 +683,6 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals 
 				echo implode(' or ', $strings);
 				break;
 				
-			case SearchFields_JiraIssue::JIRA_VERSION_ID:
-				$strings = array();
-				echo implode(' or ', $strings);
-				break;
-			
 			default:
 				parent::renderCriteriaParam($param);
 				break;
@@ -757,7 +729,6 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals 
 			case SearchFields_JiraIssue::PROJECT_ID:
 			case SearchFields_JiraIssue::JIRA_STATUS_ID:
 			case SearchFields_JiraIssue::JIRA_TYPE_ID:
-			case SearchFields_JiraIssue::JIRA_VERSION_ID:
 				@$options = DevblocksPlatform::importGPC($_REQUEST['options'],'array',array());
 				$options = DevblocksPlatform::sanitizeArray($options, 'integer', array('nonzero','unique'));
 				$criteria = new DevblocksSearchCriteria($field,$oper,$options);

@@ -18,13 +18,13 @@
 	<!-- Plugin Dependencies -->
 	
 	<dependencies>
-		<require plugin_id="cerberusweb.core" version="6.1.0" />
+		<require plugin_id="cerberusweb.core" version="6.4.0" />
 	</dependencies>
 
 	<!-- Patches -->
 	
 	<patches>
-		<patch version="6.0.0" revision="1" file="patches/6.0.0.php" />
+		<patch version="6.0.0" revision="2" file="patches/6.0.0.php" />
 	</patches>
 	
 	<!-- Exported Classes -->

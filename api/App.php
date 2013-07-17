@@ -355,15 +355,14 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 					}
 					
 					$fields = array(
-							DAO_JiraIssue::JIRA_ID => $object->id,
-							DAO_JiraIssue::JIRA_KEY => $object->key,
-							DAO_JiraIssue::JIRA_STATUS_ID => $object->fields->status->id,
-							DAO_JiraIssue::JIRA_TYPE_ID => $object->fields->issuetype->id,
-							//DAO_JiraIssue::JIRA_VERSION_ID => $object->fields->version->id,
-							DAO_JiraIssue::PROJECT_ID => $local_project->id,
-							DAO_JiraIssue::SUMMARY => $object->fields->summary,
-							DAO_JiraIssue::CREATED => strtotime($object->fields->created),
-							DAO_JiraIssue::UPDATED => $current_updated_date,
+						DAO_JiraIssue::JIRA_ID => $object->id,
+						DAO_JiraIssue::JIRA_KEY => $object->key,
+						DAO_JiraIssue::JIRA_STATUS_ID => $object->fields->status->id,
+						DAO_JiraIssue::JIRA_TYPE_ID => $object->fields->issuetype->id,
+						DAO_JiraIssue::PROJECT_ID => $local_project->id,
+						DAO_JiraIssue::SUMMARY => $object->fields->summary,
+						DAO_JiraIssue::CREATED => strtotime($object->fields->created),
+						DAO_JiraIssue::UPDATED => $current_updated_date,
 					);
 					
 					$local_issue = DAO_JiraIssue::getByJiraId($object->id);

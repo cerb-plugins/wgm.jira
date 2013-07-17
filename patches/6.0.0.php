@@ -37,7 +37,6 @@ if(!isset($tables['jira_issue'])) {
 			jira_id INT UNSIGNED NOT NULL DEFAULT 0,
 			jira_key VARCHAR(32) DEFAULT '',
 			jira_type_id SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-			jira_version_id SMALLINT UNSIGNED NOT NULL DEFAULT 0,
 			jira_status_id SMALLINT UNSIGNED NOT NULL DEFAULT 0,
 			summary VARCHAR(255) DEFAULT '',
 			created INT UNSIGNED NOT NULL DEFAULT 0,
@@ -52,6 +51,35 @@ if(!isset($tables['jira_issue'])) {
 	$db->Execute($sql);
 
 	$tables['jira_issue'] = 'jira_issue';
+}
+
+if(!isset($tables['jira_issue'])) {
+	$logger->error("The 'jira_issue' table does not exist.");
+	return FALSE;
+}
+
+list($columns, $indexes) = $db->metaTable('jira_issue');
+
+// Drop the version column
+
+if(isset($columns['jira_version_id'])) {
+	$db->Execute("ALTER TABLE jira_issue DROP COLUMN jira_version_id");
+}
+
+// ===========================================================================
+// jira_issue_to_version
+
+if(!isset($tables['jira_issue_to_version'])) {
+	$sql = sprintf("
+		CREATE TABLE IF NOT EXISTS jira_issue_to_version (
+			jira_issue_id INT UNSIGNED NOT NULL DEFAULT 0,
+			jira_version_id INT UNSIGNED NOT NULL DEFAULT 0,
+			PRIMARY KEY (jira_issue_id, jira_version_id)
+		) ENGINE=%s;
+	", APP_DB_ENGINE);
+	$db->Execute($sql);
+
+	$tables['jira_issue_to_version'] = 'jira_issue_to_version';
 }
 
 // ===========================================================================
