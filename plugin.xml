@@ -55,7 +55,7 @@
 
 		<extension point="devblocks.context">
 			<id>cerberusweb.contexts.jira.project</id>
-			<name>JIRA Project</name>
+			<name>Jira Project</name>
 			<class>
 				<file>api/dao/jira_project.php</file>
 				<name>Context_JiraProject</name>
