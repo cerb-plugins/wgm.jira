@@ -96,15 +96,17 @@ class PageSection_ProfilesJiraProject extends Extension_PageSection {
 		@$view_id = DevblocksPlatform::importGPC($_REQUEST['view_id'], 'string', '');
 		
 		@$id = DevblocksPlatform::importGPC($_REQUEST['id'], 'integer', 0);
-		@$name = DevblocksPlatform::importGPC($_REQUEST['name'], 'string', '');
-		@$do_delete = DevblocksPlatform::importGPC($_REQUEST['do_delete'], 'string', '');
+		
+		//@$name = DevblocksPlatform::importGPC($_REQUEST['name'], 'string', '');
+		//@$do_delete = DevblocksPlatform::importGPC($_REQUEST['do_delete'], 'string', '');
 		
 		$active_worker = CerberusApplication::getActiveWorker();
 		
 		if(!empty($id) && !empty($do_delete)) { // Delete
-			DAO_JiraProject::delete($id);
+			//DAO_JiraProject::delete($id);
 			
 		} else {
+			/*
 			if(empty($id)) { // New
 				$fields = array(
 					DAO_JiraProject::UPDATED_AT => time(),
@@ -133,8 +135,8 @@ class PageSection_ProfilesJiraProject extends Extension_PageSection {
 					DAO_JiraProject::NAME => $name,
 				);
 				DAO_JiraProject::update($id, $fields);
-				
 			}
+			*/
 
 			// If we're adding a comment
 			if(!empty($comment)) {

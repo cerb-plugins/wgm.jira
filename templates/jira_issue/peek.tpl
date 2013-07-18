@@ -14,7 +14,7 @@
 		<tr>
 			<td width="1%" nowrap="nowrap"><b>{'common.name'|devblocks_translate}:</b></td>
 			<td width="99%">
-				<input type="text" name="summary" value="{$model->summary}" style="width:98%;">
+				{$model->summary}
 			</td>
 		</tr>
 		
@@ -74,7 +74,7 @@
 
 <div class="buttons">
 	<button type="button" class="submit" onclick="genericAjaxPopupPostCloseReloadView(null,'frmJiraIssuePeek','{$view_id}', false, 'jira_issue_save');"><span class="cerb-sprite2 sprite-tick-circle"></span> {$translate->_('common.save_changes')|capitalize}</button>
-	{if !empty($model->id)}<button type="button" onclick="$(this).parent().siblings('fieldset.delete').fadeIn();$(this).closest('div').fadeOut();"><span class="cerb-sprite2 sprite-cross-circle"></span> {'common.delete'|devblocks_translate|capitalize}</button>{/if}
+	{*{if !empty($model->id)}<button type="button" onclick="$(this).parent().siblings('fieldset.delete').fadeIn();$(this).closest('div').fadeOut();"><span class="cerb-sprite2 sprite-cross-circle"></span> {'common.delete'|devblocks_translate|capitalize}</button>{/if}*}
 </div>
 
 {if !empty($model->id)}
