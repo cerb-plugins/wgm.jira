@@ -123,6 +123,10 @@ class WgmJira_API {
 		return $this->_postJson('/rest/api/2/issue', null, $json);
 	}
 	
+	function postCommentIssueJson($key, $json) {
+		return $this->_postJson(sprintf('/rest/api/2/issue/%s/comment', $key), null, $json);
+	}
+	
 	function getLastError() {
 		return current($this->_errors);
 	}
@@ -543,6 +547,104 @@ class WgmJira_EventActionCreateIssue extends Extension_DevblocksEventAction {
 		// [TODO] If false !==
 		$response = $jira->postCreateIssueJson(json_encode($new));
 		
+		if(is_array($response) && isset($response['key'])) {
+			$response_placeholder = $params['response_placeholder'];
+			$dict->$response_placeholder = $response;
+		}
+		
+		// [TODO] Do something with the JIRA output
+		// [TODO] Pull the JIRA information in the API
+		// [TODO] Link the JIRA issue to this record?
+		// [TODO] Put the JIRA key in a custom field on the ticket?
+	}
+};
+endif;
+
+if(class_exists('Extension_DevblocksEventAction')):
+class WgmJira_EventActionCommentIssue extends Extension_DevblocksEventAction {
+	function render(Extension_DevblocksEvent $event, Model_TriggerEvent $trigger, $params=array(), $seq=null) {
+		$tpl = DevblocksPlatform::getTemplateService();
+		$tpl->assign('params', $params);
+		
+		if(!is_null($seq))
+			$tpl->assign('namePrefix', 'action'.$seq);
+		
+		$tpl->display('devblocks:wgm.jira::events/action_comment_jira_issue.tpl');
+	}
+	
+	function simulate($token, Model_TriggerEvent $trigger, $params, DevblocksDictionaryDelegate $dict) {
+		$jira = WgmJira_API::getInstance();
+		$tpl_builder = DevblocksPlatform::getTemplateBuilder();
+		
+		$out = null;
+		
+		if(false === ($key = $tpl_builder->build(@$params['key'], $dict)))
+			$key = null;
+		
+		if(false === ($comment = $tpl_builder->build(@$params['comment'], $dict)))
+			$comment = null;
+		
+		if(empty($key))
+			return "[ERROR] No issue key given.";
+		
+		if(empty($comment))
+			return "[ERROR] No summary given.";
+		
+		if(!isset($params['response_placeholder']) && empty($params['response_placeholder']))
+			return "[ERROR] No result placeholder given.";
+		
+		// Output
+		$out = sprintf(">>> Commenting on JIRA Issue\nIssue: %s\nPlaceholder: %s\n\n%s\n",
+			$key,
+			$params['response_placeholder'],
+			$comment
+		);
+		
+		// Simulate a successful response
+		$response_placeholder = $params['response_placeholder'];
+		$dict->$response_placeholder = array(
+			'id' => 1234,
+			'body' => $comment,
+			'self' => '',
+		);
+		
+		return $out;
+	}
+	
+	function run($token, Model_TriggerEvent $trigger, $params, DevblocksDictionaryDelegate $dict) {
+		$jira = WgmJira_API::getInstance();
+		$tpl_builder = DevblocksPlatform::getTemplateBuilder();
+		
+		//var_dump($jira->getCreateMeta());
+
+		if(false === ($key = $tpl_builder->build(@$params['key'], $dict)))
+			$key = null;
+		
+		if(false === ($comment = $tpl_builder->build(@$params['comment'], $dict)))
+			$comment = null;
+		
+		if(empty($key))
+			return false;
+		
+		if(empty($comment))
+			return false;
+		
+		if(!isset($params['response_placeholder']) && empty($params['response_placeholder']))
+			return false;
+		
+		$new = array(
+			'body' => $comment,
+			/*
+			'visibility' => array(
+				'type' => 'group',
+				'value' => 'wgm-staff',
+			),
+			*/
+		);
+		
+		// [TODO] If false !==
+		$response = $jira->postCommentIssueJson($key, json_encode($new));
+
 		if(is_array($response) && isset($response['key'])) {
 			$response_placeholder = $params['response_placeholder'];
 			$dict->$response_placeholder = $response;

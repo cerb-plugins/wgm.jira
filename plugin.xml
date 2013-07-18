@@ -4,7 +4,7 @@
 	<name>JIRA Integration</name>
 	<description>This plugin provides integration with Atlassian JIRA via their REST API.  It is intended to be a bridge used by other plugins to communicate with JIRA services.</description>
 	<author>Webgroup Media, LLC.</author>
-	<version>0.0.8</version>
+	<version>0.0.9</version>
 	<link>http://www.cerbweb.com/book/latest/plugins/wgm.jira.html</link>
 	<image>plugin.png</image>
  
@@ -166,6 +166,23 @@
 			</class>
 			<params>
 				<param key="label" value="Create an issue in JIRA" />
+				<param key="events">
+					<value>
+						<data key="*" />
+					</value>
+				</param>
+			</params>
+		</extension>
+		
+		<extension point="devblocks.event.action">
+			<id>wgmjira.event.action.comment_issue</id>
+			<name>Comment JIRA Issue</name>
+			<class>
+				<file>api/App.php</file>
+				<name>WgmJira_EventActionCommentIssue</name>
+			</class>
+			<params>
+				<param key="label" value="Comment on an issue in JIRA" />
 				<param key="events">
 					<value>
 						<data key="*" />
