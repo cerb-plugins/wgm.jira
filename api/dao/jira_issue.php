@@ -441,6 +441,24 @@ class Model_JiraIssue {
 	public $created;
 	public $updated;
 	
+	function getProject() {
+		return DAO_JiraProject::get($this->project_id);
+	}
+	
+	function getType() {
+		if(false == ($project = $this->getProject()))
+			return null;
+		
+		return @$project->issue_types[$this->jira_type_id];
+	}
+	
+	function getStatus() {
+		if(false == ($project = $this->getProject()))
+			return null;
+		
+		return @$project->statuses[$this->jira_status_id];
+	}
+	
 	function getDescription() {
 		return DAO_JiraIssue::getDescription($this->jira_id);
 	}
@@ -1099,6 +1117,12 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 	function renderPeekPopup($context_id=0, $view_id='') {
 		$tpl = DevblocksPlatform::getTemplateService();
 		$tpl->assign('view_id', $view_id);
+		
+		// Params
+		
+		$tpl->assign('jira_base_url', DevblocksPlatform::getPluginSetting('wgm.jira','base_url',''));
+		
+		// Model
 		
 		if(!empty($context_id) && null != ($jira_issue = DAO_JiraIssue::get($context_id))) {
 			$tpl->assign('model', $jira_issue);

@@ -7,20 +7,68 @@
 {if !empty($model) && !empty($model->id)}<input type="hidden" name="id" value="{$model->id}">{/if}
 <input type="hidden" name="do_delete" value="0">
 
+{$jira_project = $model->getProject()}
+
 <fieldset class="peek">
 	<legend>{'common.properties'|devblocks_translate}</legend>
 	
 	<table cellspacing="0" cellpadding="2" border="0" width="98%">
 		<tr>
-			<td width="1%" nowrap="nowrap"><b>{'common.name'|devblocks_translate}:</b></td>
+			<td width="1%" nowrap="nowrap" valign="top"><b>{'common.name'|devblocks_translate|capitalize}:</b></td>
 			<td width="99%">
 				{$model->summary}
+			</td>
+		</tr>
+		<tr>
+			<td width="1%" nowrap="nowrap" valign="top"><b>{'dao.jira_issue.jira_key'|devblocks_translate|capitalize}:</b></td>
+			<td width="99%">
+				<a href="{$jira_base_url}/browse/{$model->jira_key}" target="_blank">{$model->jira_key}</a>
+			</td>
+		</tr>
+		<tr>
+			<td width="1%" nowrap="nowrap" valign="top"><b>{'dao.jira_issue.project_id'|devblocks_translate|capitalize}:</b></td>
+			<td width="99%">
+				{if $jira_project}
+					{$jira_project->name}
+				{/if}
+			</td>
+		</tr>
+		<tr>
+			<td width="1%" nowrap="nowrap" valign="top"><b>{'dao.jira_issue.jira_versions'|devblocks_translate|capitalize}:</b></td>
+			<td width="99%">
+				{$model->jira_versions|default:'(none)'}
+			</td>
+		</tr>
+		<tr>
+			<td width="1%" nowrap="nowrap" valign="top"><b>{'dao.jira_issue.jira_type_id'|devblocks_translate|capitalize}:</b></td>
+			<td width="99%">
+				{$type = $model->getType()}
+				{$type.name}
+			</td>
+		</tr>
+		<tr>
+			<td width="1%" nowrap="nowrap" valign="top"><b>{'dao.jira_issue.jira_status_id'|devblocks_translate|capitalize}:</b></td>
+			<td width="99%">
+				{$status = $model->getStatus()}
+				{$status.name}
+			</td>
+		</tr>
+		<tr>
+			<td width="1%" nowrap="nowrap" valign="top"><b>{'common.created'|devblocks_translate|capitalize}:</b></td>
+			<td width="99%">
+				{$model->created|devblocks_date} ({$model->created|devblocks_prettytime})</abbr>
+			</td>
+		</tr>
+		<tr>
+			<td width="1%" nowrap="nowrap" valign="top"><b>{'common.updated'|devblocks_translate|capitalize}:</b></td>
+			<td width="99%">
+				{$model->updated|devblocks_date} ({$model->updated|devblocks_prettytime})</abbr>
 			</td>
 		</tr>
 		
 		{* Watchers *}
 		<tr>
-			<td width="0%" nowrap="nowrap" valign="top" align="right">{$translate->_('common.watchers')|capitalize}: </td>
+			<td width="0%" nowrap="nowrap" valign="top" align="right">{$translate->_('common.watchers')|capitalize|capitalize}: </td>
 			<td width="100%">
 				{if empty($model->id)}
 					<button type="button" class="chooser_watcher"><span class="cerb-sprite sprite-view"></span></button>
