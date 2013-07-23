@@ -66,6 +66,16 @@
 
 {include file="devblocks:cerberusweb.core::internal/custom_fieldsets/profile_fieldsets.tpl" properties=$properties_custom_fieldsets}
 
+{$description = $jira_issue->getDescription()}
+{if !empty($description)}
+<fieldset class="properties">
+	<legend>{'common.description'|devblocks_translate|capitalize}</legend>
+	<div style="margin-left:15px;">
+		{$description|escape:'html'|devblocks_hyperlinks|nl2br nofilter}
+	</div>
+</fieldset>
+{/if}
+
 <div>
 {include file="devblocks:cerberusweb.core::internal/notifications/context_profile.tpl" context=$page_context context_id=$page_context_id}
 </div>
