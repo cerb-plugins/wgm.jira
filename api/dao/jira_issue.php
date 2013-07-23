@@ -114,6 +114,23 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 		return current($results);
 	}
 	
+	static function getDescription($issue_id) {
+		$db = DevblocksPlatform::getDatabaseService();
+		
+		return $db->GetOne(sprintf("SELECT description FROM jira_issue_description WHERE jira_issue_id = %d", $issue_id));
+	}
+	
+	static function setDescription($issue_id, $description) {
+		$db = DevblocksPlatform::getDatabaseService();
+		
+		$db->Execute(sprintf("REPLACE INTO jira_issue_description (jira_issue_id, description) VALUES (%d, %s)",
+			$issue_id,
+			$db->qstr($description)
+		));
+		
+		return TRUE;
+	}
+	
 	static function setVersions($issue_id, $fix_version_ids) {
 		if(!is_array($fix_version_ids)) $fix_version_ids = array($fix_version_ids);
 		$db = DevblocksPlatform::getDatabaseService();
@@ -423,6 +440,10 @@ class Model_JiraIssue {
 	public $summary;
 	public $created;
 	public $updated;
+	
+	function getDescription() {
+		return DAO_JiraIssue::getDescription($this->jira_id);
+	}
 };
 
 class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals {

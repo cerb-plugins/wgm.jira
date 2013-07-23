@@ -88,6 +88,22 @@ if(!isset($tables['jira_issue_to_version'])) {
 }
 
 // ===========================================================================
+// jira_issue_description
+
+if(!isset($tables['jira_issue_description'])) {
+	$sql = sprintf("
+		CREATE TABLE IF NOT EXISTS jira_issue_description (
+			jira_issue_id INT UNSIGNED NOT NULL DEFAULT 0,
+			description TEXT,
+			PRIMARY KEY (jira_issue_id)
+		) ENGINE=%s;
+	", APP_DB_ENGINE);
+	$db->Execute($sql);
+
+	$tables['jira_issue_description'] = 'jira_issue_description';
+}
+
+// ===========================================================================
 // Enable scheduled task and give defaults
 
 if(null != ($cron = DevblocksPlatform::getExtension('wgmjira.cron', true, true))) {

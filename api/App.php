@@ -378,9 +378,13 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 						$local_issue_id = DAO_JiraIssue::create($fields);
 					}
 
+					// Link versions
+					
 					DAO_JiraIssue::setVersions($local_issue_id, array_keys($fix_versions));
 					
-					// [TODO] Store description content
+					// Store description content
+					
+					DAO_JiraIssue::setDescription($object->id, $object->fields->description);
 					
 					$last_updated_date = $current_updated_date;
 				}

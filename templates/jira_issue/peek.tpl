@@ -32,7 +32,6 @@
 			</td>
 		</tr>
 	</table>
-	
 </fieldset>
 
 {if !empty($custom_fields)}
@@ -43,6 +42,12 @@
 {/if}
 
 {include file="devblocks:cerberusweb.core::internal/custom_fieldsets/peek_custom_fieldsets.tpl" context='cerberusweb.contexts.jira.issue' context_id=$model->id}
+
+{* Description *}
+<fieldset class="peek">
+	<legend>{'common.description'|devblocks_translate|capitalize}</legend>
+	{$model->getDescription()|escape:'html'|devblocks_hyperlinks|nl2br nofilter}
+</fieldset>
 
 {* Comment *}
 {if !empty($last_comment)}
