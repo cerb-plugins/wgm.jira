@@ -147,6 +147,24 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 		return TRUE;
 	}
 	
+	static function saveComment($comment_id, $issue_id, $created, $author, $body) {
+		$db = DevblocksPlatform::getDatabaseService();
+		
+		$db->Execute(sprintf("REPLACE INTO jira_issue_comment (jira_comment_id, jira_issue_id, created, jira_author, body) ".
+			"VALUES (%d, %d, %d, %s, %s)",
+			$comment_id,
+			$issue_id,
+			$created,
+			$db->qstr($author),
+			$db->qstr($body)
+		));
+		
+		// [TODO] New comment events for watchers (check IDs)
+		// [TODO] Check response code
+		
+		return TRUE;
+	}
+	
 	/**
 	 * @param resource $rs
 	 * @return Model_JiraIssue[]

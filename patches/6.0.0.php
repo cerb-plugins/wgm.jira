@@ -104,6 +104,25 @@ if(!isset($tables['jira_issue_description'])) {
 }
 
 // ===========================================================================
+// jira_issue_comment
+
+if(!isset($tables['jira_issue_comment'])) {
+	$sql = sprintf("
+		CREATE TABLE IF NOT EXISTS jira_issue_comment (
+			jira_comment_id INT UNSIGNED NOT NULL DEFAULT 0,
+			jira_issue_id INT UNSIGNED NOT NULL DEFAULT 0,
+			jira_author VARCHAR(255) NOT NULL DEFAULT '',
+			created INT UNSIGNED NOT NULL DEFAULT 0,
+			body TEXT,
+			PRIMARY KEY (jira_comment_id)
+		) ENGINE=%s;
+	", APP_DB_ENGINE);
+	$db->Execute($sql);
+
+	$tables['jira_issue_comment'] = 'jira_issue_comment';
+}
+
+// ===========================================================================
 // Enable scheduled task and give defaults
 
 if(null != ($cron = DevblocksPlatform::getExtension('wgmjira.cron', true, true))) {

@@ -310,7 +310,7 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 				if(false == ($response = $jira->getIssues(
 					sprintf("project='%s' AND updated > %d000 ORDER BY updated ASC", $local_project->jira_key, date('U', $local_project->last_synced_at)),
 					$maxResults,
-					'summary,created,updated,description,status,issuetype,fixVersions',
+					'summary,created,updated,description,status,issuetype,fixVersions,comment',
 					$startAt
 				)
 				)) {
@@ -385,6 +385,19 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 					// Store description content
 					
 					DAO_JiraIssue::setDescription($object->id, $object->fields->description);
+					
+					// Save comments
+					
+					if(isset($object->fields->comment->comments) && is_array($object->fields->comment->comments))
+					foreach($object->fields->comment->comments as $comment) {
+						DAO_JiraIssue::saveComment(
+							$comment->id,
+							$object->id,
+							@strtotime($comment->created),
+							$comment->author->displayName,
+							$comment->body
+						);
+					}
 					
 					$last_updated_date = $current_updated_date;
 				}
