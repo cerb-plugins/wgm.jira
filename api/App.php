@@ -305,8 +305,6 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 		
 			// Resume from last sync date
 			do {
-				//var_dump('New batch...');
-		
 				if(false == ($response = $jira->getIssues(
 					sprintf("project='%s' AND updated > %d000 ORDER BY updated ASC", $local_project->jira_key, date('U', $local_project->last_synced_at)),
 					$maxResults,
@@ -324,8 +322,6 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 				}
 		
 				$num_issues = count($response->issues);
-				//var_dump($num_issues);
-		
 				$num_processed = 0;
 		
 				foreach($response->issues as $object) {
@@ -334,18 +330,16 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 		
 					if($current_updated_date != $last_updated_date)
 						$last_unique_updated_date = $last_updated_date;
-						
-					//var_dump($num_processed);
-		
+
+					// We're overflowing
 					if(!$is_overflow && $num_processed >= floor($maxResults * 0.90)) {
-						//var_dump("We're overflowing...");
 						$is_overflow = true;
 					}
 		
+					// We're done overflowing
 					if($is_overflow && $current_updated_date == $last_updated_date) {
 						$is_overflow = false;
 						$num_issues = 0;
-						//var_dump("We stopped overflowing");
 						break;
 					}
 					
@@ -411,8 +405,6 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 		
 			} while($is_overflow);
 		
-			//var_dump($last_unique_updated_date);
-				
 			// Set the last updated date on the project
 			if(!empty($last_unique_updated_date)) {
 				DAO_JiraProject::update($local_project->id, array(
