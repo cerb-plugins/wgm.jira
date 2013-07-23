@@ -49,19 +49,34 @@ class PageSection_ProfilesJiraIssue extends Extension_PageSection {
 			
 		$properties = array();
 		
-		// [TODO] status, type, versions
-		
 		$properties['jira_key'] = array(
 			'label' => ucfirst($translate->_('dao.jira_issue.jira_key')),
 			'type' => Model_CustomField::TYPE_SINGLE_LINE,
 			'value' => $jira_issue->jira_key,
 		);
-			
-		// [TODO] Link project
+		
 		$properties['jira_project_id'] = array(
 			'label' => ucfirst($translate->_('dao.jira_issue.project_id')),
-			'type' => 'ctx_' . 'cerberusweb.contexts.jira.project',
-			'value' => $jira_issue->project_id,
+			'type' => '',
+			'value' => $jira_issue->getProject(),
+		);
+		
+		$properties['jira_versions'] = array(
+			'label' => ucfirst($translate->_('dao.jira_issue.jira_versions')),
+			'type' => Model_CustomField::TYPE_SINGLE_LINE,
+			'value' => $jira_issue->jira_versions,
+		);
+		
+		$properties['jira_type_id'] = array(
+			'label' => ucfirst($translate->_('dao.jira_issue.jira_type_id')),
+			'type' => Model_CustomField::TYPE_SINGLE_LINE,
+			'value' => ($jira_type = $jira_issue->getType()) ? $jira_type['name'] : '',
+		);
+		
+		$properties['jira_status_id'] = array(
+			'label' => ucfirst($translate->_('dao.jira_issue.jira_status_id')),
+			'type' => Model_CustomField::TYPE_SINGLE_LINE,
+			'value' => ($jira_status = $jira_issue->getStatus()) ? $jira_status['name'] : '',
 		);
 		
 		$properties['created'] = array(

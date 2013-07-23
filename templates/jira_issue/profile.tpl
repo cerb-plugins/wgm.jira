@@ -48,6 +48,10 @@
 			{if $k == '...'}
 				<b>{$translate->_('...')|capitalize}:</b>
 				...
+			{elseif $k == 'jira_project_id'}
+				<b>{'dao.jira_issue.project_id'|devblocks_translate|capitalize}:</b>
+				{$jira_project = $v.value}
+				<a href="javascript:;" onclick="genericAjaxPopup('peek','c=internal&a=showPeekPopup&context=cerberusweb.contexts.jira.project&context_id={$jira_project->id}',null,false,550);">{$jira_project->name}</a>
 			{else}
 				{include file="devblocks:cerberusweb.core::internal/custom_fields/profile_cell_renderer.tpl"}
 			{/if}
