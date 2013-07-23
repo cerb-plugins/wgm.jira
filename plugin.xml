@@ -4,21 +4,21 @@
 	<name>JIRA Integration</name>
 	<description>This plugin provides integration with Atlassian JIRA via their REST API.  It is intended to be a bridge used by other plugins to communicate with JIRA services.</description>
 	<author>Webgroup Media, LLC.</author>
-	<version>0.0.9</version>
+	<version>0.0.10</version>
 	<link>http://www.cerbweb.com/book/latest/plugins/wgm.jira.html</link>
 	<image>plugin.png</image>
  
  	<!-- Requirements -->
 
 	<requires>
-		<app_version min="6.4" max="6.4.99" />
+		<app_version min="6.4.4" max="6.4.99" />
 		<php_extension name="curl" />
 	</requires>
  
 	<!-- Plugin Dependencies -->
 	
 	<dependencies>
-		<require plugin_id="cerberusweb.core" version="6.4.0" />
+		<require plugin_id="cerberusweb.core" version="6.4.4" />
 	</dependencies>
 
 	<!-- Patches -->
