@@ -1,0 +1,25 @@
+{foreach from=$comments item=comment}
+<div id="comment{$comment.jira_comment_id}">
+	<div class="block" style="overflow:auto;">
+		{*
+		<span class="tag" style="color:rgb(71,133,210);">{$translate->_('common.comment')|lower}</span>
+		*}
+		
+		<b style="font-size:1.3em;">
+			{$comment.jira_author}
+		</b>
+		
+		{$extensions = DevblocksPlatform::getExtensions('wgm.jira.comment.badge', true)}
+		{foreach from=$extensions item=extension}
+			{$extension->render($comment)}
+		{/foreach}
+		<br>
+		
+		{if isset($comment.created)}<b>{$translate->_('message.header.date')|capitalize}:</b> {$comment.created|devblocks_date} (<abbr title="{$comment.created|devblocks_date}">{$comment.created|devblocks_prettytime}</abbr>)<br>{/if}
+		
+		<pre class="emailbody" style="padding-top:10px;">{$comment.body|escape:'html'|devblocks_hyperlinks|nl2br nofilter}</pre>
+		<br clear="all">
+	</div>
+	<br>
+</div>
+{/foreach}

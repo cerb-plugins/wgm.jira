@@ -261,4 +261,29 @@ class PageSection_ProfilesJiraIssue extends Extension_PageSection {
 		
 		DevblocksPlatform::redirect(new DevblocksHttpResponse(array('explore',$hash,$orig_pos)));
 	}
+	
+	function showDiscussionTabAction() {
+		@$context = DevblocksPlatform::importGPC($_REQUEST['context'],'string','');
+		@$context_id = DevblocksPlatform::importGPC($_REQUEST['context_id'],'integer',0);
+		@$point = DevblocksPlatform::importGPC($_REQUEST['point'],'string','contact.history');
+		
+		$tpl = DevblocksPlatform::getTemplateService();
+		$visit = CerberusApplication::getVisit();
+		$translate = DevblocksPlatform::getTranslationService();
+		
+		if(empty($context_id))
+			return;
+		
+		if(false == ($issue = DAO_JiraIssue::get($context_id)))
+			return;
+
+		if(!empty($point))
+			$visit->set($point, 'discussion');
+		
+		$tpl->assign('issue', $issue);
+		$tpl->assign('comments', $issue->getComments());
+		
+		$tpl->display('devblocks:wgm.jira::jira_issue/profile/tab_discussion.tpl');
+	}
+	
 };

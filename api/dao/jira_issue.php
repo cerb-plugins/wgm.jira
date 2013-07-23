@@ -165,6 +165,19 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 		return TRUE;
 	}
 	
+	static function getComments($issue_id) {
+		$db = DevblocksPlatform::getDatabaseService();
+
+		$results = $db->GetArray(sprintf("SELECT jira_comment_id, jira_issue_id, created, jira_author, body ".
+			"FROM jira_issue_comment ".
+			"WHERE jira_issue_id = %d ".
+			"ORDER BY created DESC",
+			$issue_id
+		));
+		
+		return $results;
+	}
+	
 	/**
 	 * @param resource $rs
 	 * @return Model_JiraIssue[]
@@ -479,6 +492,10 @@ class Model_JiraIssue {
 	
 	function getDescription() {
 		return DAO_JiraIssue::getDescription($this->jira_id);
+	}
+	
+	function getComments() {
+		return DAO_JiraIssue::getComments($this->jira_id);
 	}
 };
 

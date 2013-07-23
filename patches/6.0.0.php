@@ -114,7 +114,8 @@ if(!isset($tables['jira_issue_comment'])) {
 			jira_author VARCHAR(255) NOT NULL DEFAULT '',
 			created INT UNSIGNED NOT NULL DEFAULT 0,
 			body TEXT,
-			PRIMARY KEY (jira_comment_id)
+			PRIMARY KEY (jira_comment_id),
+			INDEX jira_issue_id (jira_issue_id)
 		) ENGINE=%s;
 	", APP_DB_ENGINE);
 	$db->Execute($sql);
