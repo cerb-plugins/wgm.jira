@@ -10,6 +10,13 @@
 			<tuv xml:lang="en_US"><seg>JIRA</seg></tuv>
 		</tu>
 		
+		<tu tuid='wgm.jira.common.issue'>
+			<tuv xml:lang="en_US"><seg>Issue</seg></tuv>
+		</tu>
+		<tu tuid='wgm.jira.common.issues'>
+			<tuv xml:lang="en_US"><seg>Issues</seg></tuv>
+		</tu>
+		
 		<!-- Jira Issue -->
 		
 		<tu tuid='dao.jira_issue.project_id'>

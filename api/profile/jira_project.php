@@ -230,4 +230,51 @@ class PageSection_ProfilesJiraProject extends Extension_PageSection {
 		
 		DevblocksPlatform::redirect(new DevblocksHttpResponse(array('explore',$hash,$orig_pos)));
 	}
+	
+	function showIssuesTabAction() {
+		@$context = DevblocksPlatform::importGPC($_REQUEST['context'],'string','');
+		@$context_id = DevblocksPlatform::importGPC($_REQUEST['context_id'],'integer',0);
+		@$point = DevblocksPlatform::importGPC($_REQUEST['point'],'string','contact.history');
+		
+		$tpl = DevblocksPlatform::getTemplateService();
+		$visit = CerberusApplication::getVisit();
+		$translate = DevblocksPlatform::getTranslationService();
+		
+		if(empty($context_id))
+			return;
+		
+		if(false == ($project = DAO_JiraProject::get($context_id)))
+			return;
+
+		if(!empty($point))
+			$visit->set($point, 'issues');
+		
+		// Issue worklist with project filter
+		
+		$view_id = sprintf("jira_project_profile_issues_%d", $project->id);
+		
+		if(null == ($view = C4_AbstractViewLoader::getView($view_id))) {
+			$context_ext = Extension_DevblocksContext::get('cerberusweb.contexts.jira.issue');
+			$view = $context_ext->getSearchView($view_id);
+		}
+
+		if(empty($view))
+			return;
+		
+		$view->name = mb_convert_case($translate->_('wgm.jira.common.issues'), MB_CASE_TITLE);
+		$view->is_ephemeral = true;
+		
+		$view->addParamsRequired(
+			array(
+				SearchFields_JiraIssue::PROJECT_ID => new DevblocksSearchCriteria(SearchFields_JiraIssue::PROJECT_ID, '=', $project->id),
+			),
+			true
+		);
+		
+		$tpl->assign('view', $view);
+		
+		C4_AbstractViewLoader::setView($view->id, $view);
+	
+		$tpl->display('devblocks:cerberusweb.core::internal/views/search_and_view.tpl');
+	}
 };
