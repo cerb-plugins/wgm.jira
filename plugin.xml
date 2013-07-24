@@ -111,7 +111,7 @@
 				<name>WgmJira_Setup</name>
 			</class>
 			<params>
-				<param key="tab_label" value="wgm.jira.common" />
+				<param key="tab_label" value="JIRA" />
 			</params>
 		</extension>
 		
