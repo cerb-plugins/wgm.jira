@@ -17,7 +17,7 @@
 		
 		{if isset($comment.created)}<b>{$translate->_('message.header.date')|capitalize}:</b> {$comment.created|devblocks_date} (<abbr title="{$comment.created|devblocks_date}">{$comment.created|devblocks_prettytime}</abbr>)<br>{/if}
 		
-		<pre class="emailbody" style="padding-top:10px;">{$comment.body|escape:'html'|devblocks_hyperlinks|nl2br nofilter}</pre>
+		<pre class="emailbody" style="padding-top:10px;">{$comment.body|escape:'html'|devblocks_hyperlinks nofilter}</pre>
 		<br clear="all">
 	</div>
 	<br>
