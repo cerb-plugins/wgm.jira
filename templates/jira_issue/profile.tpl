@@ -71,7 +71,7 @@
 <fieldset class="properties">
 	<legend>{'common.description'|devblocks_translate|capitalize}</legend>
 	<div style="margin-left:15px;">
-		<pre class="emailbody" style="padding-top:10px;">{$description|escape:'html'|devblocks_hyperlinks nofilter}</pre>
+		<pre class="emailbody">{$description|escape:'html'|devblocks_hyperlinks nofilter}</pre>
 	</div>
 </fieldset>
 {/if}

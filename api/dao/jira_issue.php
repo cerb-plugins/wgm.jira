@@ -1086,14 +1086,14 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 		$url_writer = DevblocksPlatform::getUrlService();
 		
 		$url = $this->profileGetUrl($context_id);
-		$friendly = DevblocksPlatform::strToPermalink($jira_issue->name);
+		$friendly = DevblocksPlatform::strToPermalink($jira_issue->summary);
 		
 		if(!empty($friendly))
 			$url .= '-' . $friendly;
 		
 		return array(
 			'id' => $jira_issue->id,
-			'name' => $jira_issue->name,
+			'name' => $jira_issue->summary,
 			'permalink' => $url,
 		);
 	}
@@ -1107,7 +1107,7 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 
 		// Polymorph
 		if(is_numeric($jira_issue)) {
-			$jira_issue = DAO_JiraIssue::get($issue);
+			$jira_issue = DAO_JiraIssue::get($jira_issue);
 		} elseif($jira_issue instanceof Model_JiraIssue) {
 			// It's what we want already.
 		} else {
@@ -1140,7 +1140,7 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 			
 			// URL
 			$url_writer = DevblocksPlatform::getUrlService();
-			$token_values['record_url'] = $url_writer->writeNoProxy(sprintf("c=profiles&type=jira_issue&id=%d-%s",$jira_issue->id, DevblocksPlatform::strToPermalink($jira_issue->name)), true);
+			$token_values['record_url'] = $url_writer->writeNoProxy(sprintf("c=profiles&type=jira_issue&id=%d-%s",$jira_issue->id, DevblocksPlatform::strToPermalink($jira_issue->summary)), true);
 		}
 
 		return true;

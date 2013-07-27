@@ -94,7 +94,7 @@
 {* Description *}
 <fieldset class="peek">
 	<legend>{'common.description'|devblocks_translate|capitalize}</legend>
-	{$model->getDescription()|escape:'html'|devblocks_hyperlinks|nl2br nofilter}
+	<pre class="emailbody">{$model->getDescription()|escape:'html'|devblocks_hyperlinks nofilter}</pre>
 </fieldset>
 
 {* Comment *}
