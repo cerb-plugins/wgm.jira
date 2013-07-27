@@ -105,6 +105,10 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 		return null;
 	}
 	
+	static function random() {
+		return self::_getRandom('jira_issue');
+	}
+	
 	static function getByJiraId($remote_id) {
 		$results = self::getWhere(sprintf("%s = %d", self::JIRA_ID, $remote_id));
 		
@@ -1065,7 +1069,7 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 	const ID = 'cerberusweb.contexts.jira.issue';
 	
 	function getRandom() {
-		//return DAO_JiraIssue::random();
+		return DAO_JiraIssue::random();
 	}
 	
 	function profileGetUrl($context_id) {

@@ -114,6 +114,20 @@ class WgmJira_API {
 		return $this->_get('/rest/api/2/search', $params);
 	}
 	
+	function getIssueByKey($key) {
+		$response = $this->getIssues(
+			sprintf("key='%s'", $key),
+			1,
+			'summary,created,updated,description,status,issuetype,fixVersions,project,comment',
+			0
+		);
+		
+		if($response->issues)
+			return current($response->issues);
+		
+		return false;
+	}
+	
 	function getCreateMeta() {
 		$params = array();
 		return $this->_get('/rest/api/2/issue/createmeta', $params);
@@ -213,6 +227,67 @@ class WgmJira_API {
 		
 		curl_close($ch);
 		return $json;
+	}
+	
+	static public function importIssue($object) {
+		// Fix versions
+		
+		$fix_versions = array();
+		
+		if(is_array($object->fields->fixVersions))
+		foreach($object->fields->fixVersions as $fix_version) {
+			$fix_versions[$fix_version->id] = $fix_version->name;
+		}
+		
+		// Fields
+		
+		$fields = array(
+			DAO_JiraIssue::JIRA_ID => $object->id,
+			DAO_JiraIssue::JIRA_KEY => $object->key,
+			DAO_JiraIssue::JIRA_STATUS_ID => $object->fields->status->id,
+			DAO_JiraIssue::JIRA_VERSIONS => implode(', ', $fix_versions),
+			DAO_JiraIssue::JIRA_TYPE_ID => $object->fields->issuetype->id,
+			DAO_JiraIssue::PROJECT_ID => $object->fields->project->id,
+			DAO_JiraIssue::SUMMARY => $object->fields->summary,
+			DAO_JiraIssue::CREATED => strtotime($object->fields->created),
+			DAO_JiraIssue::UPDATED => strtotime($object->fields->updated),
+		);
+		
+		$local_issue = DAO_JiraIssue::getByJiraId($object->id);
+		
+		if(!empty($local_issue)) {
+			$local_issue_id = $local_issue->id;
+			DAO_JiraIssue::update($local_issue_id, $fields);
+
+		} else {
+			$local_issue_id = DAO_JiraIssue::create($fields);
+		}
+
+		// Versions
+		
+		DAO_JiraIssue::setVersions($local_issue_id, array_keys($fix_versions));
+		
+		// Store description content
+		
+		DAO_JiraIssue::setDescription($object->id, $object->fields->description);
+		
+		// Comments
+		
+		if(isset($object->fields->comment->comments) && is_array($object->fields->comment->comments))
+		foreach($object->fields->comment->comments as $comment) {
+			DAO_JiraIssue::saveComment(
+				$comment->id,
+				$object->id,
+				@strtotime($comment->created),
+				$comment->author->displayName,
+				$comment->body
+			);
+		}
+		
+		// Links
+		// [TODO]
+		
+		return $local_issue_id;
 	}
 };
 
@@ -343,55 +418,7 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 						break;
 					}
 					
-					$fix_versions = array();
-					
-					if(is_array($object->fields->fixVersions))
-					foreach($object->fields->fixVersions as $fix_version) {
-						$fix_versions[$fix_version->id] = $fix_version->name;
-					}
-					
-					$fields = array(
-						DAO_JiraIssue::JIRA_ID => $object->id,
-						DAO_JiraIssue::JIRA_KEY => $object->key,
-						DAO_JiraIssue::JIRA_STATUS_ID => $object->fields->status->id,
-						DAO_JiraIssue::JIRA_VERSIONS => implode(', ', $fix_versions),
-						DAO_JiraIssue::JIRA_TYPE_ID => $object->fields->issuetype->id,
-						DAO_JiraIssue::PROJECT_ID => $local_project->id,
-						DAO_JiraIssue::SUMMARY => $object->fields->summary,
-						DAO_JiraIssue::CREATED => strtotime($object->fields->created),
-						DAO_JiraIssue::UPDATED => $current_updated_date,
-					);
-					
-					$local_issue = DAO_JiraIssue::getByJiraId($object->id);
-					
-					if(!empty($local_issue)) {
-						$local_issue_id = $local_issue->id;
-						DAO_JiraIssue::update($local_issue_id, $fields);
-		
-					} else {
-						$local_issue_id = DAO_JiraIssue::create($fields);
-					}
-
-					// Link versions
-					
-					DAO_JiraIssue::setVersions($local_issue_id, array_keys($fix_versions));
-					
-					// Store description content
-					
-					DAO_JiraIssue::setDescription($object->id, $object->fields->description);
-					
-					// Save comments
-					
-					if(isset($object->fields->comment->comments) && is_array($object->fields->comment->comments))
-					foreach($object->fields->comment->comments as $comment) {
-						DAO_JiraIssue::saveComment(
-							$comment->id,
-							$object->id,
-							@strtotime($comment->created),
-							$comment->author->displayName,
-							$comment->body
-						);
-					}
+					$local_issue_id = WgmJira_API::importIssue($object);
 					
 					$last_updated_date = $current_updated_date;
 				}
@@ -494,7 +521,8 @@ class WgmJira_EventActionCreateIssue extends Extension_DevblocksEventAction {
 			return "[ERROR] No result placeholder given.";
 		
 		// Output
-		$out = sprintf(">>> Creating JIRA Issue\nProject: %s\nSummary: %s\nType: %sPlaceholder: %s\n\n%s\n",
+		
+		$out = sprintf(">>> Creating JIRA Issue\nProject: %s\nSummary: %s\nType: %s\nPlaceholder: %s\n\n%s\n",
 			$project_key,
 			$summary,
 			$params['type'],
@@ -503,12 +531,16 @@ class WgmJira_EventActionCreateIssue extends Extension_DevblocksEventAction {
 		);
 		
 		// Simulate a successful response
+		
 		$response_placeholder = $params['response_placeholder'];
-		$dict->$response_placeholder = array(
-			'id' => 1234,
-			'key' => 'JIRA-1234',
-			'self' => '',
-		);
+		
+		// Get an example JIRA issue and display the availablefields
+		
+		$labels = array();
+		$values = array();
+		CerberusContexts::getContext('cerberusweb.contexts.jira.issue', null, $labels, $values, null, true);
+		
+		$dict->$response_placeholder = $values;
 		
 		return $out;
 	}
@@ -557,12 +589,21 @@ class WgmJira_EventActionCreateIssue extends Extension_DevblocksEventAction {
 		$response = $jira->postCreateIssueJson(json_encode($new));
 		
 		if(is_array($response) && isset($response['key'])) {
-			$response_placeholder = $params['response_placeholder'];
-			$dict->$response_placeholder = $response;
+			// Pull the new issue through the API (like a one-item import)
+			if(false != ($issue = $jira->getIssueByKey($response['key']))) {
+				if(false !== ($issue_id = WgmJira_API::importIssue($issue))) {
+					$labels = array();
+					$values = array();
+					CerberusContexts::getContext('cerberusweb.contexts.jira.issue',$issue_id, $labels, $values, null, true);
+					
+					$response_placeholder = $params['response_placeholder'];
+					$dict->$response_placeholder = $values;
+				}
+			}
+			
 		}
-		
+	
 		// [TODO] Do something with the JIRA output
-		// [TODO] Pull the JIRA information in the API
 		// [TODO] Link the JIRA issue to this record?
 		// [TODO] Put the JIRA key in a custom field on the ticket?
 	}
