@@ -1118,7 +1118,12 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 		$token_labels = array(
 			'id' => $prefix.$translate->_('common.id'),
 			'jira_key' => $prefix.$translate->_('dao.jira_issue.jira_key'),
+			'jira_type' => $prefix.$translate->_('dao.jira_issue.jira_type_id'),
+			'jira_status' => $prefix.$translate->_('dao.jira_issue.jira_status_id'),
 			'summary' => $prefix.$translate->_('dao.jira_issue.summary'),
+			'created' => $prefix.$translate->_('common.created'),
+			'updated' => $prefix.$translate->_('common.updated'),
+			'jira_versions' => $prefix.$translate->_('dao.jira_issue.jira_versions'),
 			'record_url' => $prefix.$translate->_('common.url.record'),
 		);
 		
@@ -1132,11 +1137,22 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 		$token_values['_context'] = Context_JiraIssue::ID;
 		
 		if($jira_issue) {
+			$project = $jira_issue->getProject();
+			$type = $jira_issue->getType();
+			$status = $jira_issue->getStatus();
+			
 			$token_values['_loaded'] = true;
 			$token_values['_label'] = '[' . $jira_issue->jira_key . '] ' . $jira_issue->summary;
 			$token_values['id'] = $jira_issue->id;
 			$token_values['jira_key'] = $jira_issue->jira_key;
+			$token_values['jira_type_id'] = $jira_issue->jira_type_id;
+			$token_values['jira_type'] = (is_array($type) ? $type['name'] : '');
+			$token_values['jira_status_id'] = $jira_issue->jira_status_id;
+			$token_values['jira_status'] = (is_array($status) ? $status['name'] : '');
 			$token_values['summary'] = $jira_issue->summary;
+			$token_values['created'] = $jira_issue->created;
+			$token_values['updated'] = $jira_issue->updated;
+			$token_values['jira_versions'] = $jira_issue->jira_versions;
 			
 			// URL
 			$url_writer = DevblocksPlatform::getUrlService();
