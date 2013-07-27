@@ -34,6 +34,7 @@
 			<class name="Context_JiraIssue" />
 			<class name="DAO_JiraIssue" />
 			<class name="Model_JiraIssue" />
+			<class name="Search_JiraIssue" />
 			<class name="SearchFields_JiraIssue" />
 			<class name="View_JiraIssue" />
 		</file>
@@ -140,6 +141,19 @@
 			<params>
 				<param key="page_id" value="core.page.profiles" />
 				<param key="uri" value="jira_issue" />
+			</params>
+		</extension>
+		
+		<!-- Search Schemas -->
+		
+		<extension point="devblocks.search.schema">
+			<id>jira.search.schema.jira_issue</id>
+			<name>Jira Issues</name>
+			<class>
+				<file>api/dao/jira_issue.php</file>
+				<name>Search_JiraIssue</name>
+			</class>
+			<params>
 			</params>
 		</extension>
 

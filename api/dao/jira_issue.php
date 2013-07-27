@@ -269,6 +269,10 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 			(isset($tables['context_link']) ? "INNER JOIN context_link ON (context_link.to_context = 'cerberusweb.contexts.jira.issue' AND context_link.to_context_id = jira_issue.id) " : " ").
 			'';
 		
+		if(isset($tables['ft'])) {
+			$join_sql .= 'LEFT JOIN fulltext_jira_issue ft ON (ft.id=jira_issue.id) ';
+		}
+		
 		// Custom field joins
 		list($select_sql, $join_sql, $has_multiple_values) = self::_appendSelectJoinSqlForCustomFieldTables(
 			$tables,
@@ -411,6 +415,8 @@ class SearchFields_JiraIssue implements IDevblocksSearchFields {
 	const CREATED = 'j_created';
 	const UPDATED = 'j_updated';
 	
+	const FULLTEXT_CONTENT = 'ft_j_content';
+	
 	const VIRTUAL_CONTEXT_LINK = '*_context_link';
 	const VIRTUAL_HAS_FIELDSET = '*_has_fieldset';
 	const VIRTUAL_WATCHERS = '*_workers';
@@ -444,6 +450,12 @@ class SearchFields_JiraIssue implements IDevblocksSearchFields {
 			self::CONTEXT_LINK_ID => new DevblocksSearchField(self::CONTEXT_LINK_ID, 'context_link', 'from_context_id', null),
 		);
 		
+		// Fulltext
+		$tables = DevblocksPlatform::getDatabaseTables();
+		if(isset($tables['fulltext_jira_issue'])) {
+			$columns[self::FULLTEXT_CONTENT] = new DevblocksSearchField(self::FULLTEXT_CONTENT, 'ft', 'content', $translate->_('common.content'), 'FT');
+		}
+		
 		// Custom fields with fieldsets
 		
 		$custom_columns = DevblocksSearchField::getCustomSearchFieldsByContexts(array(
@@ -457,6 +469,68 @@ class SearchFields_JiraIssue implements IDevblocksSearchFields {
 		DevblocksPlatform::sortObjects($columns, 'db_label');
 
 		return $columns;
+	}
+};
+
+class Search_JiraIssue {
+	const ID = 'jira.search.schema.jira_issue';
+	
+	public static function index($stop_time=null) {
+		$logger = DevblocksPlatform::getConsoleLog();
+		
+		if(false == ($search = DevblocksPlatform::getSearchService())) {
+			$logger->error("[Search] The search engine is misconfigured.");
+			return;
+		}
+		
+		$ns = 'jira_issue';
+		$ptr_time = DAO_DevblocksExtensionPropertyStore::get(self::ID, 'last_indexed_time', 0);
+		$done = false;
+
+		while(!$done && time() < $stop_time) {
+			$where = sprintf("%s >= %d",
+				DAO_JiraIssue::UPDATED,
+				$ptr_time
+			);
+			$issues = DAO_JiraIssue::getWhere($where, array(DAO_JiraIssue::UPDATED, DAO_JiraIssue::ID), array(true, true), 100);
+
+			if(empty($issues)) {
+				$done = true;
+				continue;
+			}
+			
+			if(count($issues) < 100) {
+				$done = true;
+			}
+			
+			$last_time = $ptr_time;
+			
+			foreach($issues as $issue) { /* @var $issue Model_JiraIssue */
+				$ptr_time = $issue->updated;
+
+				$logger->info(sprintf("[Search] Indexing %s %d...",
+					$ns,
+					$issue->id
+				));
+				
+				$comments = $issue->getComments();
+				
+				$content =
+					$issue->summary . ' '
+					. $issue->getDescription() . ' '
+					;
+					
+				if(is_array($comments))
+				foreach($comments as $comment)
+					$content .= $comment['body'] . ' ';
+				
+				$search->index($ns, $issue->id, $content, true);
+				
+				flush();
+			}
+		}
+		
+		DAO_DevblocksExtensionPropertyStore::put(self::ID, 'last_indexed_time', $ptr_time);
 	}
 };
 
