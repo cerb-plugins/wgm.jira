@@ -120,6 +120,10 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 		return null;
 	}
 	
+	static function random() {
+		return self::_getRandom('jira_project');
+	}
+	
 	/**
 	 *
 	 * @param unknown_type $remote_id
@@ -809,7 +813,7 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 	const ID = 'cerberusweb.contexts.jira.project';
 	
 	function getRandom() {
-		//return DAO_JiraProject::random();
+		return DAO_JiraProject::random();
 	}
 	
 	function profileGetUrl($context_id) {

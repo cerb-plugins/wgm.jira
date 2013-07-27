@@ -308,7 +308,7 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 				if(false == ($response = $jira->getIssues(
 					sprintf("project='%s' AND updated > %d000 ORDER BY updated ASC", $local_project->jira_key, date('U', $local_project->last_synced_at)),
 					$maxResults,
-					'summary,created,updated,description,status,issuetype,fixVersions,comment',
+					'summary,created,updated,description,status,issuetype,fixVersions,project,comment',
 					$startAt
 				)
 				)) {

@@ -547,7 +547,7 @@ class Model_JiraIssue {
 	public $updated;
 	
 	function getProject() {
-		return DAO_JiraProject::get($this->project_id);
+		return DAO_JiraProject::getByJiraId($this->project_id);
 	}
 	
 	function getType() {
@@ -685,7 +685,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals 
 				
 				$projects = DAO_JiraProject::getAll();
 				foreach($projects as $project_id => $project)
-					$label_map[$project_id] = $project->name;
+					$label_map[$project->jira_id] = $project->name;
 				
 				$counts = $this->_getSubtotalCountForStringColumn('DAO_JiraIssue', $column, $label_map, 'in', 'options[]');
 				break;
@@ -789,8 +789,8 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals 
 				
 				$projects = DAO_JiraProject::getAll();
 				if(is_array($projects))
-				foreach($projects as $project_id => $project) {
-					$options[$project_id] = $project->name;
+				foreach($projects as $project) {
+					$options[$project->jira_id] = $project->name;
 				}
 				
 				asort($options);
