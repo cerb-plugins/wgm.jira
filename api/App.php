@@ -490,6 +490,10 @@ class WgmJira_EventActionCreateIssue extends Extension_DevblocksEventAction {
 		$projects = DAO_JiraProject::getAll();
 		$tpl->assign('projects', $projects);
 		
+		$event = $trigger->getEvent();
+		$values_to_contexts = $event->getValuesContexts($trigger);
+		$tpl->assign('values_to_contexts', $values_to_contexts);
+		
 		$tpl->display('devblocks:wgm.jira::events/action_create_jira_issue.tpl');
 	}
 	
@@ -508,27 +512,56 @@ class WgmJira_EventActionCreateIssue extends Extension_DevblocksEventAction {
 		if(false === ($description = $tpl_builder->build(@$params['description'], $dict)))
 			$description = null;
 		
-		if(empty($project_key))
+		if(!isset($params['project_key']) || empty($params['project_key']))
 			return "[ERROR] No project key given.";
 		
-		if(empty($summary))
+		if(!isset($params['summary']) || empty($params['summary']))
 			return "[ERROR] No summary given.";
 		
-		if(!isset($params['type']) && empty($params['type']))
+		if(!isset($params['type']) || empty($params['type']))
 			return "[ERROR] No type given.";
 
-		if(!isset($params['response_placeholder']) && empty($params['response_placeholder']))
+		if(!isset($params['response_placeholder']) || empty($params['response_placeholder']))
 			return "[ERROR] No result placeholder given.";
 		
 		// Output
 		
-		$out = sprintf(">>> Creating JIRA Issue\nProject: %s\nSummary: %s\nType: %s\nPlaceholder: %s\n\n%s\n",
+		$out = sprintf(">>> Creating JIRA Issue\nProject: %s\nSummary: %s\nType: %s\nPlaceholder: %s\n",
 			$project_key,
 			$summary,
 			$params['type'],
-			$params['response_placeholder'],
-			$description
+			$params['response_placeholder']
 		);
+		
+		if(!empty($description)) {
+			$out .= sprintf("\n%s\n",
+				$description
+			);
+		}
+		
+		$out .= "\n";
+		
+		// Connection
+		@$link_to = DevblocksPlatform::importVar($params['link_to'],'array',array());
+		
+		if(!empty($link_to)) {
+			$trigger = $dict->_trigger;
+			$event = $trigger->getEvent();
+			
+			$on_result = DevblocksEventHelper::onContexts($link_to, $event->getValuesContexts($trigger), $dict);
+			@$on_objects = $on_result['objects'];
+			
+			if(is_array($on_objects)) {
+				$out .= ">>> Linking to:\n";
+				
+				foreach($on_objects as $on_object) {
+					$on_object_context = Extension_DevblocksContext::get($on_object->_context);
+					$out .= ' * (' . $on_object_context->manifest->name . ') ' . $on_object->_label . "\n";
+				}
+			}
+			
+			$out .= "\n";
+		}
 		
 		// Simulate a successful response
 		
@@ -587,6 +620,8 @@ class WgmJira_EventActionCreateIssue extends Extension_DevblocksEventAction {
 		
 		// [TODO] If false !==
 		$response = $jira->postCreateIssueJson(json_encode($new));
+		$issue = null;
+		$issue_id = 0;
 		
 		if(is_array($response) && isset($response['key'])) {
 			// Pull the new issue through the API (like a one-item import)
@@ -603,9 +638,23 @@ class WgmJira_EventActionCreateIssue extends Extension_DevblocksEventAction {
 			
 		}
 	
-		// [TODO] Do something with the JIRA output
-		// [TODO] Link the JIRA issue to this record?
-		// [TODO] Put the JIRA key in a custom field on the ticket?
+		// Connection
+		
+		@$link_to = DevblocksPlatform::importVar($params['link_to'],'array',array());
+		
+		if(!empty($link_to) && !empty($issue_id)) {
+			$trigger = $dict->_trigger;
+			$event = $trigger->getEvent();
+			
+			$on_result = DevblocksEventHelper::onContexts($link_to, $event->getValuesContexts($trigger), $dict);
+			@$on_objects = $on_result['objects'];
+			
+			if(is_array($on_objects)) {
+				foreach($on_objects as $on_object) {
+					DAO_ContextLink::setLink('cerberusweb.contexts.jira.issue', $issue_id, $on_object->_context, $on_object->id);
+				}
+			}
+		}
 	}
 };
 endif;
