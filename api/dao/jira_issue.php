@@ -1121,8 +1121,8 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 			'jira_type' => $prefix.$translate->_('dao.jira_issue.jira_type_id'),
 			'jira_status' => $prefix.$translate->_('dao.jira_issue.jira_status_id'),
 			'summary' => $prefix.$translate->_('dao.jira_issue.summary'),
-			'created' => $prefix.$translate->_('common.created'),
-			'updated' => $prefix.$translate->_('common.updated'),
+			'created|date' => $prefix.$translate->_('common.created'),
+			'updated|date' => $prefix.$translate->_('common.updated'),
 			'jira_versions' => $prefix.$translate->_('dao.jira_issue.jira_versions'),
 			'record_url' => $prefix.$translate->_('common.url.record'),
 		);
