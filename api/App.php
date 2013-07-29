@@ -567,11 +567,27 @@ class WgmJira_EventActionCreateIssue extends Extension_DevblocksEventAction {
 		
 		$response_placeholder = $params['response_placeholder'];
 		
-		// Get an example JIRA issue and display the availablefields
+		// Get an example JIRA issue and display the available fields
 		
 		$labels = array();
 		$values = array();
 		CerberusContexts::getContext('cerberusweb.contexts.jira.issue', null, $labels, $values, null, true);
+
+		if(!empty($labels)) {
+			$out .= "Placeholders:\n";
+			$out .= sprintf(" * {{%s._label}}\n", $response_placeholder);
+			
+			foreach($labels as $k => $l) {
+				$out .= sprintf(" * {{%s.%s}}\n",
+					$response_placeholder,
+					$k
+				);
+			}
+			
+			$out .= "\n";
+		}
+		
+		//
 		
 		$dict->$response_placeholder = $values;
 		
