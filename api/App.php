@@ -30,6 +30,7 @@ class WgmJira_Setup extends Extension_PluginSetup {
 			// Test connection
 			$jira = WgmJira_API::getInstance();
 			$jira->setBaseUrl($base_url);
+			$jira->setAuth($jira_user, $jira_password);
 			
 			// Show the actual error
 			if(false === $jira->getServerInfo())
