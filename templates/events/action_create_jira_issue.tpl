@@ -27,5 +27,5 @@
 {/if}
 
 <b>Save response to a variable named:</b><br>
-<input type="text" name="{$namePrefix}[response_placeholder]" value="{$params.response_placeholder|default:"_jira_result"}" size="45" style="width:100%;" placeholder="e.g. _jira_result">
+<input type="text" name="{$namePrefix}[response_placeholder]" value="{$params.response_placeholder|default:"_jira_issue"}" size="45" style="width:100%;" placeholder="e.g. _jira_result">
 </br>
