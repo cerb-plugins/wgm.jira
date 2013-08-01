@@ -266,7 +266,7 @@ class PageSection_ProfilesJiraProject extends Extension_PageSection {
 		
 		$view->addParamsRequired(
 			array(
-				SearchFields_JiraIssue::PROJECT_ID => new DevblocksSearchCriteria(SearchFields_JiraIssue::PROJECT_ID, '=', $project->id),
+				SearchFields_JiraIssue::PROJECT_ID => new DevblocksSearchCriteria(SearchFields_JiraIssue::PROJECT_ID, '=', $project->jira_id),
 			),
 			true
 		);
