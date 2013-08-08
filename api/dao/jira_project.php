@@ -140,6 +140,22 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 		return null;
 	}
 	
+	/**
+	 *
+	 * @param string $jira_key
+	 * @return Model_JiraProject|null
+	 */
+	static function getByJiraKey($jira_key) {
+		$projects = DAO_JiraProject::getAll();
+		
+		foreach($projects as $project_id => $project) { /* @var $project Model_JiraProject */
+			if($project->jira_key == $jira_key)
+				return $project;
+		}
+		
+		return null;
+	}
+	
 	static function getAllTypes() {
 		$results = array();
 		
