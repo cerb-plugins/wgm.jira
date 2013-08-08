@@ -862,7 +862,7 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 		$token_labels = array(
 			'id' => $prefix.$translate->_('common.id'),
 			'name' => $prefix.$translate->_('common.name'),
-			'updated_at|date' => $prefix.$translate->_('common.updated'),
+			'last_synced_at|date' => $prefix.$translate->_('dao.jira_project.last_synced_at'),
 			'record_url' => $prefix.$translate->_('common.url.record'),
 		);
 		
@@ -880,7 +880,7 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 			$token_values['_label'] = $jira_project->name;
 			$token_values['id'] = $jira_project->id;
 			$token_values['name'] = $jira_project->name;
-			$token_values['updated_at'] = $jira_project->updated_at;
+			$token_values['last_synced_at'] = $jira_project->last_synced_at;
 			
 			// URL
 			$url_writer = DevblocksPlatform::getUrlService();
@@ -939,14 +939,9 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 		$view->name = 'Jira Project';
 		$view->view_columns = array(
 			SearchFields_JiraProject::NAME,
-			SearchFields_JiraProject::UPDATED_AT,
+			SearchFields_JiraProject::LAST_SYNCED_AT,
 		);
-		/*
-		$view->addParams(array(
-			SearchFields_JiraProject::UPDATED_AT => new DevblocksSearchCriteria(SearchFields_JiraProject::UPDATED_AT,'=',0),
-		), true);
-		*/
-		$view->renderSortBy = SearchFields_JiraProject::UPDATED_AT;
+		$view->renderSortBy = SearchFields_JiraProject::LAST_SYNCED_AT;
 		$view->renderSortAsc = false;
 		$view->renderLimit = 10;
 		$view->renderFilters = false;
