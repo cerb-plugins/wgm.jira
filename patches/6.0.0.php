@@ -14,9 +14,9 @@ if(!isset($tables['jira_project'])) {
 			jira_key VARCHAR(16) DEFAULT '',
 			name VARCHAR(255) DEFAULT '',
 			url VARCHAR(255) DEFAULT '',
-			issuetypes_json TEXT,
-			statuses_json TEXT,
-			versions_json TEXT,
+			issuetypes_json MEDIUMTEXT,
+			statuses_json MEDIUMTEXT,
+			versions_json MEDIUMTEXT,
 			last_synced_at INT UNSIGNED NOT NULL DEFAULT 0,
 			PRIMARY KEY (id)
 		) ENGINE=%s;
@@ -24,6 +24,25 @@ if(!isset($tables['jira_project'])) {
 	$db->Execute($sql);
 
 	$tables['jira_project'] = 'jira_project';
+}
+
+if(!isset($tables['jira_project'])) {
+	$logger->error("The 'jira_project' table does not exist.");
+	return FALSE;
+}
+
+list($columns, $indexes) = $db->metaTable('jira_project');
+
+if(isset($columns['issuetypes_json']) && $columns['issuetypes_json']['type'] == 'text') {
+	$db->Execute("ALTER TABLE jira_project MODIFY COLUMN issuetypes_json MEDIUMTEXT");
+}
+
+if(isset($columns['statuses_json']) && $columns['statuses_json']['type'] == 'text') {
+	$db->Execute("ALTER TABLE jira_project MODIFY COLUMN statuses_json MEDIUMTEXT");
+}
+
+if(isset($columns['versions_json']) && $columns['versions_json']['type'] == 'text') {
+	$db->Execute("ALTER TABLE jira_project MODIFY COLUMN versions_json MEDIUMTEXT");
 }
 
 // ===========================================================================
