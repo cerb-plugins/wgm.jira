@@ -953,10 +953,6 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 		$defaults->class_name = $this->getViewClass();
 		$view = C4_AbstractViewLoader::getView($view_id, $defaults);
 		$view->name = 'Jira Project';
-		$view->view_columns = array(
-			SearchFields_JiraProject::NAME,
-			SearchFields_JiraProject::LAST_SYNCED_AT,
-		);
 		$view->renderSortBy = SearchFields_JiraProject::LAST_SYNCED_AT;
 		$view->renderSortAsc = false;
 		$view->renderLimit = 10;
