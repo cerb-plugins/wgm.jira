@@ -147,7 +147,7 @@ if(!isset($tables['jira_issue_comment'])) {
 
 if(null != ($cron = DevblocksPlatform::getExtension('wgmjira.cron', true, true))) {
 	$cron->setParam(CerberusCronPageExtension::PARAM_ENABLED, true);
-	$cron->setParam(CerberusCronPageExtension::PARAM_DURATION, '10');
+	$cron->setParam(CerberusCronPageExtension::PARAM_DURATION, '15');
 	$cron->setParam(CerberusCronPageExtension::PARAM_TERM, 'm');
 	$cron->setParam(CerberusCronPageExtension::PARAM_LASTRUN, strtotime('Yesterday 23:45'));
 }

@@ -129,9 +129,11 @@ class WgmJira_API {
 		return false;
 	}
 	
-	function getCreateMeta() {
-		$params = array();
-		return $this->_get('/rest/api/2/issue/createmeta', $params);
+	function getIssueCreateMeta() {
+		$params = array(
+			'expand' => 'projects.issuetypes.fields',
+		);
+		return $this->_get(sprintf("/rest/api/2/issue/createmeta"), $params);
 	}
 	
 	function postCreateIssueJson($json) {
@@ -146,7 +148,25 @@ class WgmJira_API {
 		return current($this->_errors);
 	}
 	
-	private function _postJson($path, $params=array(), $json=null) {
+	function execute($verb, $path, $params=array(), $json=null) {
+		switch($verb) {
+			case 'get':
+				return $this->_get($path, $params);
+				break;
+				
+			case 'post':
+			case 'put':
+				return $this->_postJson($path, $params, $json, $verb);
+				break;
+				
+			case 'delete':
+				// [TODO]
+				break;
+		}
+		
+	}
+	
+	private function _postJson($path, $params=array(), $json=null, $verb='post') {
 		if(empty($this->_base_url))
 			return false;
 		
@@ -167,23 +187,39 @@ class WgmJira_API {
 		
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 		
-		if(!empty($headers))
-			curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+		switch($verb) {
+			case 'post':
+				curl_setopt($ch, CURLOPT_POST, 1);
+				break;
+				
+			case 'put':
+				curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
+				curl_setopt($ch, CURLOPT_POST, 1);
+				//curl_setopt($ch, CURLOPT_PUT, 1);
+				//$headers[] = 'X-HTTP-Method-Override: PUT';
+				//$headers[] = 'Content-Length: ' . strlen($json);
+				break;
+		}
 		
 		curl_setopt($ch, CURLOPT_POSTFIELDS, $json);
 		
-		$out = curl_exec($ch);
-
-		$info = curl_getinfo($ch);
+		if(!empty($headers))
+			curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 		
+		$out = curl_exec($ch);
+		
+		$info = curl_getinfo($ch);
+
 		// [TODO] This can fail without HTTPS
 		
 		if(curl_errno($ch)) {
 			$this->_errors = array(curl_error($ch));
 			$json = false;
+			
 		} elseif(false == ($json = json_decode($out, true))) {
 			$this->_errors = array('The Base URL does not point to a valid JIRA installation.');
 			$json = false;
+			
 		} else {
 			$this->_errors = array();
 		}
@@ -219,9 +255,11 @@ class WgmJira_API {
 		if(curl_errno($ch)) {
 			$this->_errors = array(curl_error($ch));
 			$json = false;
+			
 		} elseif(false == ($json = json_decode($out))) {
 			$this->_errors = array('The Base URL does not point to a valid JIRA installation.');
 			$json = false;
+			
 		} else {
 			$this->_errors = array();
 		}
@@ -304,11 +342,9 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 		$logger->info("Finished");
 	}
 
-	// [TODO] Synchronize versions
-		
-	private function _synchronize() {
+	function _synchronize() {
 		$jira = WgmJira_API::getInstance();
-		
+
 		// Sync statuses
 		if(false == ($results = $jira->getStatuses()))
 			return;
@@ -317,30 +353,31 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 		
 		if(is_array($results))
 			foreach($results as $object) {
-			unset($object->description);
-			unset($object->iconUrl);
-			unset($object->self);
-			$statuses[$object->id] = $object;
-		}
+				unset($object->description);
+				unset($object->iconUrl);
+				unset($object->self);
+				$statuses[$object->id] = $object;
+			}
 		
 		// Sync projects
-		if(false == ($projects = $jira->getProjects()))
-			return;
+		$response = $jira->getIssueCreateMeta();
+		$projects = $response->projects;
 		
 		if(is_array($projects))
-			foreach($projects as $project_meta) {
+		foreach($projects as $project_meta) {
+			// Pull the full record for each project and merge with createmeta
 			if(false == ($project = $jira->getProject($project_meta->key)))
 				continue;
 				
 			$issue_types = array();
 			$versions = array();
 				
-			if(isset($project->issueTypes) && is_array($project->issueTypes))
-				foreach($project->issueTypes as $object) {
+			if(isset($project_meta->issuetypes) && is_array($project_meta->issuetypes))
+				foreach($project_meta->issuetypes as $object) {
 				unset($object->self);
 				$issue_types[$object->id] = $object;
 			}
-				
+
 			if(isset($project->versions) && is_array($project->versions))
 				foreach($project->versions as $object) {
 				unset($object->self);
@@ -479,162 +516,7 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 	}
 };
 
-if(class_exists('Extension_DevblocksEventAction')):
-class WgmJira_EventActionCreateIssue extends Extension_DevblocksEventAction {
-	function render(Extension_DevblocksEvent $event, Model_TriggerEvent $trigger, $params=array(), $seq=null) {
-		$tpl = DevblocksPlatform::getTemplateService();
-		$tpl->assign('params', $params);
-		
-		if(!is_null($seq))
-			$tpl->assign('namePrefix', 'action'.$seq);
-		
-		$projects = DAO_JiraProject::getAll();
-		$tpl->assign('projects', $projects);
-		
-		$event = $trigger->getEvent();
-		$values_to_contexts = $event->getValuesContexts($trigger);
-		$tpl->assign('values_to_contexts', $values_to_contexts);
-		
-		$tpl->display('devblocks:wgm.jira::events/action_create_jira_issue.tpl');
-	}
-	
-	function simulate($token, Model_TriggerEvent $trigger, $params, DevblocksDictionaryDelegate $dict) {
-		$jira = WgmJira_API::getInstance();
-		$tpl_builder = DevblocksPlatform::getTemplateBuilder();
-		
-		$out = null;
-		
-		if(false === ($project_key = $tpl_builder->build(@$params['project_key'], $dict)))
-			$project_key = null;
-		
-		if(false === ($summary = $tpl_builder->build(@$params['summary'], $dict)))
-			$summary = null;
-		
-		if(false === ($description = $tpl_builder->build(@$params['description'], $dict)))
-			$description = null;
-		
-		if(!isset($params['project_key']) || empty($params['project_key']))
-			return "[ERROR] No project key given.";
-		
-		if(!isset($params['summary']) || empty($params['summary']))
-			return "[ERROR] No summary given.";
-		
-		if(!isset($params['type']) || empty($params['type']))
-			return "[ERROR] No type given.";
-
-		if(!isset($params['response_placeholder']) || empty($params['response_placeholder']))
-			return "[ERROR] No result placeholder given.";
-		
-		// Output
-		
-		$out = sprintf(">>> Creating JIRA Issue\nProject: %s\nSummary: %s\nType: %s\nPlaceholder: %s\n",
-			$project_key,
-			$summary,
-			$params['type'],
-			$params['response_placeholder']
-		);
-		
-		if(!empty($description)) {
-			$out .= sprintf("\n%s\n",
-				$description
-			);
-		}
-		
-		$out .= "\n";
-		
-		// Connection
-		@$link_to = DevblocksPlatform::importVar($params['link_to'],'array',array());
-		
-		if(!empty($link_to)) {
-			$trigger = $dict->_trigger;
-			$event = $trigger->getEvent();
-			
-			$on_result = DevblocksEventHelper::onContexts($link_to, $event->getValuesContexts($trigger), $dict);
-			@$on_objects = $on_result['objects'];
-			
-			if(is_array($on_objects)) {
-				$out .= ">>> Linking to:\n";
-				
-				foreach($on_objects as $on_object) {
-					$on_object_context = Extension_DevblocksContext::get($on_object->_context);
-					$out .= ' * (' . $on_object_context->manifest->name . ') ' . $on_object->_label . "\n";
-				}
-			}
-			
-			$out .= "\n";
-		}
-		
-		// Simulate a successful response
-		
-		$response_placeholder = $params['response_placeholder'];
-		
-		// Get an example JIRA issue and display the available fields
-		
-		$labels = array();
-		$values = array();
-		CerberusContexts::getContext('cerberusweb.contexts.jira.issue', null, $labels, $values, null, true);
-
-		if(!empty($labels)) {
-			$out .= "Placeholders:\n";
-			$out .= sprintf(" * {{%s._label}}\n", $response_placeholder);
-			
-			foreach($labels as $k => $l) {
-				$out .= sprintf(" * {{%s.%s}}\n",
-					$response_placeholder,
-					$k
-				);
-			}
-			
-			$out .= "\n";
-		}
-		
-		//
-		
-		$dict->$response_placeholder = $values;
-		
-		return $out;
-	}
-	
-	function run($token, Model_TriggerEvent $trigger, $params, DevblocksDictionaryDelegate $dict) {
-		$jira = WgmJira_API::getInstance();
-		$tpl_builder = DevblocksPlatform::getTemplateBuilder();
-		
-		//var_dump($jira->getCreateMeta());
-		
-		if(false === ($project_key = $tpl_builder->build(@$params['project_key'], $dict)))
-			$project_key = null;
-		
-		if(false === ($summary = $tpl_builder->build(@$params['summary'], $dict)))
-			$summary = null;
-		
-		if(false === ($description = $tpl_builder->build(@$params['description'], $dict)))
-			$description = null;
-		
-		if(empty($project_key))
-			return false;
-		
-		if(empty($summary))
-			return false;
-		
-		if(!isset($params['type']) && empty($params['type']))
-			return false;
-		
-		if(!isset($params['response_placeholder']) && empty($params['response_placeholder']))
-			return false;
-		
-		$new = array(
-			'fields' => array(
-				'project' => array(
-					'key' => $project_key,
-				),
-				'summary' => $summary,
-				'description' => $description,
-				'issuetype' => array(
-					'name' => $params['type'],
-				),
-			)
-		);
-		
+/*
 		// [TODO] If false !==
 		$response = $jira->postCreateIssueJson(json_encode($new));
 		$issue = null;
@@ -654,7 +536,7 @@ class WgmJira_EventActionCreateIssue extends Extension_DevblocksEventAction {
 			}
 			
 		}
-	
+		
 		// Connection
 		
 		@$link_to = DevblocksPlatform::importVar($params['link_to'],'array',array());
@@ -672,12 +554,10 @@ class WgmJira_EventActionCreateIssue extends Extension_DevblocksEventAction {
 				}
 			}
 		}
-	}
-};
-endif;
+*/
 
 if(class_exists('Extension_DevblocksEventAction')):
-class WgmJira_EventActionCommentIssue extends Extension_DevblocksEventAction {
+class WgmJira_EventActionApiCall extends Extension_DevblocksEventAction {
 	function render(Extension_DevblocksEvent $event, Model_TriggerEvent $trigger, $params=array(), $seq=null) {
 		$tpl = DevblocksPlatform::getTemplateService();
 		$tpl->assign('params', $params);
@@ -685,7 +565,7 @@ class WgmJira_EventActionCommentIssue extends Extension_DevblocksEventAction {
 		if(!is_null($seq))
 			$tpl->assign('namePrefix', 'action'.$seq);
 		
-		$tpl->display('devblocks:wgm.jira::events/action_comment_jira_issue.tpl');
+		$tpl->display('devblocks:wgm.jira::events/action_jira_api_call.tpl');
 	}
 	
 	function simulate($token, Model_TriggerEvent $trigger, $params, DevblocksDictionaryDelegate $dict) {
@@ -694,34 +574,29 @@ class WgmJira_EventActionCommentIssue extends Extension_DevblocksEventAction {
 		
 		$out = null;
 		
-		if(false === ($key = $tpl_builder->build(@$params['key'], $dict)))
-			$key = null;
+		@$api_verb = $params['api_verb'];
+		@$api_path = $tpl_builder->build($params['api_path'], $dict);
+		@$json = $tpl_builder->build($params['json'], $dict);
+		@$response_placeholder = $params['response_placeholder'];
 		
-		if(false === ($comment = $tpl_builder->build(@$params['comment'], $dict)))
-			$comment = null;
+		if(empty($api_verb))
+			return "[ERROR] API verb is required.";
 		
-		if(empty($key))
-			return "[ERROR] No issue key given.";
+		if(empty($api_path))
+			return "[ERROR] API path is required.";
 		
-		if(empty($comment))
-			return "[ERROR] No summary given.";
-		
-		if(!isset($params['response_placeholder']) && empty($params['response_placeholder']))
+		if(empty($response_placeholder))
 			return "[ERROR] No result placeholder given.";
 		
 		// Output
-		$out = sprintf(">>> Commenting on JIRA Issue\nIssue: %s\nPlaceholder: %s\n\n%s\n",
-			$key,
-			$params['response_placeholder'],
-			$comment
+		$out = sprintf(">>> Sending request to JIRA API:\n%s %s\n%s\n",
+			mb_convert_case($api_verb, MB_CASE_UPPER),
+			$api_path,
+			(in_array($api_verb, array('post','put')) ? ("\n" . $json . "\n") : "")
 		);
 		
-		// Simulate a successful response
-		$response_placeholder = $params['response_placeholder'];
-		$dict->$response_placeholder = array(
-			'id' => 1234,
-			'body' => $comment,
-			'self' => '',
+		$out .= sprintf(">>> Saving response to placeholder:\n%s\n",
+			$response_placeholder
 		);
 		
 		return $out;
@@ -731,45 +606,23 @@ class WgmJira_EventActionCommentIssue extends Extension_DevblocksEventAction {
 		$jira = WgmJira_API::getInstance();
 		$tpl_builder = DevblocksPlatform::getTemplateBuilder();
 		
-		//var_dump($jira->getCreateMeta());
-
-		if(false === ($key = $tpl_builder->build(@$params['key'], $dict)))
-			$key = null;
+		@$api_verb = $params['api_verb'];
+		@$api_path = $tpl_builder->build($params['api_path'], $dict);
+		@$json = $tpl_builder->build($params['json'], $dict);
+		@$response_placeholder = $params['response_placeholder'];
 		
-		if(false === ($comment = $tpl_builder->build(@$params['comment'], $dict)))
-			$comment = null;
-		
-		if(empty($key))
+		if(empty($api_verb) || empty($api_path))
 			return false;
 		
-		if(empty($comment))
+		if(empty($response_placeholder))
 			return false;
 		
-		if(!isset($params['response_placeholder']) && empty($params['response_placeholder']))
-			return false;
+		$response = $jira->execute($api_verb, $api_path, array(), $json);
 		
-		$new = array(
-			'body' => $comment,
-			/*
-			'visibility' => array(
-				'type' => 'group',
-				'value' => 'wgm-staff',
-			),
-			*/
-		);
-		
-		// [TODO] If false !==
-		$response = $jira->postCommentIssueJson($key, json_encode($new));
-
-		if(is_array($response) && isset($response['key'])) {
+		if(is_array($response)) {
 			$response_placeholder = $params['response_placeholder'];
 			$dict->$response_placeholder = $response;
 		}
-		
-		// [TODO] Do something with the JIRA output
-		// [TODO] Pull the JIRA information in the API
-		// [TODO] Link the JIRA issue to this record?
-		// [TODO] Put the JIRA key in a custom field on the ticket?
 	}
 };
 endif;

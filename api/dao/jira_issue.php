@@ -1154,10 +1154,26 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 			$token_values['updated'] = $jira_issue->updated;
 			$token_values['jira_versions'] = $jira_issue->jira_versions;
 			
+			$token_values['project_id'] = $jira_issue->project_id;
+			
 			// URL
 			$url_writer = DevblocksPlatform::getUrlService();
 			$token_values['record_url'] = $url_writer->writeNoProxy(sprintf("c=profiles&type=jira_issue&id=%d-%s",$jira_issue->id, DevblocksPlatform::strToPermalink($jira_issue->summary)), true);
 		}
+		
+		// JIRA Project
+		$merge_token_labels = array();
+		$merge_token_values = array();
+		CerberusContexts::getContext('cerberusweb.contexts.jira.project', null, $merge_token_labels, $merge_token_values, '', true);
+
+		CerberusContexts::merge(
+			'project_',
+			'Jira Project:',
+			$merge_token_labels,
+			$merge_token_values,
+			$token_labels,
+			$token_values
+		);
 
 		return true;
 	}

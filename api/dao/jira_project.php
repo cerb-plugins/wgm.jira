@@ -867,7 +867,7 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 
 		// Polymorph
 		if(is_numeric($jira_project)) {
-			$jira_project = DAO_JiraProject::get($jira_project);
+			$jira_project = DAO_JiraProject::getByJiraId($jira_project);
 		} elseif($jira_project instanceof Model_JiraProject) {
 			// It's what we want already.
 		} else {
@@ -877,9 +877,11 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 		// Token labels
 		$token_labels = array(
 			'id' => $prefix.$translate->_('common.id'),
-			'name' => $prefix.$translate->_('common.name'),
+			'jira_key' => $prefix.$translate->_('dao.jira_project.jira_key'),
 			'last_synced_at|date' => $prefix.$translate->_('dao.jira_project.last_synced_at'),
+			'name' => $prefix.$translate->_('common.name'),
 			'record_url' => $prefix.$translate->_('common.url.record'),
+			'url' => $prefix.$translate->_('common.url'),
 		);
 		
 		// Custom field/fieldset token labels
@@ -895,8 +897,10 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 			$token_values['_loaded'] = true;
 			$token_values['_label'] = $jira_project->name;
 			$token_values['id'] = $jira_project->id;
-			$token_values['name'] = $jira_project->name;
+			$token_values['jira_key'] = $jira_project->jira_key;
 			$token_values['last_synced_at'] = $jira_project->last_synced_at;
+			$token_values['name'] = $jira_project->name;
+			$token_values['url'] = $jira_project->url;
 			
 			// URL
 			$url_writer = DevblocksPlatform::getUrlService();
