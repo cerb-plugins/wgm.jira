@@ -130,17 +130,17 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 		
 		$types = array(
 			// [TODO] Implement full list
-			'issue_created|date' => Model_CustomField::TYPE_DATE,
+			'issue_created' => Model_CustomField::TYPE_DATE,
 			'issue_jira_key' => Model_CustomField::TYPE_SINGLE_LINE,
 			'issue_record_url' => Model_CustomField::TYPE_URL,
 			'issue_jira_status' => Model_CustomField::TYPE_SINGLE_LINE,
 			'issue_summary' => Model_CustomField::TYPE_SINGLE_LINE,
 			'issue_jira_type' => Model_CustomField::TYPE_SINGLE_LINE,
-			'issue_updated|date' => Model_CustomField::TYPE_DATE,
+			'issue_updated' => Model_CustomField::TYPE_DATE,
 			'issue_jira_versions' => Model_CustomField::TYPE_SINGLE_LINE,
 			
 			'issue_project_jira_key' => Model_CustomField::TYPE_SINGLE_LINE,
-			'issue_project_last_synced_at|date' => Model_CustomField::TYPE_DATE,
+			'issue_project_last_synced_at' => Model_CustomField::TYPE_DATE,
 			'issue_project_name' => Model_CustomField::TYPE_SINGLE_LINE,
 			'issue_project_record_url' => Model_CustomField::TYPE_URL,
 			'issue_project_url' => Model_CustomField::TYPE_URL,

@@ -220,6 +220,8 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 		
 		$db->Execute(sprintf("DELETE FROM jira_issue WHERE id IN (%s)", $ids_list));
 		
+		// [TODO] Cascade delete to linked tables
+		
 		// Fire event
 		/*
 		$eventMgr = DevblocksPlatform::getEventService();
@@ -1098,6 +1100,19 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 		);
 	}
 	
+	// [TODO] Interface
+	function getDefaultProperties() {
+		return array(
+			'project__label',
+			'jira_key',
+			'jira_type',
+			'jira_status',
+			'jira_versions',
+			'created',
+			'updated',
+		);
+	}
+	
 	function getContext($jira_issue, &$token_labels, &$token_values, $prefix=null) {
 		if(is_null($prefix))
 			$prefix = 'JIRA Issue:';
@@ -1116,15 +1131,30 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 		
 		// Token labels
 		$token_labels = array(
+			'_label' => $prefix,
 			'id' => $prefix.$translate->_('common.id'),
 			'jira_key' => $prefix.$translate->_('dao.jira_issue.jira_key'),
 			'jira_type' => $prefix.$translate->_('dao.jira_issue.jira_type_id'),
 			'jira_status' => $prefix.$translate->_('dao.jira_issue.jira_status_id'),
 			'summary' => $prefix.$translate->_('dao.jira_issue.summary'),
-			'created|date' => $prefix.$translate->_('common.created'),
-			'updated|date' => $prefix.$translate->_('common.updated'),
+			'created' => $prefix.$translate->_('common.created'),
+			'updated' => $prefix.$translate->_('common.updated'),
 			'jira_versions' => $prefix.$translate->_('dao.jira_issue.jira_versions'),
 			'record_url' => $prefix.$translate->_('common.url.record'),
+		);
+		
+		// Token types
+		$token_types = array(
+			'_label' => 'context_url',
+			'id' => Model_CustomField::TYPE_NUMBER,
+			'jira_key' => Model_CustomField::TYPE_SINGLE_LINE,
+			'jira_type' => Model_CustomField::TYPE_SINGLE_LINE,
+			'jira_status' => Model_CustomField::TYPE_SINGLE_LINE,
+			'summary' => Model_CustomField::TYPE_SINGLE_LINE,
+			'created' => Model_CustomField::TYPE_DATE,
+			'updated' => Model_CustomField::TYPE_DATE,
+			'jira_versions' => Model_CustomField::TYPE_SINGLE_LINE,
+			'record_url' => Model_CustomField::TYPE_URL,
 		);
 		
 		// Custom field/fieldset token labels
@@ -1135,6 +1165,7 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 		$token_values = array();
 		
 		$token_values['_context'] = Context_JiraIssue::ID;
+		$token_values['_types'] = $token_types;
 		
 		if($jira_issue) {
 			$project = $jira_issue->getProject();
@@ -1155,6 +1186,8 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 			$token_values['jira_versions'] = $jira_issue->jira_versions;
 			
 			$token_values['project_id'] = $jira_issue->project_id;
+			
+			// [TODO] Content
 			
 			// URL
 			$url_writer = DevblocksPlatform::getUrlService();

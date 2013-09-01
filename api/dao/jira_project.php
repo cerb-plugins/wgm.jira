@@ -858,6 +858,15 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 		);
 	}
 	
+	// [TODO] Interface
+	function getDefaultProperties() {
+		return array(
+			'jira_key',
+			'last_synced_at',
+			'url',
+		);
+	}
+	
 	function getContext($jira_project, &$token_labels, &$token_values, $prefix=null) {
 		if(is_null($prefix))
 			$prefix = 'Jira Project:';
@@ -867,7 +876,15 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 
 		// Polymorph
 		if(is_numeric($jira_project)) {
-			$jira_project = DAO_JiraProject::getByJiraId($jira_project);
+			$jira_project_id = $jira_project;
+			
+			// [TODO] Can we standardize how we request this?
+			
+			// Try JIRA ID first
+			if(false == ($jira_project = DAO_JiraProject::getByJiraId($jira_project_id)))
+				// Then Cerb ID
+				$jira_project = DAO_JiraProject::get($jira_project_id);
+			
 		} elseif($jira_project instanceof Model_JiraProject) {
 			// It's what we want already.
 		} else {
@@ -876,12 +893,24 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 		
 		// Token labels
 		$token_labels = array(
+			'_label' => $prefix,
 			'id' => $prefix.$translate->_('common.id'),
 			'jira_key' => $prefix.$translate->_('dao.jira_project.jira_key'),
-			'last_synced_at|date' => $prefix.$translate->_('dao.jira_project.last_synced_at'),
+			'last_synced_at' => $prefix.$translate->_('dao.jira_project.last_synced_at'),
 			'name' => $prefix.$translate->_('common.name'),
 			'record_url' => $prefix.$translate->_('common.url.record'),
 			'url' => $prefix.$translate->_('common.url'),
+		);
+		
+		// Token types
+		$token_types = array(
+			'_label' => 'context_url',
+			'id' => Model_CustomField::TYPE_NUMBER,
+			'jira_key' => Model_CustomField::TYPE_SINGLE_LINE,
+			'last_synced_at' => Model_CustomField::TYPE_DATE,
+			'name' => Model_CustomField::TYPE_SINGLE_LINE,
+			'record_url' => Model_CustomField::TYPE_URL,
+			'url' => Model_CustomField::TYPE_URL,
 		);
 		
 		// Custom field/fieldset token labels
@@ -892,6 +921,7 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 		$token_values = array();
 		
 		$token_values['_context'] = 'cerberusweb.contexts.jira.project';
+		$token_values['_types'] = $token_types;
 		
 		if($jira_project) {
 			$token_values['_loaded'] = true;
