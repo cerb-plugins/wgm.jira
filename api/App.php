@@ -620,7 +620,6 @@ class WgmJira_EventActionApiCall extends Extension_DevblocksEventAction {
 		$response = $jira->execute($api_verb, $api_path, array(), $json);
 		
 		if(is_array($response)) {
-			$response_placeholder = $params['response_placeholder'];
 			$dict->$response_placeholder = $response;
 		}
 	}
