@@ -170,6 +170,20 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 		return $results;
 	}
 	
+	static function getAllStatuses() {
+		$results = array();
+		
+		$projects = DAO_JiraProject::getAll();
+		
+		foreach($projects as $project) {
+			foreach($project->statuses as $status_id => $status) {
+				$results[$status_id] = $status;
+			}
+		}
+		
+		return $results;
+	}
+	
 	/**
 	 * @param resource $rs
 	 * @return Model_JiraProject[]

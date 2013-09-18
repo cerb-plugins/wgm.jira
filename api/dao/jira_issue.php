@@ -579,7 +579,7 @@ class Model_JiraIssue {
 	}
 };
 
-class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals {
+class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals, IAbstractView_QuickSearch {
 	const DEFAULT_ID = 'jira_issues';
 
 	function __construct() {
@@ -743,6 +743,138 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals 
 		}
 		
 		return $counts;
+	}
+	
+	function isQuickSearchField($token) {
+		switch($token) {
+			case SearchFields_JiraIssue::JIRA_STATUS_ID:
+			case SearchFields_JiraIssue::JIRA_TYPE_ID:
+			case SearchFields_JiraIssue::PROJECT_ID:
+				return true;
+			break;
+		}
+		
+		return false;
+	}
+	
+	function quickSearch($token, $query, &$oper, &$value) {
+		switch($token) {
+			case SearchFields_JiraIssue::JIRA_STATUS_ID:
+				$statuses = array();
+				$oper = DevblocksSearchCriteria::OPER_IN;
+				
+				if(preg_match('#([\!\=]+)(.*)#', $query, $matches)) {
+					$oper_hint = trim($matches[1]);
+					$query = trim($matches[2]);
+					
+					switch($oper_hint) {
+						case '!':
+						case '!=':
+							$oper = DevblocksSearchCriteria::OPER_NIN;
+							break;
+					}
+				}
+				
+				$inputs = DevblocksPlatform::parseCsvString($query);
+				
+				if(is_array($inputs))
+				foreach($inputs as $v) {
+					$pattern = DevblocksPlatform::strToRegExp($v);
+					
+					foreach(DAO_JiraProject::getAllStatuses() as $status_id => $status) {
+						if(1 == preg_match($pattern, $status['name']))
+							$statuses[$status_id] = true;
+					}
+				}
+				
+				if(empty($statuses)) {
+					$value = null;
+					
+				} else {
+					$value = array_keys($statuses);
+				}
+				
+				return true;
+				break;
+				
+			case SearchFields_JiraIssue::JIRA_TYPE_ID:
+				$types = array();
+				$oper = DevblocksSearchCriteria::OPER_IN;
+				
+				if(preg_match('#([\!\=]+)(.*)#', $query, $matches)) {
+					$oper_hint = trim($matches[1]);
+					$query = trim($matches[2]);
+					
+					switch($oper_hint) {
+						case '!':
+						case '!=':
+							$oper = DevblocksSearchCriteria::OPER_NIN;
+							break;
+					}
+				}
+				
+				$inputs = DevblocksPlatform::parseCsvString($query);
+				
+				if(is_array($inputs))
+				foreach($inputs as $v) {
+					$pattern = DevblocksPlatform::strToRegExp($v);
+					
+					foreach(DAO_JiraProject::getAllTypes() as $type_id => $type) {
+						if(1 == preg_match($pattern, $type['name']))
+							$types[$type_id] = true;
+					}
+				}
+				
+				if(empty($types)) {
+					$value = null;
+					
+				} else {
+					$value = array_keys($types);
+				}
+				
+				return true;
+				break;
+				
+			case SearchFields_JiraIssue::PROJECT_ID:
+				$projects = array();
+				$oper = DevblocksSearchCriteria::OPER_IN;
+				
+				if(preg_match('#([\!\=]+)(.*)#', $query, $matches)) {
+					$oper_hint = trim($matches[1]);
+					$query = trim($matches[2]);
+					
+					switch($oper_hint) {
+						case '!':
+						case '!=':
+							$oper = DevblocksSearchCriteria::OPER_NIN;
+							break;
+					}
+				}
+				
+				$inputs = DevblocksPlatform::parseCsvString($query);
+				
+				if(is_array($inputs))
+				foreach($inputs as $v) {
+					$pattern = DevblocksPlatform::strToRegExp($v);
+					
+					foreach(DAO_JiraProject::getAll() as $project_id => $project) {
+						if(1 == preg_match($pattern, $project->name))
+							$projects[$project_id] = true;
+					}
+				}
+				
+				if(empty($projects)) {
+					$value = null;
+					
+				} else {
+					$value = array_keys($projects);
+				}
+				
+				return true;
+				break;
+		}
+		
+		return false;
 	}
 	
 	function render() {
