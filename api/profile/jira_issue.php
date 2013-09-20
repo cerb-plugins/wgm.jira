@@ -133,12 +133,13 @@ class PageSection_ProfilesJiraIssue extends Extension_PageSection {
 		@$id = DevblocksPlatform::importGPC($_REQUEST['id'], 'integer', 0);
 		
 		//@$name = DevblocksPlatform::importGPC($_REQUEST['name'], 'string', '');
-		//@$do_delete = DevblocksPlatform::importGPC($_REQUEST['do_delete'], 'string', '');
+		@$do_delete = DevblocksPlatform::importGPC($_REQUEST['do_delete'], 'string', '');
 		
 		$active_worker = CerberusApplication::getActiveWorker();
 		
 		if(!empty($id) && !empty($do_delete)) { // Delete
-			//DAO_JiraIssue::delete($id);
+			// [TODO] Privs
+			DAO_JiraIssue::delete($id);
 			
 		} else {
 			/*
