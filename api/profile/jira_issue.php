@@ -142,37 +142,6 @@ class PageSection_ProfilesJiraIssue extends Extension_PageSection {
 			DAO_JiraIssue::delete($id);
 			
 		} else {
-			/*
-			if(empty($id)) { // New
-				$fields = array(
-					DAO_JiraIssue::UPDATED_AT => time(),
-					DAO_JiraIssue::NAME => $name,
-				);
-				$id = DAO_JiraIssue::create($fields);
-				
-				// Watchers
-				@$add_watcher_ids = DevblocksPlatform::sanitizeArray(DevblocksPlatform::importGPC($_REQUEST['add_watcher_ids'],'array',array()),'integer',array('unique','nonzero'));
-				if(!empty($add_watcher_ids))
-					CerberusContexts::addWatchers('cerberusweb.contexts.jira.issue', $id, $add_watcher_ids);
-				
-				// Context Link (if given)
-				@$link_context = DevblocksPlatform::importGPC($_REQUEST['link_context'],'string','');
-				@$link_context_id = DevblocksPlatform::importGPC($_REQUEST['link_context_id'],'integer','');
-				if(!empty($id) && !empty($link_context) && !empty($link_context_id)) {
-					DAO_ContextLink::setLink('cerberusweb.contexts.jira.issue', $id, $link_context, $link_context_id);
-				}
-				
-				if(!empty($view_id) && !empty($id))
-					C4_AbstractView::setMarqueeContextCreated($view_id, 'cerberusweb.contexts.jira.issue', $id);
-				
-			} else { // Edit
-				$fields = array(
-					DAO_JiraIssue::UPDATED_AT => time(),
-					DAO_JiraIssue::NAME => $name,
-				);
-				DAO_JiraIssue::update($id, $fields);
-			}
-			*/
 
 			// If we're adding a comment
 			if(!empty($comment)) {
