@@ -149,14 +149,16 @@ class WgmJira_API {
 	}
 	
 	function execute($verb, $path, $params=array(), $json=null) {
+		$response = null;
+		
 		switch($verb) {
 			case 'get':
-				return $this->_get($path, $params);
+				$response = $this->_get($path, $params);
 				break;
 				
 			case 'post':
 			case 'put':
-				return $this->_postJson($path, $params, $json, $verb);
+				$response = $this->_postJson($path, $params, $json, $verb);
 				break;
 				
 			case 'delete':
@@ -164,6 +166,9 @@ class WgmJira_API {
 				break;
 		}
 		
+		$this->_reimportApiChanges($verb, $path, $response);
+		
+		return $response;
 	}
 	
 	private function _postJson($path, $params=array(), $json=null, $verb='post') {
@@ -216,8 +221,8 @@ class WgmJira_API {
 			$this->_errors = array(curl_error($ch));
 			$json = false;
 			
-		} elseif(false == ($json = json_decode($out, true))) {
-			$this->_errors = array('The Base URL does not point to a valid JIRA installation.');
+		} elseif(!empty($out) && false == ($json = json_decode($out, true))) {
+			$this->_errors = array('Error decoding JSON response');
 			$json = false;
 			
 		} else {
@@ -256,8 +261,8 @@ class WgmJira_API {
 			$this->_errors = array(curl_error($ch));
 			$json = false;
 			
-		} elseif(false == ($json = json_decode($out))) {
-			$this->_errors = array('The Base URL does not point to a valid JIRA installation.');
+		} elseif(!empty($out) && false == ($json = json_decode($out))) {
+			$this->_errors = array('Error decoding JSON response');
 			$json = false;
 			
 		} else {
@@ -266,6 +271,24 @@ class WgmJira_API {
 		
 		curl_close($ch);
 		return $json;
+	}
+	
+	// Special handling for API responses (e.g. recache)
+	private function _reimportApiChanges($verb, $path, $response) {
+
+		// Create issue
+		if($verb == 'post' && $path == '/rest/api/2/issue') {
+			if(isset($response['key'])) {
+				if(false !== ($issue = WgmJira_API::getIssueByKey($response['key'])))
+					WgmJira_API::importIssue($issue);
+			}
+
+		// Change issue
+		} elseif(in_array($verb, array('post', 'put')) && preg_match('#^/rest/api/2/issue/(.*?)(/.*)*$#', $path, $matches)) {
+			if(false !== ($issue = WgmJira_API::getIssueByKey($matches[1])))
+				WgmJira_API::importIssue($issue);
+			
+		}
 	}
 	
 	static public function importIssue($object) {
