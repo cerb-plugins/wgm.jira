@@ -50,6 +50,10 @@
 		<file path="api/events/abstract_event_jira_issue.php">
 			<class name="AbstractEvent_JiraIssue" />
 		</file>
+		<file path="api/events/jira_issue_created.php">
+			<class name="Event_JiraIssueCreated" />
+		</file>
+		
 		<file path="api/events/jira_issue_macro.php">
 			<class name="Event_JiraIssueMacro" />
 		</file>
@@ -216,6 +220,22 @@
 		
 		<!-- Event Triggers -->
 		
+		<extension point="devblocks.event">
+			<id>wgmjira.event.issue.created</id>
+			<name>JIRA issue created</name>
+			<class>
+				<file>api/events/jira_issue_created.php</file>
+				<name>Event_JiraIssueCreated</name>
+			</class>
+			<params>
+				<param key="contexts">
+					<value>
+						<data key="cerberusweb.contexts.app" />
+						<data key="cerberusweb.contexts.role" />
+					</value>
+				</param>
+			</params>
+		</extension>
 		<extension point="devblocks.event">
 			<id>event.macro.jira_issue</id>
 			<name>Custom JIRA issue behavior</name>

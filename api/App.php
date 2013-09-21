@@ -292,6 +292,8 @@ class WgmJira_API {
 	}
 	
 	static public function importIssue($object) {
+		$is_new = false;
+		
 		// Fix versions
 		
 		$fix_versions = array();
@@ -323,6 +325,7 @@ class WgmJira_API {
 
 		} else {
 			$local_issue_id = DAO_JiraIssue::create($fields);
+			$is_new = true;
 		}
 
 		// Versions
@@ -348,6 +351,11 @@ class WgmJira_API {
 		
 		// Links
 		// [TODO]
+		
+		// Trigger 'New JIRA issue created' event
+		if($is_new) {
+			Event_JiraIssueCreated::trigger($local_issue_id);
+		}
 		
 		return $local_issue_id;
 	}
