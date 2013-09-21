@@ -43,7 +43,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 			// Send events
 			if(!empty($object_changes)) {
 				// Local events
-				//self::_processUpdateEvents($object_changes);
+				self::_processUpdateEvents($object_changes);
 				
 				// Trigger an event about the changes
 				$eventMgr = DevblocksPlatform::getEventService();
@@ -60,6 +60,27 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 				DevblocksPlatform::markContextChanged('cerberusweb.contexts.jira.issue', $batch_ids);
 			}
 		}
+	}
+	
+	static function _processUpdateEvents($objects) {
+		if(is_array($objects))
+		foreach($objects as $object_id => $object) {
+			@$model = $object['model'];
+			@$changes = $object['changes'];
+			
+			if(empty($model) || empty($changes))
+				continue;
+			
+			/*
+			 * Status change
+			 */
+			@$status_id = $changes[DAO_JiraIssue::JIRA_STATUS_ID];
+			
+			if(!empty($status_id) && !empty($model[DAO_JiraIssue::JIRA_STATUS_ID])) {
+				Event_JiraIssueStatusChanged::trigger($object_id);
+			}
+			
+		} // foreach
 	}
 	
 	static function updateWhere($fields, $where) {
