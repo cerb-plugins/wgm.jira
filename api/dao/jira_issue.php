@@ -1296,6 +1296,7 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 			'jira_type' => $prefix.$translate->_('dao.jira_issue.jira_type_id'),
 			'jira_status' => $prefix.$translate->_('dao.jira_issue.jira_status_id'),
 			'summary' => $prefix.$translate->_('dao.jira_issue.summary'),
+			'description' => $prefix.$translate->_('dao.jira_issue.description'),
 			'created' => $prefix.$translate->_('common.created'),
 			'updated' => $prefix.$translate->_('common.updated'),
 			'jira_versions' => $prefix.$translate->_('dao.jira_issue.jira_versions'),
@@ -1310,6 +1311,7 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 			'jira_type' => Model_CustomField::TYPE_SINGLE_LINE,
 			'jira_status' => Model_CustomField::TYPE_SINGLE_LINE,
 			'summary' => Model_CustomField::TYPE_SINGLE_LINE,
+			'description' => Model_CustomField::TYPE_MULTI_LINE,
 			'created' => Model_CustomField::TYPE_DATE,
 			'updated' => Model_CustomField::TYPE_DATE,
 			'jira_versions' => Model_CustomField::TYPE_SINGLE_LINE,
@@ -1334,6 +1336,7 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 			$token_values['_loaded'] = true;
 			$token_values['_label'] = '[' . $jira_issue->jira_key . '] ' . $jira_issue->summary;
 			$token_values['id'] = $jira_issue->id;
+			$token_values['jira_id'] = $jira_issue->jira_id;
 			$token_values['jira_key'] = $jira_issue->jira_key;
 			$token_values['jira_type_id'] = $jira_issue->jira_type_id;
 			$token_values['jira_type'] = (is_array($type) ? $type['name'] : '');
@@ -1386,6 +1389,10 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 		}
 		
 		switch($token) {
+			case 'description':
+				$values['description'] = DAO_JiraIssue::getDescription($dictionary['jira_id']);
+				break;
+
 			case 'watchers':
 				$watchers = array(
 					$token => CerberusContexts::getWatchers($context, $context_id, true),

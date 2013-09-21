@@ -152,6 +152,24 @@
 			</params>
 		</extension>
 		
+		<!-- Mobile Profile Blocks -->
+
+		<extension point="mobile.profile.block">
+			<id>jira.mobile.profile.block.issue</id>
+			<name>Mobile JIRA issue profile</name>
+			<class>
+				<file>api/mobile/profiles.php</file>
+				<name>MobileProfile_JiraIssue</name>
+			</class>
+			<params>
+				<param key="contexts">
+					<value>
+						<data key="cerberusweb.contexts.jira.issue" />
+					</value>
+				</param>
+			</params>
+		</extension>
+		
 		<!-- Search Schemas -->
 		
 		<extension point="devblocks.search.schema">
