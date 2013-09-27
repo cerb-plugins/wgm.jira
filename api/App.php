@@ -520,10 +520,6 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 		if(empty($clients_updated_from))
 			$clients_updated_from = gmmktime(0,0,0,1,1,2000);
 
-		$invoices_updated_from = $this->getParam('invoices.updated_from', 0);
-		if(empty($invoices_updated_from))
-			$invoices_updated_from = gmmktime(0,0,0,1,1,2000);
-
 		$tpl->assign('clients_updated_from', $clients_updated_from);
 
 		$tpl->display('devblocks:wgm.freshbooks::config/cron.tpl');
@@ -533,59 +529,14 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 	public function saveConfigurationAction() {
 		/*
 		@$clients_updated_from = DevblocksPlatform::importGPC($_POST['clients_updated_from'], 'string', '');
-		@$invoices_updated_from = DevblocksPlatform::importGPC($_POST['invoices_updated_from'], 'string', '');
 
 		// Save settings
 		$clients_timestamp = intval(@strtotime($clients_updated_from));
 		if(!empty($clients_timestamp))
 			$this->setParam('clients.updated_from', $clients_timestamp);
-
-		$invoices_timestamp = intval(@strtotime($invoices_updated_from));
-		if(!empty($invoices_timestamp))
-			$this->setParam('invoices.updated_from', $invoices_timestamp);
 		*/
 	}
 };
-
-/*
-		// [TODO] If false !==
-		$response = $jira->postCreateIssueJson(json_encode($new));
-		$issue = null;
-		$issue_id = 0;
-		
-		if(is_array($response) && isset($response['key'])) {
-			// Pull the new issue through the API (like a one-item import)
-			if(false != ($issue = $jira->getIssueByKey($response['key']))) {
-				if(false !== ($issue_id = WgmJira_API::importIssue($issue))) {
-					$labels = array();
-					$values = array();
-					CerberusContexts::getContext('cerberusweb.contexts.jira.issue',$issue_id, $labels, $values, null, true);
-					
-					$response_placeholder = $params['response_placeholder'];
-					$dict->$response_placeholder = $values;
-				}
-			}
-			
-		}
-		
-		// Connection
-		
-		@$link_to = DevblocksPlatform::importVar($params['link_to'],'array',array());
-		
-		if(!empty($link_to) && !empty($issue_id)) {
-			$trigger = $dict->_trigger;
-			$event = $trigger->getEvent();
-			
-			$on_result = DevblocksEventHelper::onContexts($link_to, $event->getValuesContexts($trigger), $dict);
-			@$on_objects = $on_result['objects'];
-			
-			if(is_array($on_objects)) {
-				foreach($on_objects as $on_object) {
-					DAO_ContextLink::setLink('cerberusweb.contexts.jira.issue', $issue_id, $on_object->_context, $on_object->id);
-				}
-			}
-		}
-*/
 
 if(class_exists('Extension_DevblocksEventAction')):
 class WgmJira_EventActionApiCall extends Extension_DevblocksEventAction {
