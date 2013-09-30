@@ -278,7 +278,9 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 				SearchFields_JiraProject::LAST_SYNCED_AT
 			);
 			
-		$join_sql = "FROM jira_project ";
+		$join_sql = "FROM jira_project ".
+			(isset($tables['context_link']) ? "INNER JOIN context_link ON (context_link.to_context = 'cerberusweb.contexts.jira.project' AND context_link.to_context_id = jira_project.id) " : " ").
+			'';
 		
 		// Custom field joins
 		list($select_sql, $join_sql, $has_multiple_values) = self::_appendSelectJoinSqlForCustomFieldTables(
