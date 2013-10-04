@@ -130,6 +130,16 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 		return self::_getRandom('jira_issue');
 	}
 	
+	static function randomComment($issue_id=null) {
+		$db = DevblocksPlatform::getDatabaseService();
+		
+		// With a specific issue ID?
+		if($issue_id && false != ($comment_id = $db->GetOne(sprintf("SELECT jira_comment_id FROM jira_issue_comment WHERE jira_issue_id = %d ORDER BY RAND() LIMIT 1", $issue_id))))
+			return $comment_id;
+		
+		return $db->GetOne("SELECT jira_comment_id FROM jira_issue_comment ORDER BY RAND() LIMIT 1");
+	}
+	
 	static function getByJiraId($remote_id) {
 		$results = self::getWhere(sprintf("%s = %d", self::JIRA_ID, $remote_id));
 		
@@ -198,6 +208,19 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 			"WHERE jira_issue_id = %d ".
 			"ORDER BY created DESC",
 			$issue_id
+		));
+		
+		return $results;
+	}
+	
+	static function getComment($comment_id) {
+		$db = DevblocksPlatform::getDatabaseService();
+
+		$results = $db->GetRow(sprintf("SELECT jira_comment_id, jira_issue_id, created, jira_author, body ".
+			"FROM jira_issue_comment ".
+			"WHERE jira_comment_id = %d ".
+			"ORDER BY created DESC",
+			$comment_id
 		));
 		
 		return $results;
@@ -1414,6 +1437,10 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 				$values['description'] = DAO_JiraIssue::getDescription($dictionary['jira_id']);
 				break;
 
+			case 'discussion':
+				$values['discussion'] = DAO_JiraIssue::getComments($dictionary['jira_id']);
+				break;
+				
 			case 'watchers':
 				$watchers = array(
 					$token => CerberusContexts::getWatchers($context, $context_id, true),

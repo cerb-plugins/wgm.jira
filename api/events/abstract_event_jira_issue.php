@@ -23,33 +23,48 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 	 * @param integer $issue_id
 	 * @return Model_DevblocksEvent
 	 */
-	function generateSampleEventModel(Model_TriggerEvent $trigger, $issue_id=null) {
+	function generateSampleEventModel(Model_TriggerEvent $trigger, $issue_id=null, $comment_id=null) {
+
+		// If this is the 'new comment on jira issue' event, simulate a comment
+		if(empty($comment_id) && get_class($this) == 'Event_JiraIssueCommented') {
+			// [TODO] This should get a comment where the issue_id is related
+			$comment_id = DAO_JiraIssue::randomComment();
+		}
 		
 		if(empty($issue_id)) {
-			// Pull the latest record
-			list($results) = DAO_JiraIssue::search(
-				array(),
-				array(
-					//new DevblocksSearchCriteria(SearchFields_Task::IS_CLOSED,'=',0),
-				),
-				10,
-				0,
-				SearchFields_JiraIssue::ID,
-				false,
-				false
-			);
-			
-			shuffle($results);
-			
-			$result = array_shift($results);
-			
-			$issue_id = $result[SearchFields_JiraIssue::ID];
+			// If we have a comment, use its issue_id
+			if(!empty($comment_id)) {
+				if(false !== ($comment = DAO_JiraIssue::getComment($comment_id))) {
+					if(false !== ($issue = DAO_JiraIssue::getByJiraId($comment['jira_issue_id'])))
+						$issue_id = $issue->id;
+				}
+			}
+				
+			// Otherwise, pick a random issue
+			if(empty($issue_id)) {
+				list($results) = DAO_JiraIssue::search(
+					array(),
+					array(),
+					25,
+					0,
+					SearchFields_JiraIssue::ID,
+					false,
+					false
+				);
+				
+				shuffle($results);
+				
+				$result = array_shift($results);
+				
+				$issue_id = $result[SearchFields_JiraIssue::ID];
+			}
 		}
 		
 		return new Model_DevblocksEvent(
 			$this->_event_id,
 			array(
 				'issue_id' => $issue_id,
+				'comment_id' => $comment_id,
 			)
 		);
 	}
@@ -78,6 +93,47 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 			);
 
 		/**
+		 * Comment
+		 */
+			
+		@$comment_id = $event_model->params['comment_id'];
+
+		if(get_class($this) == 'Event_JiraIssueCommented') {
+			$merge_token_labels = array(
+				'author' => 'Comment author',
+				'body' => 'Comment body',
+				'created' => 'Comment created',
+			);
+			
+			$merge_token_values = array(
+				//'_context' => null,
+				'_labels' => $merge_token_labels,
+				'_types' => array(
+					'id' => Model_CustomField::TYPE_NUMBER,
+					'author' => Model_CustomField::TYPE_SINGLE_LINE,
+					'body' => Model_CustomField::TYPE_MULTI_LINE,
+					'created' => Model_CustomField::TYPE_DATE,
+				),
+			);
+			
+			if(false !== ($comment = DAO_JiraIssue::getComment($comment_id))) {
+				$merge_token_values['id'] = $comment_id;
+				$merge_token_values['author'] = $comment['jira_author'];
+				$merge_token_values['body'] = $comment['body'];
+				$merge_token_values['created'] = $comment['created'];
+			}
+			
+			CerberusContexts::merge(
+				'issue_comment_',
+				'',
+				$merge_token_labels,
+				$merge_token_values,
+				$labels,
+				$values
+			);
+		}
+			
+		/**
 		 * Return
 		 */
 
@@ -98,7 +154,7 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 				'context' => 'cerberusweb.contexts.jira.issue',
 			),
 			'issue_project_id' => array(
-				'label' => 'Issue',
+				'label' => 'Issue project',
 				'context' => 'cerberusweb.contexts.jira.project',
 			),
 			'issue_project_watchers' => array(
@@ -152,6 +208,12 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 			'issue_project_watcher_count' => null,
 		);
 
+		if(get_class($this) == 'Event_JiraIssueCommented') {
+			$types['issue_comment_author'] = Model_CustomField::TYPE_SINGLE_LINE;
+			$types['issue_comment_body'] = Model_CustomField::TYPE_MULTI_LINE;
+			$types['issue_comment_created'] = Model_CustomField::TYPE_DATE;
+		}
+		
 		$conditions = $this->_importLabelsTypesAsConditions($labels, $types);
 		
 		return $conditions;

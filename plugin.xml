@@ -59,6 +59,10 @@
 			<class name="Event_JiraIssueCreated" />
 		</file>
 		
+		<file path="api/events/jira_issue_commented.php">
+			<class name="Event_JiraIssueCommented" />
+		</file>
+		
 		<file path="api/events/jira_issue_status_changed.php">
 			<class name="Event_JiraIssueStatusChanged" />
 		</file>
@@ -251,6 +255,23 @@
 		</extension>
 		
 		<extension point="devblocks.event">
+			<id>wgmjira.event.issue.commented</id>
+			<name>JIRA issue commented on</name>
+			<class>
+				<file>api/events/jira_issue_commented.php</file>
+				<name>Event_JiraIssueCommented</name>
+			</class>
+			<params>
+				<param key="contexts">
+					<value>
+						<data key="cerberusweb.contexts.app" />
+						<data key="cerberusweb.contexts.role" />
+					</value>
+				</param>
+			</params>
+		</extension>
+		
+		<extension point="devblocks.event">
 			<id>wgmjira.event.issue.status.changed</id>
 			<name>JIRA issue status changed</name>
 			<class>
@@ -266,6 +287,7 @@
 				</param>
 			</params>
 		</extension>
+		
 		<extension point="devblocks.event">
 			<id>event.macro.jira_issue</id>
 			<name>Custom JIRA issue behavior</name>

@@ -347,6 +347,9 @@ class WgmJira_API {
 				$comment->author->displayName,
 				$comment->body
 			);
+			
+			// Trigger 'New JIRA issue comment' event
+			Event_JiraIssueCommented::trigger($local_issue_id, $comment->id);
 		}
 		
 		// Links
