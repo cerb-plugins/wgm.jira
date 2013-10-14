@@ -340,7 +340,7 @@ class WgmJira_API {
 		
 		if(isset($object->fields->comment->comments) && is_array($object->fields->comment->comments))
 		foreach($object->fields->comment->comments as $comment) {
-			DAO_JiraIssue::saveComment(
+			$result = DAO_JiraIssue::saveComment(
 				$comment->id,
 				$object->id,
 				@strtotime($comment->created),
@@ -348,8 +348,9 @@ class WgmJira_API {
 				$comment->body
 			);
 			
-			// Trigger 'New JIRA issue comment' event
-			Event_JiraIssueCommented::trigger($local_issue_id, $comment->id);
+			// If we inserted, trigger 'New JIRA issue comment' event
+			if($result == 1)
+				Event_JiraIssueCommented::trigger($local_issue_id, $comment->id);
 		}
 		
 		// Links
