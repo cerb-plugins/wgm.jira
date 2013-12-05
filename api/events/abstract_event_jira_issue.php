@@ -403,7 +403,7 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 	}
 	
 	function simulateActionExtension($token, $trigger, $params, DevblocksDictionaryDelegate $dict) {
-		@$issue_id = $dict->issuel_id;
+		@$issue_id = $dict->issue_id;
 
 		if(empty($issue_id))
 			return;

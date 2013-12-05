@@ -1271,7 +1271,7 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 		
 		return array(
 			'id' => $jira_issue->id,
-			'name' => $jira_issue->summary,
+			'name' => sprintf("[%s] %s", $jira_issue->jira_key, $jira_issue->summary),
 			'permalink' => $url,
 		);
 	}
@@ -1337,7 +1337,7 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 			'jira_type' => $prefix.$translate->_('dao.jira_issue.jira_type_id'),
 			'jira_status' => $prefix.$translate->_('dao.jira_issue.jira_status_id'),
 			'summary' => $prefix.$translate->_('dao.jira_issue.summary'),
-			'description' => $prefix.$translate->_('dao.jira_issue.description'),
+			'description' => $prefix.$translate->_('common.description'),
 			'created' => $prefix.$translate->_('common.created'),
 			'updated' => $prefix.$translate->_('common.updated'),
 			'jira_versions' => $prefix.$translate->_('dao.jira_issue.jira_versions'),
@@ -1404,7 +1404,7 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 
 		CerberusContexts::merge(
 			'project_',
-			'Jira Project:',
+			'Jira Issue Project:',
 			$merge_token_labels,
 			$merge_token_values,
 			$token_labels,
@@ -1431,11 +1431,13 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 		
 		switch($token) {
 			case 'description':
-				$values['description'] = DAO_JiraIssue::getDescription($dictionary['jira_id']);
+				if(isset($dictionary['jira_id']))
+					$values['description'] = DAO_JiraIssue::getDescription($dictionary['jira_id']);
 				break;
 
 			case 'discussion':
-				$values['discussion'] = DAO_JiraIssue::getComments($dictionary['jira_id']);
+				if(isset($dictionary['jira_id']))
+					$values['discussion'] = DAO_JiraIssue::getComments($dictionary['jira_id']);
 				break;
 				
 			case 'watchers':
