@@ -113,21 +113,14 @@ abstract class AbstractEvent_JiraProject extends Extension_DevblocksEvent {
 	
 	function getConditionExtensions() {
 		$labels = $this->getLabels();
+		$types = $this->getTypes();
 		
 		$labels['project_link'] = 'Jira project is linked';
 		$labels['project_watcher_count'] = 'Jira project watcher count';
 		
-		$types = array(
-			'project_jira_key' => Model_CustomField::TYPE_SINGLE_LINE,
-			'project_last_synced_at' => Model_CustomField::TYPE_DATE,
-			'project_name' => Model_CustomField::TYPE_SINGLE_LINE,
-			'project_record_url' => Model_CustomField::TYPE_URL,
-			'project_url' => Model_CustomField::TYPE_URL,
-			
-			'project_link' => null,
-			'project_watcher_count' => null,
-		);
-
+		$types['project_link'] = null;
+		$types['project_watcher_count'] = null;
+		
 		$conditions = $this->_importLabelsTypesAsConditions($labels, $types);
 		
 		return $conditions;
