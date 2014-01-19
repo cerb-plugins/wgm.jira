@@ -379,6 +379,7 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 
 	function _synchronize() {
 		$jira = WgmJira_API::getInstance();
+		$logger = DevblocksPlatform::getConsoleLog("JIRA");
 
 		// Sync statuses
 		if(false == ($results = $jira->getStatuses()))
@@ -403,7 +404,7 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 			// Pull the full record for each project and merge with createmeta
 			if(false == ($project = $jira->getProject($project_meta->key)))
 				continue;
-				
+			
 			$issue_types = array();
 			$versions = array();
 				
@@ -419,6 +420,8 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 				$versions[$object->id] = $object;
 			}
 				
+			$local_project = DAO_JiraProject::getByJiraId($project->id);
+
 			$fields = array(
 				DAO_JiraProject::JIRA_ID => $project->id,
 				DAO_JiraProject::JIRA_KEY => $project->key,
@@ -429,8 +432,6 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 				DAO_JiraProject::VERSIONS_JSON => json_encode($versions),
 			);
 			
-			$local_project = DAO_JiraProject::getByJiraId($project->id);
-			
 			if(!empty($local_project)) {
 				DAO_JiraProject::update($local_project->id, $fields);
 		
@@ -438,78 +439,82 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 				$local_id = DAO_JiraProject::create($fields);
 				$local_project = DAO_JiraProject::get($local_id);
 			}
-		
-			$startAt = 0;
-			$maxResults = 500;
-			$last_updated_date = $local_project->last_synced_at;
-			$last_unique_updated_date = $last_updated_date;
 			
-			/*
-			 * This should track if we've pulled more than one page, and if so we
-			* should bail out as soon as we have a subsequent row which has a different
-			* updated date.
-			*/
-			$is_overflow = false;
-		
-			// Resume from last sync date
-			do {
-				if(false == ($response = $jira->getIssues(
-					sprintf("project='%s' AND updated > %d000 ORDER BY updated ASC", $local_project->jira_key, date('U', $local_project->last_synced_at)),
-					$maxResults,
-					'summary,created,updated,description,status,issuetype,fixVersions,project,comment',
-					$startAt
-				)
-				)) {
-					$is_overflow = false;
-					continue;
-				}
-		
-				if(!isset($response->issues) || !is_array($response->issues) || empty($response->issues)) {
-					$is_overflow = false;
-					continue;
-				}
-		
-				$num_issues = count($response->issues);
-				$num_processed = 0;
-		
-				foreach($response->issues as $object) {
-					$current_updated_date = strtotime($object->fields->updated);
-					$num_processed++;
-		
-					if($current_updated_date != $last_updated_date)
-						$last_unique_updated_date = $last_updated_date;
-
-					// We're overflowing
-					if(!$is_overflow && $num_processed >= floor($maxResults * 0.90)) {
-						$is_overflow = true;
-					}
-		
-					// We're done overflowing
-					if($is_overflow && $current_updated_date == $last_updated_date) {
+			if($local_project->is_sync) {
+				$logger->info(sprintf("Syncing project [%s] %s", $local_project->jira_key, $local_project->name));
+			
+				$startAt = 0;
+				$maxResults = 500;
+				$last_updated_date = $local_project->last_synced_at;
+				$last_unique_updated_date = $last_updated_date;
+				
+				/*
+				 * This should track if we've pulled more than one page, and if so we
+				* should bail out as soon as we have a subsequent row which has a different
+				* updated date.
+				*/
+				$is_overflow = false;
+			
+				// Resume from last sync date
+				do {
+					if(false == ($response = $jira->getIssues(
+						sprintf("project='%s' AND updated > %d000 ORDER BY updated ASC", $local_project->jira_key, date('U', $local_project->last_synced_at)),
+						$maxResults,
+						'summary,created,updated,description,status,issuetype,fixVersions,project,comment',
+						$startAt
+					)
+					)) {
 						$is_overflow = false;
-						$num_issues = 0;
-						break;
+						continue;
 					}
-					
-					$local_issue_id = WgmJira_API::importIssue($object);
-					
-					$last_updated_date = $current_updated_date;
+			
+					if(!isset($response->issues) || !is_array($response->issues) || empty($response->issues)) {
+						$is_overflow = false;
+						continue;
+					}
+			
+					$num_issues = count($response->issues);
+					$num_processed = 0;
+			
+					foreach($response->issues as $object) {
+						$current_updated_date = strtotime($object->fields->updated);
+						$num_processed++;
+			
+						if($current_updated_date != $last_updated_date)
+							$last_unique_updated_date = $last_updated_date;
+	
+						// We're overflowing
+						if(!$is_overflow && $num_processed >= floor($maxResults * 0.90)) {
+							$is_overflow = true;
+						}
+			
+						// We're done overflowing
+						if($is_overflow && $current_updated_date == $last_updated_date) {
+							$is_overflow = false;
+							$num_issues = 0;
+							break;
+						}
+						
+						$local_issue_id = WgmJira_API::importIssue($object);
+						
+						$last_updated_date = $current_updated_date;
+					}
+			
+					// If we finished everything, move the date cursor to past the last row
+					if($num_issues < $maxResults && $num_processed == $num_issues)
+						$last_unique_updated_date = $last_updated_date;
+			
+					// If we need to get another page, move the row cursor
+					$startAt += $maxResults;
+			
+				} while($is_overflow);
+			
+				// Set the last updated date on the project
+				if(!empty($last_unique_updated_date)) {
+					DAO_JiraProject::update($local_project->id, array(
+					DAO_JiraProject::LAST_SYNCED_AT => $last_unique_updated_date,
+					));
 				}
-		
-				// If we finished everything, move the date cursor to past the last row
-				if($num_issues < $maxResults && $num_processed == $num_issues)
-					$last_unique_updated_date = $last_updated_date;
-		
-				// If we need to get another page, move the row cursor
-				$startAt += $maxResults;
-		
-			} while($is_overflow);
-		
-			// Set the last updated date on the project
-			if(!empty($last_unique_updated_date)) {
-				DAO_JiraProject::update($local_project->id, array(
-				DAO_JiraProject::LAST_SYNCED_AT => $last_unique_updated_date,
-				));
 			}
 		}
 	}

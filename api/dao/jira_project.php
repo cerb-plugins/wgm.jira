@@ -11,6 +11,7 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 	const STATUSES_JSON = 'statuses_json';
 	const VERSIONS_JSON = 'versions_json';
 	const LAST_SYNCED_AT = 'last_synced_at';
+	const IS_SYNC = 'is_sync';
 
 	static function create($fields) {
 		$db = DevblocksPlatform::getDatabaseService();
@@ -96,7 +97,7 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 		list($where_sql, $sort_sql, $limit_sql) = self::_getWhereSQL($where, $sortBy, $sortAsc, $limit);
 		
 		// SQL
-		$sql = "SELECT id, jira_id, jira_key, name, url, issuetypes_json, statuses_json, versions_json, last_synced_at ".
+		$sql = "SELECT id, jira_id, jira_key, name, url, issuetypes_json, statuses_json, versions_json, last_synced_at, is_sync ".
 			"FROM jira_project ".
 			$where_sql.
 			$sort_sql.
@@ -199,6 +200,7 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 			$object->name = $row['name'];
 			$object->url = $row['url'];
 			$object->last_synced_at = $row['last_synced_at'];
+			$object->is_sync = $row['is_sync'];
 			
 			if(false !== (@$obj = json_decode($row['issuetypes_json'], true))) {
 				$object->issue_types = $obj;
@@ -266,7 +268,8 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 			"jira_project.issuetypes_json as %s, ".
 			"jira_project.statuses_json as %s, ".
 			"jira_project.versions_json as %s, ".
-			"jira_project.last_synced_at as %s ",
+			"jira_project.last_synced_at as %s, ".
+			"jira_project.is_sync as %s ",
 				SearchFields_JiraProject::ID,
 				SearchFields_JiraProject::JIRA_ID,
 				SearchFields_JiraProject::JIRA_KEY,
@@ -275,7 +278,8 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 				SearchFields_JiraProject::ISSUETYPES_JSON,
 				SearchFields_JiraProject::STATUSES_JSON,
 				SearchFields_JiraProject::VERSIONS_JSON,
-				SearchFields_JiraProject::LAST_SYNCED_AT
+				SearchFields_JiraProject::LAST_SYNCED_AT,
+				SearchFields_JiraProject::IS_SYNC
 			);
 			
 		$join_sql = "FROM jira_project ".
@@ -429,6 +433,7 @@ class SearchFields_JiraProject implements IDevblocksSearchFields {
 	const STATUSES_JSON = 'j_statuses_json';
 	const VERSIONS_JSON = 'j_versions_json';
 	const LAST_SYNCED_AT = 'j_last_synced_at';
+	const IS_SYNC = 'j_is_sync';
 
 	const VIRTUAL_CONTEXT_LINK = '*_context_link';
 	const VIRTUAL_HAS_FIELDSET = '*_has_fieldset';
@@ -453,6 +458,7 @@ class SearchFields_JiraProject implements IDevblocksSearchFields {
 			self::STATUSES_JSON => new DevblocksSearchField(self::STATUSES_JSON, 'jira_project', 'statuses_json', $translate->_('dao.jira_project.statuses_json'), null),
 			self::VERSIONS_JSON => new DevblocksSearchField(self::VERSIONS_JSON, 'jira_project', 'versions_json', $translate->_('dao.jira_project.versions_json'), null),
 			self::LAST_SYNCED_AT => new DevblocksSearchField(self::LAST_SYNCED_AT, 'jira_project', 'last_synced_at', $translate->_('dao.jira_project.last_synced_at'), Model_CustomField::TYPE_DATE),
+			self::IS_SYNC => new DevblocksSearchField(self::IS_SYNC, 'jira_project', 'is_sync', $translate->_('dao.jira_project.is_sync'), Model_CustomField::TYPE_CHECKBOX),
 
 			self::VIRTUAL_CONTEXT_LINK => new DevblocksSearchField(self::VIRTUAL_CONTEXT_LINK, '*', 'context_link', $translate->_('common.links'), null),
 			self::VIRTUAL_HAS_FIELDSET => new DevblocksSearchField(self::VIRTUAL_HAS_FIELDSET, '*', 'has_fieldset', $translate->_('common.fieldset'), null),
@@ -487,6 +493,7 @@ class Model_JiraProject {
 	public $statuses = array();
 	public $versions = array();
 	public $last_synced_at;
+	public $is_sync;
 };
 
 class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotals {
@@ -506,6 +513,7 @@ class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotal
 			SearchFields_JiraProject::JIRA_KEY,
 			SearchFields_JiraProject::URL,
 			SearchFields_JiraProject::LAST_SYNCED_AT,
+			SearchFields_JiraProject::IS_SYNC,
 		);
 
 		$this->addColumnsHidden(array(
@@ -654,7 +662,7 @@ class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotal
 				$tpl->display('devblocks:cerberusweb.core::internal/views/criteria/__number.tpl');
 				break;
 				
-			case 'placeholder_bool':
+			case SearchFields_JiraProject::IS_SYNC:
 				$tpl->display('devblocks:cerberusweb.core::internal/views/criteria/__bool.tpl');
 				break;
 				
@@ -741,7 +749,7 @@ class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotal
 				$criteria = $this->_doSetCriteriaDate($field, $oper);
 				break;
 				
-			case 'placeholder_bool':
+			case SearchFields_JiraProject::IS_SYNC:
 				@$bool = DevblocksPlatform::importGPC($_REQUEST['bool'],'integer',1);
 				$criteria = new DevblocksSearchCriteria($field,$oper,$bool);
 				break;
@@ -899,6 +907,7 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 	function getDefaultProperties() {
 		return array(
 			'jira_key',
+			'is_sync',
 			'last_synced_at',
 			'url',
 		);
@@ -933,6 +942,7 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 			'_label' => $prefix,
 			'id' => $prefix.$translate->_('common.id'),
 			'jira_key' => $prefix.$translate->_('dao.jira_project.jira_key'),
+			'is_sync' => $prefix.$translate->_('dao.jira_project.is_sync'),
 			'last_synced_at' => $prefix.$translate->_('dao.jira_project.last_synced_at'),
 			'name' => $prefix.$translate->_('common.name'),
 			'record_url' => $prefix.$translate->_('common.url.record'),
@@ -944,6 +954,7 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 			'_label' => 'context_url',
 			'id' => Model_CustomField::TYPE_NUMBER,
 			'jira_key' => Model_CustomField::TYPE_SINGLE_LINE,
+			'is_sync' => Model_CustomField::TYPE_CHECKBOX,
 			'last_synced_at' => Model_CustomField::TYPE_DATE,
 			'name' => Model_CustomField::TYPE_SINGLE_LINE,
 			'record_url' => Model_CustomField::TYPE_URL,
@@ -969,6 +980,7 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 			$token_values['_label'] = $jira_project->name;
 			$token_values['id'] = $jira_project->id;
 			$token_values['jira_key'] = $jira_project->jira_key;
+			$token_values['is_sync'] = $jira_project->is_sync;
 			$token_values['last_synced_at'] = $jira_project->last_synced_at;
 			$token_values['name'] = $jira_project->name;
 			$token_values['url'] = $jira_project->url;

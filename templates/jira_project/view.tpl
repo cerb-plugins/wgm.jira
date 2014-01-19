@@ -84,6 +84,12 @@
 				<a href="{devblocks_url}c=profiles&type=jira_project&id={$result.j_id}-{$result.j_name|devblocks_permalink}{/devblocks_url}" class="subject">{$result.j_name}</a>
 				<button type="button" class="peek" style="visibility:hidden;padding:1px;margin:0px 5px;" onclick="genericAjaxPopup('peek','c=internal&a=showPeekPopup&context={$view_context}&context_id={$result.j_id}&view_id={$view->id}',null,false,'550');"><span class="cerb-sprite2 sprite-document-search-result" style="margin-left:2px" title="{'views.peek'|devblocks_translate}"></span></button>
 			</td>
+			{elseif $column=="j_is_sync"}
+				<td>
+					{if $result.j_is_sync}
+						<span class="cerb-sprite2 sprite-tick-circle-gray"></span>
+					{/if}
+				</td>
 			{elseif $column == "j_last_synced_at"}
 				<td title="{$result.$column|devblocks_date}">
 					{if !empty($result.$column)}

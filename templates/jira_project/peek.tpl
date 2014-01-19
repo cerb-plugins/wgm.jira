@@ -18,6 +18,14 @@
 			</td>
 		</tr>
 		
+		<tr>
+			<td width="1%" nowrap="nowrap" align="right" valign="top">{'dao.jira_project.is_sync'|devblocks_translate|capitalize}: </td>
+			<td width="99%">
+				<label><input type="radio" name="is_sync" value="1" {if $model->is_sync}checked="checked"{/if}> {'common.yes'|devblocks_translate|capitalize}</label>
+				<label><input type="radio" name="is_sync" value="0" {if empty($model->is_sync)}checked="checked"{/if}> {'common.no'|devblocks_translate|capitalize}</label>
+			</td>
+		</tr>
+		
 		{* Watchers *}
 		<tr>
 			<td width="0%" nowrap="nowrap" valign="top" align="right">{'common.watchers'|devblocks_translate|capitalize}: </td>

@@ -49,6 +49,12 @@ class PageSection_ProfilesJiraProject extends Extension_PageSection {
 			
 		$properties = array();
 			
+		$properties['is_sync'] = array(
+			'label' => ucfirst($translate->_('dao.jira_project.is_sync')),
+			'type' => Model_CustomField::TYPE_CHECKBOX,
+			'value' => $jira_project->is_sync,
+		);
+		
 		$properties['last_synced_at'] = array(
 			'label' => ucfirst($translate->_('dao.jira_project.last_synced_at')),
 			'type' => Model_CustomField::TYPE_DATE,
@@ -101,6 +107,8 @@ class PageSection_ProfilesJiraProject extends Extension_PageSection {
 		
 		@$id = DevblocksPlatform::importGPC($_REQUEST['id'], 'integer', 0);
 		
+		@$is_sync = DevblocksPlatform::importGPC($_REQUEST['is_sync'], 'integer', 0);
+		
 		//@$name = DevblocksPlatform::importGPC($_REQUEST['name'], 'string', '');
 		//@$do_delete = DevblocksPlatform::importGPC($_REQUEST['do_delete'], 'string', '');
 		
@@ -110,8 +118,8 @@ class PageSection_ProfilesJiraProject extends Extension_PageSection {
 			//DAO_JiraProject::delete($id);
 			
 		} else {
-			/*
 			if(empty($id)) { // New
+				/*
 				$fields = array(
 					DAO_JiraProject::UPDATED_AT => time(),
 					DAO_JiraProject::NAME => $name,
@@ -132,15 +140,14 @@ class PageSection_ProfilesJiraProject extends Extension_PageSection {
 				
 				if(!empty($view_id) && !empty($id))
 					C4_AbstractView::setMarqueeContextCreated($view_id, 'cerberusweb.contexts.jira.project', $id);
+				*/
 				
 			} else { // Edit
 				$fields = array(
-					DAO_JiraProject::UPDATED_AT => time(),
-					DAO_JiraProject::NAME => $name,
+					DAO_JiraProject::IS_SYNC => $is_sync,
 				);
 				DAO_JiraProject::update($id, $fields);
 			}
-			*/
 
 			// If we're adding a comment
 			if(!empty($comment)) {
