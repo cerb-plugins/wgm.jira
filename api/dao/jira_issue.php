@@ -230,7 +230,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 	static private function _getObjectsFromResult($rs) {
 		$objects = array();
 		
-		while($row = mysql_fetch_assoc($rs)) {
+		while($row = mysqli_fetch_assoc($rs)) {
 			$object = new Model_JiraIssue();
 			$object->id = $row['id'];
 			$object->project_id = $row['project_id'];
@@ -245,7 +245,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 			$objects[$object->id] = $object;
 		}
 		
-		mysql_free_result($rs);
+		mysqli_free_result($rs);
 		
 		return $objects;
 	}
@@ -319,10 +319,6 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 			(isset($tables['context_link']) ? "INNER JOIN context_link ON (context_link.to_context = 'cerberusweb.contexts.jira.issue' AND context_link.to_context_id = jira_issue.id) " : " ").
 			'';
 		
-		if(isset($tables['ft'])) {
-			$join_sql .= 'LEFT JOIN fulltext_jira_issue ft ON (ft.id=jira_issue.id) ';
-		}
-		
 		// Custom field joins
 		list($select_sql, $join_sql, $has_multiple_values) = self::_appendSelectJoinSqlForCustomFieldTables(
 			$tables,
@@ -371,6 +367,21 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 		settype($param_key, 'string');
 		
 		switch($param_key) {
+			// [TODO] Attribute for project id
+			case SearchFields_JiraIssue::FULLTEXT_CONTENT:
+				$search = Extension_DevblocksSearchSchema::get(Search_JiraIssue::ID);
+				$query = $search->getQueryFromParam($param);
+				$ids = $search->query($query, array(), 250);
+				
+				if(empty($ids))
+					$ids = array(-1);
+				
+				$args['where_sql'] .= sprintf('AND %s IN (%s) ',
+					$from_index,
+					implode(', ', $ids)
+				);
+				break;
+			
 			case SearchFields_JiraIssue::VIRTUAL_CONTEXT_LINK:
 				$args['has_multiple_values'] = true;
 				self::_searchComponentsVirtualContextLinks($param, $from_context, $from_index, $args['join_sql'], $args['where_sql']);
@@ -422,13 +433,13 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 			$rs = $db->SelectLimit($sql,$limit,$page*$limit) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
 		} else {
 			$rs = $db->Execute($sql) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
-			$total = mysql_num_rows($rs);
+			$total = mysqli_num_rows($rs);
 		}
 		
 		$results = array();
 		$total = -1;
 		
-		while($row = mysql_fetch_assoc($rs)) {
+		while($row = mysqli_fetch_assoc($rs)) {
 			$result = array();
 			foreach($row as $f => $v) {
 				$result[$f] = $v;
@@ -446,7 +457,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 			$total = $db->GetOne($count_sql);
 		}
 		
-		mysql_free_result($rs);
+		mysqli_free_result($rs);
 		
 		return array($results,$total);
 	}
@@ -498,13 +509,13 @@ class SearchFields_JiraIssue implements IDevblocksSearchFields {
 			
 			self::CONTEXT_LINK => new DevblocksSearchField(self::CONTEXT_LINK, 'context_link', 'from_context', null),
 			self::CONTEXT_LINK_ID => new DevblocksSearchField(self::CONTEXT_LINK_ID, 'context_link', 'from_context_id', null),
+				
+			self::FULLTEXT_CONTENT => new DevblocksSearchField(self::FULLTEXT_CONTENT, 'ft', 'content', $translate->_('common.content'), 'FT'),
 		);
 		
-		// Fulltext
-		$tables = DevblocksPlatform::getDatabaseTables();
-		if(isset($tables['fulltext_jira_issue'])) {
-			$columns[self::FULLTEXT_CONTENT] = new DevblocksSearchField(self::FULLTEXT_CONTENT, 'ft', 'content', $translate->_('common.content'), 'FT');
-		}
+		// Fulltext indexes
+		
+		$columns[self::FULLTEXT_CONTENT]->ft_schema = Search_JiraIssue::ID;
 		
 		// Custom fields with fieldsets
 		
@@ -522,19 +533,62 @@ class SearchFields_JiraIssue implements IDevblocksSearchFields {
 	}
 };
 
-class Search_JiraIssue {
+class Search_JiraIssue extends Extension_DevblocksSearchSchema {
 	const ID = 'jira.search.schema.jira_issue';
 	
-	public static function index($stop_time=null) {
+	public function getNamespace() {
+		return 'jira_issue';
+	}
+	
+	public function getAttributes() {
+		return array();
+	}
+	
+	public function query($query, $attributes=array(), $limit=250) {
+		if(false == ($engine = $this->getEngine()))
+			return false;
+		
+		$ids = $engine->query($this, $query, $attributes, $limit);
+		
+		return $ids;
+	}
+	
+	public function reindex() {
+		$engine = $this->getEngine();
+		$meta = $engine->getIndexMeta($this);
+		
+		// If the index has a delta, start from the current record
+		if($meta['is_indexed_externally']) {
+			// Do nothing (let the remote tool update the DB)
+			
+		// Otherwise, start over
+		} else {
+			$this->setIndexPointer(self::INDEX_POINTER_RESET);
+		}
+	}
+	
+	public function setIndexPointer($pointer) {
+		switch($pointer) {
+			case self::INDEX_POINTER_RESET:
+				$this->setParam('last_indexed_id', 0);
+				$this->setParam('last_indexed_time', 0);
+				break;
+				
+			case self::INDEX_POINTER_CURRENT:
+				$this->setParam('last_indexed_id', 0);
+				$this->setParam('last_indexed_time', time());
+				break;
+		}
+	}
+	
+	public function index($stop_time=null) {
 		$logger = DevblocksPlatform::getConsoleLog();
 		
-		if(false == ($search = DevblocksPlatform::getSearchService())) {
-			$logger->error("[Search] The search engine is misconfigured.");
-			return;
-		}
+		if(false == ($engine = $this->getEngine()))
+			return false;
 		
-		$ns = 'jira_issue';
-		$ptr_time = DAO_DevblocksExtensionPropertyStore::get(self::ID, 'last_indexed_time', 0);
+		$ns = self::getNamespace();
+		$ptr_time = $this->getParam('last_indexed_time', 0);
 		$done = false;
 
 		while(!$done && time() < $stop_time) {
@@ -574,13 +628,20 @@ class Search_JiraIssue {
 				foreach($comments as $comment)
 					$content .= $comment['body'] . ' ';
 				
-				$search->index($ns, $issue->id, $content, true);
+				$engine->index($this, $issue->id, $content);
 				
 				flush();
 			}
 		}
 		
-		DAO_DevblocksExtensionPropertyStore::put(self::ID, 'last_indexed_time', $ptr_time);
+		$this->setParam('last_indexed_time', $ptr_time);
+	}
+	
+	public function delete($ids) {
+		if(false == ($engine = $this->getEngine()))
+			return false;
+		
+		return $engine->delete($this, $ids);
 	}
 };
 
