@@ -20,28 +20,28 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 
 	/**
 	 *
-	 * @param integer $issue_id
+	 * @param integer $context_id
 	 * @return Model_DevblocksEvent
 	 */
-	function generateSampleEventModel(Model_TriggerEvent $trigger, $issue_id=null, $comment_id=null) {
+	function generateSampleEventModel(Model_TriggerEvent $trigger, $context_id=null, $comment_id=null) {
 
 		// If this is the 'new comment on jira issue' event, simulate a comment
 		if(empty($comment_id) && get_class($this) == 'Event_JiraIssueCommented') {
-			// [TODO] This should get a comment where the issue_id is related
+			// [TODO] This should get a comment where the context_id is related
 			$comment_id = DAO_JiraIssue::randomComment();
 		}
 		
-		if(empty($issue_id)) {
-			// If we have a comment, use its issue_id
+		if(empty($context_id)) {
+			// If we have a comment, use its context_id
 			if(!empty($comment_id)) {
 				if(false !== ($comment = DAO_JiraIssue::getComment($comment_id))) {
 					if(false !== ($issue = DAO_JiraIssue::getByJiraId($comment['jira_issue_id'])))
-						$issue_id = $issue->id;
+						$context_id = $issue->id;
 				}
 			}
 				
 			// Otherwise, pick a random issue
-			if(empty($issue_id)) {
+			if(empty($context_id)) {
 				list($results) = DAO_JiraIssue::search(
 					array(),
 					array(),
@@ -56,31 +56,33 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 				
 				$result = array_shift($results);
 				
-				$issue_id = $result[SearchFields_JiraIssue::ID];
+				$context_id = $result[SearchFields_JiraIssue::ID];
 			}
 		}
 		
 		return new Model_DevblocksEvent(
 			$this->_event_id,
 			array(
-				'issue_id' => $issue_id,
+				'context_id' => $context_id,
 				'comment_id' => $comment_id,
 			)
 		);
 	}
 	
-	function setEvent(Model_DevblocksEvent $event_model=null) {
+	function setEvent(Model_DevblocksEvent $event_model=null, Model_TriggerEvent $trigger=null) {
 		$labels = array();
 		$values = array();
 
+		// We can accept a model object or a context_id
+		@$model = $event_model->params['context_model'] ?: $event_model->params['context_id'];
+		
 		/**
 		 * Issue
 		 */
 		
-		@$issue_id = $event_model->params['issue_id'];
 		$merge_labels = array();
 		$merge_values = array();
-		CerberusContexts::getContext('cerberusweb.contexts.jira.issue', $issue_id, $merge_labels, $merge_values, null, true);
+		CerberusContexts::getContext('cerberusweb.contexts.jira.issue', $model, $merge_labels, $merge_values, null, true);
 
 			// Merge
 			CerberusContexts::merge(
@@ -143,7 +145,7 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 	
 	function renderSimulatorTarget($trigger, $event_model) {
 		$context = 'cerberusweb.contexts.jira.issue';
-		$context_id = $event_model->params['issue_id'];
+		$context_id = $event_model->params['context_id'];
 		DevblocksEventHelper::renderSimulatorTarget($context, $context_id, $trigger, $event_model);
 	}
 	
@@ -175,8 +177,8 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 		return $vals_to_ctx;
 	}
 	
-	function getConditionExtensions() {
-		$labels = $this->getLabels();
+	function getConditionExtensions(Model_TriggerEvent $trigger) {
+		$labels = $this->getLabels($trigger);
 		$types = $this->getTypes();
 		
 		$labels['issue_link'] = 'Jira issue is linked';
@@ -309,7 +311,7 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 		return $pass;
 	}
 	
-	function getActionExtensions() {
+	function getActionExtensions(Model_TriggerEvent $trigger) {
 		$actions =
 			array(
 				'add_watchers' => array('label' =>'Add watchers'),
@@ -320,7 +322,7 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 				'send_email' => array('label' => 'Send email'),
 				'set_links' => array('label' => 'Set links'),
 			)
-			+ DevblocksEventHelper::getActionCustomFieldsFromLabels($this->getLabels())
+			+ DevblocksEventHelper::getActionCustomFieldsFromLabels($this->getLabels($trigger))
 			;
 			
 		return $actions;

@@ -20,12 +20,12 @@ abstract class AbstractEvent_JiraProject extends Extension_DevblocksEvent {
 
 	/**
 	 *
-	 * @param integer $project_id
+	 * @param integer $context_id
 	 * @return Model_DevblocksEvent
 	 */
-	function generateSampleEventModel(Model_TriggerEvent $trigger, $project_id=null) {
+	function generateSampleEventModel(Model_TriggerEvent $trigger, $context_id=null) {
 		
-		if(empty($project_id)) {
+		if(empty($context_id)) {
 			// Pull the latest record
 			list($results) = DAO_JiraProject::search(
 				array(),
@@ -43,29 +43,31 @@ abstract class AbstractEvent_JiraProject extends Extension_DevblocksEvent {
 			
 			$result = array_shift($results);
 			
-			$project_id = $result[SearchFields_JiraProject::ID];
+			$context_id = $result[SearchFields_JiraProject::ID];
 		}
 		
 		return new Model_DevblocksEvent(
 			$this->_event_id,
 			array(
-				'project_id' => $project_id,
+				'context_id' => $context_id,
 			)
 		);
 	}
 	
-	function setEvent(Model_DevblocksEvent $event_model=null) {
+	function setEvent(Model_DevblocksEvent $event_model=null, Model_TriggerEvent $trigger=null) {
 		$labels = array();
 		$values = array();
 
+		// We can accept a model object or a context_id
+		@$model = $event_model->params['context_model'] ?: $event_model->params['context_id'];
+		
 		/**
 		 * Project
 		 */
 		
-		@$project_id = $event_model->params['project_id'];
 		$merge_labels = array();
 		$merge_values = array();
-		CerberusContexts::getContext('cerberusweb.contexts.jira.project', $project_id, $merge_labels, $merge_values, null, true);
+		CerberusContexts::getContext('cerberusweb.contexts.jira.project', $model, $merge_labels, $merge_values, null, true);
 
 			// Merge
 			CerberusContexts::merge(
@@ -87,7 +89,7 @@ abstract class AbstractEvent_JiraProject extends Extension_DevblocksEvent {
 	
 	function renderSimulatorTarget($trigger, $event_model) {
 		$context = 'cerberusweb.contexts.jira.project';
-		$context_id = $event_model->params['project_id'];
+		$context_id = $event_model->params['context_id'];
 		DevblocksEventHelper::renderSimulatorTarget($context, $context_id, $trigger, $event_model);
 	}
 	
@@ -111,8 +113,8 @@ abstract class AbstractEvent_JiraProject extends Extension_DevblocksEvent {
 		return $vals_to_ctx;
 	}
 	
-	function getConditionExtensions() {
-		$labels = $this->getLabels();
+	function getConditionExtensions(Model_TriggerEvent $trigger) {
+		$labels = $this->getLabels($trigger);
 		$types = $this->getTypes();
 		
 		$labels['project_link'] = 'Jira project is linked';
@@ -228,7 +230,7 @@ abstract class AbstractEvent_JiraProject extends Extension_DevblocksEvent {
 		return $pass;
 	}
 	
-	function getActionExtensions() {
+	function getActionExtensions(Model_TriggerEvent $trigger) {
 		$actions =
 			array(
 				'add_watchers' => array('label' =>'Add watchers'),
@@ -239,7 +241,7 @@ abstract class AbstractEvent_JiraProject extends Extension_DevblocksEvent {
 				'send_email' => array('label' => 'Send email'),
 				'set_links' => array('label' => 'Set links'),
 			)
-			+ DevblocksEventHelper::getActionCustomFieldsFromLabels($this->getLabels())
+			+ DevblocksEventHelper::getActionCustomFieldsFromLabels($this->getLabels($trigger))
 			;
 			
 		return $actions;

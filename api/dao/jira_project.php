@@ -25,7 +25,7 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 		return $id;
 	}
 	
-	static function update($ids, $fields) {
+	static function update($ids, $fields, $check_deltas=true) {
 		if(!is_array($ids))
 			$ids = array($ids);
 		
@@ -36,16 +36,16 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 			if(empty($batch_ids))
 				continue;
 			
-			// Get state before changes
-			$object_changes = parent::_getUpdateDeltas($batch_ids, $fields, get_class());
-
+			// Send events
+			if($check_deltas) {
+				CerberusContexts::checkpointChanges('cerberusweb.contexts.jira.project', $batch_ids);
+			}
+			
 			// Make changes
 			parent::_update($batch_ids, 'jira_project', $fields);
 			
 			// Send events
-			if(!empty($object_changes)) {
-				// Local events
-				//self::_processUpdateEvents($object_changes);
+			if($check_deltas) {
 				
 				// Trigger an event about the changes
 				$eventMgr = DevblocksPlatform::getEventService();
@@ -53,7 +53,7 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 					new Model_DevblocksEvent(
 						'dao.jira_project.update',
 						array(
-							'objects' => $object_changes,
+							'fields' => $fields,
 						)
 					)
 				);
@@ -391,7 +391,6 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 		}
 		
 		$results = array();
-		$total = -1;
 		
 		while($row = mysqli_fetch_assoc($rs)) {
 			$result = array();
@@ -402,13 +401,17 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 			$results[$object_id] = $result;
 		}
 
-		// [JAS]: Count all
+		$total = count($results);
+		
 		if($withCounts) {
-			$count_sql =
-				($has_multiple_values ? "SELECT COUNT(DISTINCT jira_project.id) " : "SELECT COUNT(jira_project.id) ").
-				$join_sql.
-				$where_sql;
-			$total = $db->GetOne($count_sql);
+			// We can skip counting if we have a less-than-full single page
+			if(!(0 == $page && $total < $limit)) {
+				$count_sql =
+					($has_multiple_values ? "SELECT COUNT(DISTINCT jira_project.id) " : "SELECT COUNT(jira_project.id) ").
+					$join_sql.
+					$where_sql;
+				$total = $db->GetOne($count_sql);
+			}
 		}
 		
 		mysqli_free_result($rs);
@@ -933,6 +936,8 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 			
 		} elseif($jira_project instanceof Model_JiraProject) {
 			// It's what we want already.
+		} elseif(is_array($jira_project)) {
+			$jira_project = Cerb_ORMHelper::recastArrayToModel($jira_project, 'Model_JiraProject');
 		} else {
 			$jira_project = null;
 		}
@@ -984,6 +989,9 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 			$token_values['last_synced_at'] = $jira_project->last_synced_at;
 			$token_values['name'] = $jira_project->name;
 			$token_values['url'] = $jira_project->url;
+			
+			// Custom fields
+			$token_values = $this->_importModelCustomFieldsAsValues($jira_project, $token_values);
 			
 			// URL
 			$url_writer = DevblocksPlatform::getUrlService();

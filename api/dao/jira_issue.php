@@ -23,7 +23,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 		return $id;
 	}
 	
-	static function update($ids, $fields) {
+	static function update($ids, $fields, $check_deltas=true) {
 		if(!is_array($ids))
 			$ids = array($ids);
 		
@@ -34,16 +34,18 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 			if(empty($batch_ids))
 				continue;
 			
-			// Get state before changes
-			$object_changes = parent::_getUpdateDeltas($batch_ids, $fields, get_class());
-
+			// Send events
+			if($check_deltas) {
+				CerberusContexts::checkpointChanges('cerberusweb.contexts.jira.issue', $batch_ids);
+			}
+			
 			// Make changes
 			parent::_update($batch_ids, 'jira_issue', $fields);
 			
 			// Send events
-			if(!empty($object_changes)) {
+			if($check_deltas) {
 				// Local events
-				self::_processUpdateEvents($object_changes);
+				self::_processUpdateEvents($batch_ids, $fields);
 				
 				// Trigger an event about the changes
 				$eventMgr = DevblocksPlatform::getEventService();
@@ -51,7 +53,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 					new Model_DevblocksEvent(
 						'dao.jira_issue.update',
 						array(
-							'objects' => $object_changes,
+							'fields' => $fields,
 						)
 					)
 				);
@@ -62,25 +64,34 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 		}
 	}
 	
-	static function _processUpdateEvents($objects) {
-		if(is_array($objects))
-		foreach($objects as $object_id => $object) {
-			@$model = $object['model'];
-			@$changes = $object['changes'];
-			
-			if(empty($model) || empty($changes))
-				continue;
-			
+	static function _processUpdateEvents($ids, $change_fields) {
+		// We only care about these fields, so abort if they aren't referenced
+
+		$observed_fields = array(
+			DAO_JiraIssue::JIRA_STATUS_ID,
+		);
+		
+		$used_fields = array_intersect($observed_fields, array_keys($change_fields));
+		
+		if(empty($used_fields))
+			return;
+		
+		// Load records only if they're needed
+		
+		if(false == ($models = DAO_JiraIssue::getIds($ids)))
+			return;
+		
+		foreach($models as $model) {
 			/*
 			 * Status change
 			 */
-			@$status_id = $changes[DAO_JiraIssue::JIRA_STATUS_ID];
 			
-			if(!empty($status_id) && !empty($model[DAO_JiraIssue::JIRA_STATUS_ID])) {
-				Event_JiraIssueStatusChanged::trigger($object_id);
+			// [TODO] Fold into 'Record changed'
+			if(isset($fields[DAO_JiraIssue::JIRA_STATUS_ID])) {
+				Event_JiraIssueStatusChanged::trigger($model->id);
 			}
-			
-		} // foreach
+		}
+		
 	}
 	
 	static function updateWhere($fields, $where) {
@@ -371,7 +382,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 			case SearchFields_JiraIssue::FULLTEXT_CONTENT:
 				$search = Extension_DevblocksSearchSchema::get(Search_JiraIssue::ID);
 				$query = $search->getQueryFromParam($param);
-				$ids = $search->query($query, array(), 250);
+				$ids = $search->query($query, array());
 				
 				if(empty($ids))
 					$ids = array(-1);
@@ -437,7 +448,6 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 		}
 		
 		$results = array();
-		$total = -1;
 		
 		while($row = mysqli_fetch_assoc($rs)) {
 			$result = array();
@@ -448,13 +458,17 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 			$results[$object_id] = $result;
 		}
 
-		// [JAS]: Count all
+		$total = count($results);
+		
 		if($withCounts) {
-			$count_sql =
-				($has_multiple_values ? "SELECT COUNT(DISTINCT jira_issue.id) " : "SELECT COUNT(jira_issue.id) ").
-				$join_sql.
-				$where_sql;
-			$total = $db->GetOne($count_sql);
+			// We can skip counting if we have a less-than-full single page
+			if(!(0 == $page && $total < $limit)) {
+				$count_sql =
+					($has_multiple_values ? "SELECT COUNT(DISTINCT jira_issue.id) " : "SELECT COUNT(jira_issue.id) ").
+					$join_sql.
+					$where_sql;
+				$total = $db->GetOne($count_sql);
+			}
 		}
 		
 		mysqli_free_result($rs);
@@ -544,7 +558,7 @@ class Search_JiraIssue extends Extension_DevblocksSearchSchema {
 		return array();
 	}
 	
-	public function query($query, $attributes=array(), $limit=250) {
+	public function query($query, $attributes=array(), $limit=500) {
 		if(false == ($engine = $this->getEngine()))
 			return false;
 		
@@ -1386,6 +1400,8 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 			$jira_issue = DAO_JiraIssue::get($jira_issue);
 		} elseif($jira_issue instanceof Model_JiraIssue) {
 			// It's what we want already.
+		} elseif(is_array($jira_issue)) {
+			$jira_issue = Cerb_ORMHelper::recastArrayToModel($jira_issue, 'Model_JiraIssue');
 		} else {
 			$jira_issue = null;
 		}
@@ -1454,6 +1470,9 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 			$token_values['jira_versions'] = $jira_issue->jira_versions;
 			
 			$token_values['project_id'] = $jira_issue->project_id;
+			
+			// Custom fields
+			$token_values = $this->_importModelCustomFieldsAsValues($jira_issue, $token_values);
 			
 			// [TODO] Content
 			
