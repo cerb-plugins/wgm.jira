@@ -78,17 +78,24 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 		
 		// Load records only if they're needed
 		
-		if(false == ($models = DAO_JiraIssue::getIds($ids)))
+		if(false == ($before_models = CerberusContexts::getCheckpoints('cerberusweb.contexts.jira.issue', $ids)))
 			return;
 		
-		foreach($models as $model) {
+		foreach($before_models as $id => $before_model) {
+			$before_model = (object) $before_model; /* @var $before_model Model_JiraIssue */
+			
 			/*
 			 * Status change
 			 */
-			
 			// [TODO] Fold into 'Record changed'
-			if(isset($fields[DAO_JiraIssue::JIRA_STATUS_ID])) {
-				Event_JiraIssueStatusChanged::trigger($model->id);
+			
+			@$status_id = $change_fields[DAO_JiraIssue::JIRA_STATUS_ID];
+			
+			if($status_id == $before_model->jira_status_id)
+				unset($change_fields[DAO_JiraIssue::JIRA_STATUS_ID]);
+			
+			if(isset($change_fields[DAO_JiraIssue::JIRA_STATUS_ID])) {
+				Event_JiraIssueStatusChanged::trigger($id);
 			}
 		}
 		
