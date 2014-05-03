@@ -444,7 +444,7 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 				$logger->info(sprintf("Syncing project [%s] %s", $local_project->jira_key, $local_project->name));
 			
 				$startAt = 0;
-				$maxResults = 500;
+				$maxResults = 200;
 				$last_updated_date = $local_project->last_synced_at;
 				$last_unique_updated_date = $last_updated_date;
 				
@@ -512,7 +512,7 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 				// Set the last updated date on the project
 				if(!empty($last_unique_updated_date)) {
 					DAO_JiraProject::update($local_project->id, array(
-					DAO_JiraProject::LAST_SYNCED_AT => $last_unique_updated_date,
+						DAO_JiraProject::LAST_SYNCED_AT => $last_unique_updated_date,
 					));
 				}
 			}
