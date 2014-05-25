@@ -162,10 +162,12 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 			'issue_project_watchers' => array(
 				'label' => 'Issue project watchers',
 				'context' => CerberusContexts::CONTEXT_WORKER,
+				'is_multiple' => true,
 			),
 			'issue_watchers' => array(
 				'label' => 'Issue watchers',
 				'context' => CerberusContexts::CONTEXT_WORKER,
+				'is_multiple' => true,
 			),
 		);
 		
@@ -198,14 +200,14 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 		return $conditions;
 	}
 	
-	function renderConditionExtension($token, $trigger, $params=array(), $seq=null) {
+	function renderConditionExtension($token, $as_token, $trigger, $params=array(), $seq=null) {
 		$tpl = DevblocksPlatform::getTemplateService();
 		$tpl->assign('params', $params);
 
 		if(!is_null($seq))
 			$tpl->assign('namePrefix','condition'.$seq);
 		
-		switch($token) {
+		switch($as_token) {
 			case 'issue_link':
 			case 'issue_project_link':
 				$contexts = Extension_DevblocksContext::getAll(false);
@@ -223,10 +225,10 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 		$tpl->clearAssign('params');
 	}
 	
-	function runConditionExtension($token, $trigger, $params, DevblocksDictionaryDelegate $dict) {
+	function runConditionExtension($token, $as_token, $trigger, $params, DevblocksDictionaryDelegate $dict) {
 		$pass = true;
 		
-		switch($token) {
+		switch($as_token) {
 			case 'issue_link':
 			case 'issue_project_link':
 				$not = (substr($params['oper'],0,1) == '!');
@@ -235,7 +237,7 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 				$from_context = null;
 				$from_context_id = null;
 
-				switch($token) {
+				switch($as_token) {
 					case 'issue_link':
 						$from_context = 'cerberusweb.contexts.jira.issue';
 						@$from_context_id = $dict->issue_id;
@@ -279,7 +281,7 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 				$not = (substr($params['oper'],0,1) == '!');
 				$oper = ltrim($params['oper'],'!');
 
-				switch($token) {
+				switch($as_token) {
 					case 'issue_project_watcher_count':
 						$value = count($dict->issue_project_watchers);
 						break;
