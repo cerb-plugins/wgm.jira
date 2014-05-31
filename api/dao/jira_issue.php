@@ -1495,7 +1495,7 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 
 		CerberusContexts::merge(
 			'project_',
-			'Jira Issue Project:',
+			$prefix.'Project:',
 			$merge_token_labels,
 			$merge_token_values,
 			$token_labels,

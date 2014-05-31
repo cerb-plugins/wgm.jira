@@ -174,7 +174,7 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 		$vars = parent::getValuesContexts($trigger);
 		
 		$vals_to_ctx = array_merge($vals, $vars);
-		asort($vals_to_ctx);
+		DevblocksPlatform::sortObjects($vals_to_ctx, '[label]');
 		
 		return $vals_to_ctx;
 	}
@@ -184,9 +184,9 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 		$types = $this->getTypes();
 		
 		$labels['issue_link'] = 'Jira issue is linked';
-		$labels['issue_project_link'] = 'Jira project is linked';
+		$labels['issue_project_link'] = 'Jira issue project is linked';
 		
-		$labels['issue_project_watcher_count'] = 'Jira project watcher count';
+		$labels['issue_project_watcher_count'] = 'Jira issue project watcher count';
 		$labels['issue_watcher_count'] = 'Jira issue watcher count';
 		
 		$types['issue_link'] = null;
