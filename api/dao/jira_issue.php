@@ -391,13 +391,21 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 				$query = $search->getQueryFromParam($param);
 				$ids = $search->query($query, array());
 				
-				if(empty($ids))
-					$ids = array(-1);
+				if(is_array($ids)) {
+					$from_ids = DAO_Comment::getContextIdsByContextAndIds($from_context, $ids);
+					
+					$args['where_sql'] .= sprintf('AND %s IN (%s) ',
+						$from_index,
+						implode(', ', (!empty($from_ids) ? $from_ids : array(-1)))
+					);
+					
+				} elseif(is_string($ids)) {
+					$args['join_sql'] .= sprintf("INNER JOIN %s ON (%s.id=jira_issue.id) ",
+						$ids,
+						$ids
+					);
+				}
 				
-				$args['where_sql'] .= sprintf('AND %s IN (%s) ',
-					$from_index,
-					implode(', ', $ids)
-				);
 				break;
 			
 			case SearchFields_JiraIssue::VIRTUAL_CONTEXT_LINK:
@@ -457,12 +465,8 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 		$results = array();
 		
 		while($row = mysqli_fetch_assoc($rs)) {
-			$result = array();
-			foreach($row as $f => $v) {
-				$result[$f] = $v;
-			}
 			$object_id = intval($row[SearchFields_JiraIssue::ID]);
-			$results[$object_id] = $result;
+			$results[$object_id] = $row;
 		}
 
 		$total = count($results);
