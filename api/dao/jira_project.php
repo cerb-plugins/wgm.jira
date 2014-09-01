@@ -1098,9 +1098,8 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 
 		// Comments
 		$comments = DAO_Comment::getByContext('cerberusweb.contexts.jira.project', $context_id);
-		$last_comment = array_shift($comments);
-		unset($comments);
-		$tpl->assign('last_comment', $last_comment);
+		$comments = array_reverse($comments, true);
+		$tpl->assign('comments', $comments);
 		
 		$tpl->display('devblocks:wgm.jira::jira_project/peek.tpl');
 	}

@@ -1625,9 +1625,8 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 
 		// Comments
 		$comments = DAO_Comment::getByContext('cerberusweb.contexts.jira.issue', $context_id);
-		$last_comment = array_shift($comments);
-		unset($comments);
-		$tpl->assign('last_comment', $last_comment);
+		$comments = array_reverse($comments, true);
+		$tpl->assign('comments', $comments);
 		
 		$tpl->display('devblocks:wgm.jira::jira_issue/peek.tpl');
 	}
