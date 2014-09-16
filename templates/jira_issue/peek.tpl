@@ -102,8 +102,7 @@
 
 <fieldset class="peek">
 	<legend>{'common.comment'|devblocks_translate|capitalize}</legend>
-	<textarea name="comment" rows="5" cols="45" style="width:98%;"></textarea>
-	<div style="float:right;color:rgb(120,120,120);">{'comment.notify.at_mention'|devblocks_translate}</div>
+	<textarea name="comment" rows="5" cols="45" style="width:98%;" title="{'comment.notify.at_mention'|devblocks_translate}"></textarea>
 </fieldset>
 
 {if !empty($model->id)}
@@ -145,6 +144,15 @@
 		});
 		
 		$(this).find('input:text:first').focus();
+		
+		// Tooltips
+		
+		$popup.find(':input[title], textarea[title]').tooltip({
+			position: {
+				my: 'left top',
+				at: 'left+10 bottom+5'
+			}
+		});
 		
 		// @mentions
 		
