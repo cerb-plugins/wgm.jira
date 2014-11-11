@@ -191,6 +191,7 @@ class WgmJira_API {
 		}
 		
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 		
 		switch($verb) {
 			case 'post':
