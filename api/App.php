@@ -569,6 +569,7 @@ class WgmJira_EventActionApiCall extends Extension_DevblocksEventAction {
 		@$api_path = $tpl_builder->build($params['api_path'], $dict);
 		@$json = $tpl_builder->build($params['json'], $dict);
 		@$response_placeholder = $params['response_placeholder'];
+		@$run_in_simulator = $params['run_in_simulator'];
 		
 		if(empty($api_verb))
 			return "[ERROR] API verb is required.";
@@ -586,9 +587,20 @@ class WgmJira_EventActionApiCall extends Extension_DevblocksEventAction {
 			(in_array($api_verb, array('post','put')) ? ("\n" . $json . "\n") : "")
 		);
 		
-		$out .= sprintf(">>> Saving response to placeholder:\n%s\n",
-			$response_placeholder
-		);
+		// Run in simulator?
+		
+		if($run_in_simulator) {
+			$this->run($token, $trigger, $params, $dict);
+			
+			$out .= sprintf(">>> API response is:\n\n%s\n\n",
+				DevblocksPlatform::strFormatJson(json_encode($dict->$response_placeholder))
+			);
+			
+			// Placeholder
+			$out .= sprintf(">>> Saving response to placeholder:\n%s\n",
+				$response_placeholder
+			);
+		}
 		
 		return $out;
 	}
