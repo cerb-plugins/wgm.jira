@@ -66,6 +66,8 @@
 
 {include file="devblocks:cerberusweb.core::internal/custom_fieldsets/profile_fieldsets.tpl" properties=$properties_custom_fieldsets}
 
+{include file="devblocks:cerberusweb.core::internal/profiles/profile_record_links.tpl" properties=$properties_links}
+
 {$description = $jira_issue->getDescription()}
 {if !empty($description)}
 <fieldset class="properties">

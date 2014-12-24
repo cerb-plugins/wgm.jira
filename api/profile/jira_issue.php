@@ -107,6 +107,33 @@ class PageSection_ProfilesJiraIssue extends Extension_PageSection {
 		$properties_custom_fieldsets = Page_Profiles::getProfilePropertiesCustomFieldsets('cerberusweb.contexts.jira.issue', $jira_issue->id, $values);
 		$tpl->assign('properties_custom_fieldsets', $properties_custom_fieldsets);
 		
+		// Link counts
+		
+		$properties_links = array(
+			'cerberusweb.contexts.jira.issue' => array(
+				$jira_issue->id => 
+					DAO_ContextLink::getContextLinkCounts(
+						'cerberusweb.contexts.jira.issue',
+						$jira_issue->id,
+						array(CerberusContexts::CONTEXT_WORKER, CerberusContexts::CONTEXT_CUSTOM_FIELDSET)
+					),
+			),
+		);
+		
+		// [TODO] This is using JIRA ids rather than Cerb ones
+		if(isset($jira_issue->project_id)) {
+			$properties_links['cerberusweb.contexts.jira.project'] = array(
+				$jira_issue->project_id => 
+					DAO_ContextLink::getContextLinkCounts(
+						'cerberusweb.contexts.jira.project',
+						$jira_issue->project_id,
+						array(CerberusContexts::CONTEXT_WORKER, CerberusContexts::CONTEXT_CUSTOM_FIELDSET)
+					),
+			);
+		}
+		
+		$tpl->assign('properties_links', $properties_links);
+		
 		// Properties
 		
 		$tpl->assign('properties', $properties);

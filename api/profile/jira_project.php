@@ -82,6 +82,21 @@ class PageSection_ProfilesJiraProject extends Extension_PageSection {
 		$properties_custom_fieldsets = Page_Profiles::getProfilePropertiesCustomFieldsets('cerberusweb.contexts.jira.project', $jira_project->id, $values);
 		$tpl->assign('properties_custom_fieldsets', $properties_custom_fieldsets);
 		
+		// Link counts
+		
+		$properties_links = array(
+			'cerberusweb.contexts.jira.project' => array(
+				$jira_project->id => 
+					DAO_ContextLink::getContextLinkCounts(
+						'cerberusweb.contexts.jira.project',
+						$jira_project->id,
+						array(CerberusContexts::CONTEXT_WORKER, CerberusContexts::CONTEXT_CUSTOM_FIELDSET)
+					),
+			),
+		);
+		
+		$tpl->assign('properties_links', $properties_links);
+		
 		// Properties
 		
 		$tpl->assign('properties', $properties);
