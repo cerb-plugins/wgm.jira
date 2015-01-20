@@ -389,14 +389,14 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 			case SearchFields_JiraIssue::FULLTEXT_CONTENT:
 				$search = Extension_DevblocksSearchSchema::get(Search_JiraIssue::ID);
 				$query = $search->getQueryFromParam($param);
-				$ids = $search->query($query, array());
 				
-				if(is_array($ids)) {
-					$from_ids = DAO_Comment::getContextIdsByContextAndIds($from_context, $ids);
-					
+				if(false === ($ids = $search->query($query, array()))) {
+					$args['where_sql'] .= 'AND 0 ';
+				
+				} elseif(is_array($ids)) {
 					$args['where_sql'] .= sprintf('AND %s IN (%s) ',
 						$from_index,
-						implode(', ', (!empty($from_ids) ? $from_ids : array(-1)))
+						implode(', ', (!empty($ids) ? $ids : array(-1)))
 					);
 					
 				} elseif(is_string($ids)) {
@@ -405,7 +405,6 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 						$ids
 					);
 				}
-				
 				break;
 			
 			case SearchFields_JiraIssue::VIRTUAL_CONTEXT_LINK:
@@ -647,21 +646,20 @@ class Search_JiraIssue extends Extension_DevblocksSearchSchema {
 				
 				$comments = $issue->getComments();
 				
-				$content =
-					$issue->jira_key . ' '
-					. $issue->summary . ' '
-					. $issue->getDescription() . ' '
-					;
-					
-				if(is_array($comments))
-				foreach($comments as $comment)
-					$content .= $comment['body'] . ' ';
-				
-				$engine->index(
-					$this,
-					$id,
-					$content
+				$doc = array(
+					'key' => $issue->jira_key,
+					'summary' => $issue->summary,
+					'description' => $issue->getDescription(),
+					'comments' => array(),
 				);
+
+				if(is_array($comments))
+				foreach($comments as $comment) {
+					$doc['comments'] = array('content' => $comment['body']);
+				}
+				
+				if(false === ($engine->index($this, $id, $doc)))
+					return false;
 				
 				flush();
 			}
