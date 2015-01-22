@@ -981,6 +981,21 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 		$fields = self::_appendFieldsFromQuickSearchContext('cerberusweb.contexts.jira.issue', $fields, null);
 		$fields = self::_appendFieldsFromQuickSearchContext('cerberusweb.contexts.jira.project', $fields, 'project');
 		
+		// Engine/schema examples: Fulltext
+		
+		$ft_examples = array();
+		
+		if(false != ($schema = Extension_DevblocksSearchSchema::get(Search_JiraIssue::ID))) {
+			if(false != ($engine = $schema->getEngine())) {
+				$ft_examples = $engine->getQuickSearchExamples($schema);
+			}
+		}
+		
+		if(!empty($ft_examples)) {
+			$fields['_fulltext']['examples'] = $ft_examples;
+			$fields['content']['examples'] = $ft_examples;
+		}
+		
 		// Sort by keys
 		
 		ksort($fields);
