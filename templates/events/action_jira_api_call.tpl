@@ -33,7 +33,7 @@
 
 <script type="text/javascript">
 var $action = $('fieldset#{$namePrefix}');
-$action.find('textarea').elastic();
+$action.find('textarea').autosize();
 
 $action.find('select.jira-api-verb').change(function() {
 	var $container = $(this).closest('fieldset');
@@ -41,7 +41,7 @@ $action.find('select.jira-api-verb').change(function() {
 	var val = $(this).val();
 	
 	if(val == 'post' || val == 'put')
-		$div_json.show().find('textarea').elastic();
+		$div_json.show().find('textarea').autosize();
 	else
 		$div_json.fadeOut();
 });

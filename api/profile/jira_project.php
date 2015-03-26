@@ -196,6 +196,7 @@ class PageSection_ProfilesJiraProject extends Extension_PageSection {
 		
 		// Loop through view and get IDs
 		$view = C4_AbstractViewLoader::getView($view_id);
+		$view->setAutoPersist(false);
 
 		// Page start
 		@$explore_from = DevblocksPlatform::importGPC($_REQUEST['explore_from'],'integer',0);
@@ -263,7 +264,6 @@ class PageSection_ProfilesJiraProject extends Extension_PageSection {
 		@$point = DevblocksPlatform::importGPC($_REQUEST['point'],'string','contact.history');
 		
 		$tpl = DevblocksPlatform::getTemplateService();
-		$visit = CerberusApplication::getVisit();
 		$translate = DevblocksPlatform::getTranslationService();
 		
 		if(empty($context_id))
@@ -272,9 +272,6 @@ class PageSection_ProfilesJiraProject extends Extension_PageSection {
 		if(false == ($project = DAO_JiraProject::get($context_id)))
 			return;
 
-		if(!empty($point))
-			$visit->set($point, 'issues');
-		
 		// Issue worklist with project filter
 		
 		$view_id = sprintf("jira_project_profile_issues_%d", $project->id);
@@ -299,8 +296,6 @@ class PageSection_ProfilesJiraProject extends Extension_PageSection {
 		
 		$tpl->assign('view', $view);
 		
-		C4_AbstractViewLoader::setView($view->id, $view);
-	
 		$tpl->display('devblocks:cerberusweb.core::internal/views/search_and_view.tpl');
 	}
 };

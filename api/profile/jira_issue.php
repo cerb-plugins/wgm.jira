@@ -202,6 +202,7 @@ class PageSection_ProfilesJiraIssue extends Extension_PageSection {
 		
 		// Loop through view and get IDs
 		$view = C4_AbstractViewLoader::getView($view_id);
+		$view->setAutoPersist(false);
 
 		// Page start
 		@$explore_from = DevblocksPlatform::importGPC($_REQUEST['explore_from'],'integer',0);
@@ -269,7 +270,6 @@ class PageSection_ProfilesJiraIssue extends Extension_PageSection {
 		@$point = DevblocksPlatform::importGPC($_REQUEST['point'],'string','contact.history');
 		
 		$tpl = DevblocksPlatform::getTemplateService();
-		$visit = CerberusApplication::getVisit();
 		$translate = DevblocksPlatform::getTranslationService();
 		
 		if(empty($context_id))
@@ -278,9 +278,6 @@ class PageSection_ProfilesJiraIssue extends Extension_PageSection {
 		if(false == ($issue = DAO_JiraIssue::get($context_id)))
 			return;
 
-		if(!empty($point))
-			$visit->set($point, 'discussion');
-		
 		$tpl->assign('issue', $issue);
 		$tpl->assign('comments', $issue->getComments());
 		

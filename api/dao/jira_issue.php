@@ -15,7 +15,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 		$db = DevblocksPlatform::getDatabaseService();
 		
 		$sql = "INSERT INTO jira_issue () VALUES ()";
-		$db->Execute($sql);
+		$db->ExecuteMaster($sql);
 		$id = $db->LastInsertId();
 		
 		self::update($id, $fields);
@@ -124,7 +124,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 			$sort_sql.
 			$limit_sql
 		;
-		$rs = $db->Execute($sql);
+		$rs = $db->ExecuteSlave($sql);
 		
 		return self::_getObjectsFromResult($rs);
 	}
@@ -133,6 +133,9 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 	 * @param integer $id
 	 * @return Model_JiraIssue	 */
 	static function get($id) {
+		if(empty($id))
+			return null;
+		
 		$objects = self::getWhere(sprintf("%s = %d",
 			self::ID,
 			$id
@@ -152,10 +155,10 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 		$db = DevblocksPlatform::getDatabaseService();
 		
 		// With a specific issue ID?
-		if($issue_id && false != ($comment_id = $db->GetOne(sprintf("SELECT jira_comment_id FROM jira_issue_comment WHERE jira_issue_id = %d ORDER BY RAND() LIMIT 1", $issue_id))))
+		if($issue_id && false != ($comment_id = $db->GetOneSlave(sprintf("SELECT jira_comment_id FROM jira_issue_comment WHERE jira_issue_id = %d ORDER BY RAND() LIMIT 1", $issue_id))))
 			return $comment_id;
 		
-		return $db->GetOne("SELECT jira_comment_id FROM jira_issue_comment ORDER BY RAND() LIMIT 1");
+		return $db->GetOneSlave("SELECT jira_comment_id FROM jira_issue_comment ORDER BY RAND() LIMIT 1");
 	}
 	
 	static function getByJiraId($remote_id) {
@@ -170,13 +173,13 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 	static function getDescription($issue_id) {
 		$db = DevblocksPlatform::getDatabaseService();
 		
-		return $db->GetOne(sprintf("SELECT description FROM jira_issue_description WHERE jira_issue_id = %d", $issue_id));
+		return $db->GetOneSlave(sprintf("SELECT description FROM jira_issue_description WHERE jira_issue_id = %d", $issue_id));
 	}
 	
 	static function setDescription($issue_id, $description) {
 		$db = DevblocksPlatform::getDatabaseService();
 		
-		$db->Execute(sprintf("REPLACE INTO jira_issue_description (jira_issue_id, description) VALUES (%d, %s)",
+		$db->ExecuteMaster(sprintf("REPLACE INTO jira_issue_description (jira_issue_id, description) VALUES (%d, %s)",
 			$issue_id,
 			$db->qstr($description)
 		));
@@ -188,10 +191,10 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 		if(!is_array($fix_version_ids)) $fix_version_ids = array($fix_version_ids);
 		$db = DevblocksPlatform::getDatabaseService();
 		
-		$db->Execute(sprintf("DELETE FROM jira_issue_to_version WHERE jira_issue_id = %d", $issue_id));
+		$db->ExecuteMaster(sprintf("DELETE FROM jira_issue_to_version WHERE jira_issue_id = %d", $issue_id));
 		
 		foreach($fix_version_ids as $fix_version_id) {
-			$db->Execute(sprintf("INSERT INTO jira_issue_to_version (jira_issue_id, jira_version_id) VALUES (%d, %d)",
+			$db->ExecuteMaster(sprintf("INSERT INTO jira_issue_to_version (jira_issue_id, jira_version_id) VALUES (%d, %d)",
 				$issue_id,
 				$fix_version_id
 			));
@@ -203,7 +206,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 	static function saveComment($comment_id, $issue_id, $created, $author, $body) {
 		$db = DevblocksPlatform::getDatabaseService();
 		
-		$result = $db->Execute(sprintf("REPLACE INTO jira_issue_comment (jira_comment_id, jira_issue_id, created, jira_author, body) ".
+		$result = $db->ExecuteMaster(sprintf("REPLACE INTO jira_issue_comment (jira_comment_id, jira_issue_id, created, jira_author, body) ".
 			"VALUES (%d, %d, %d, %s, %s)",
 			$comment_id,
 			$issue_id,
@@ -218,7 +221,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 	static function getComments($issue_id) {
 		$db = DevblocksPlatform::getDatabaseService();
 
-		$results = $db->GetArray(sprintf("SELECT jira_comment_id, jira_issue_id, created, jira_author, body ".
+		$results = $db->GetArraySlave(sprintf("SELECT jira_comment_id, jira_issue_id, created, jira_author, body ".
 			"FROM jira_issue_comment ".
 			"WHERE jira_issue_id = %d ".
 			"ORDER BY created DESC",
@@ -231,7 +234,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 	static function getComment($comment_id) {
 		$db = DevblocksPlatform::getDatabaseService();
 
-		$results = $db->GetRow(sprintf("SELECT jira_comment_id, jira_issue_id, created, jira_author, body ".
+		$results = $db->GetRowSlave(sprintf("SELECT jira_comment_id, jira_issue_id, created, jira_author, body ".
 			"FROM jira_issue_comment ".
 			"WHERE jira_comment_id = %d ".
 			"ORDER BY created DESC",
@@ -277,12 +280,12 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 		
 		$ids_list = implode(',', $ids);
 		
-		$db->Execute(sprintf("DELETE FROM jira_issue WHERE id IN (%s)", $ids_list));
+		$db->ExecuteMaster(sprintf("DELETE FROM jira_issue WHERE id IN (%s)", $ids_list));
 		
 		// Cascade delete to linked tables
-		$db->Execute("DELETE FROM jira_issue_comment WHERE jira_issue_id NOT IN (SELECT jira_id FROM jira_issue)");
-		$db->Execute("DELETE FROM jira_issue_description WHERE jira_issue_id NOT IN (SELECT jira_id FROM jira_issue)");
-		$db->Execute("DELETE FROM jira_issue_to_version WHERE jira_issue_id NOT IN (SELECT jira_id FROM jira_issue)");
+		$db->ExecuteMaster("DELETE FROM jira_issue_comment WHERE jira_issue_id NOT IN (SELECT jira_id FROM jira_issue)");
+		$db->ExecuteMaster("DELETE FROM jira_issue_description WHERE jira_issue_id NOT IN (SELECT jira_id FROM jira_issue)");
+		$db->ExecuteMaster("DELETE FROM jira_issue_to_version WHERE jira_issue_id NOT IN (SELECT jira_id FROM jira_issue)");
 		
 		// [TODO] Maint
 		
@@ -455,9 +458,9 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 			$sort_sql;
 			
 		if($limit > 0) {
-			$rs = $db->SelectLimit($sql,$limit,$page*$limit) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+			$rs = $db->SelectLimit($sql,$limit,$page*$limit) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs mysqli_result */
 		} else {
-			$rs = $db->Execute($sql) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+			$rs = $db->ExecuteSlave($sql) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs mysqli_result */
 			$total = mysqli_num_rows($rs);
 		}
 		
@@ -477,7 +480,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 					($has_multiple_values ? "SELECT COUNT(DISTINCT jira_issue.id) " : "SELECT COUNT(jira_issue.id) ").
 					$join_sql.
 					$where_sql;
-				$total = $db->GetOne($count_sql);
+				$total = $db->GetOneSlave($count_sql);
 			}
 		}
 		
@@ -1671,7 +1674,6 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 		$view->renderLimit = 10;
 		$view->renderTemplate = 'contextlinks_chooser';
 		$view->renderFilters = false;
-		C4_AbstractViewLoader::setView($view_id, $view);
 		return $view;
 	}
 	
@@ -1695,7 +1697,6 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 		$view->addParamsRequired($params_req, true);
 		
 		$view->renderTemplate = 'context';
-		C4_AbstractViewLoader::setView($view_id, $view);
 		return $view;
 	}
 	

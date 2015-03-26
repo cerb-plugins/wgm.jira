@@ -22,7 +22,7 @@ if(!isset($tables['jira_project'])) {
 			PRIMARY KEY (id)
 		) ENGINE=%s;
 	", APP_DB_ENGINE);
-	$db->Execute($sql);
+	$db->ExecuteMaster($sql);
 
 	$tables['jira_project'] = 'jira_project';
 }
@@ -35,20 +35,20 @@ if(!isset($tables['jira_project'])) {
 list($columns, $indexes) = $db->metaTable('jira_project');
 
 if(isset($columns['issuetypes_json']) && $columns['issuetypes_json']['type'] == 'text') {
-	$db->Execute("ALTER TABLE jira_project MODIFY COLUMN issuetypes_json MEDIUMTEXT");
+	$db->ExecuteMaster("ALTER TABLE jira_project MODIFY COLUMN issuetypes_json MEDIUMTEXT");
 }
 
 if(isset($columns['statuses_json']) && $columns['statuses_json']['type'] == 'text') {
-	$db->Execute("ALTER TABLE jira_project MODIFY COLUMN statuses_json MEDIUMTEXT");
+	$db->ExecuteMaster("ALTER TABLE jira_project MODIFY COLUMN statuses_json MEDIUMTEXT");
 }
 
 if(isset($columns['versions_json']) && $columns['versions_json']['type'] == 'text') {
-	$db->Execute("ALTER TABLE jira_project MODIFY COLUMN versions_json MEDIUMTEXT");
+	$db->ExecuteMaster("ALTER TABLE jira_project MODIFY COLUMN versions_json MEDIUMTEXT");
 }
 
 if(!isset($columns['is_sync'])) {
-	$db->Execute("ALTER TABLE jira_project ADD COLUMN is_sync TINYINT UNSIGNED NOT NULL DEFAULT 0");
-	$db->Execute("UPDATE jira_project SET is_sync=1");
+	$db->ExecuteMaster("ALTER TABLE jira_project ADD COLUMN is_sync TINYINT UNSIGNED NOT NULL DEFAULT 0");
+	$db->ExecuteMaster("UPDATE jira_project SET is_sync=1");
 }
 
 // ===========================================================================
@@ -74,7 +74,7 @@ if(!isset($tables['jira_issue'])) {
 			INDEX updated (updated)
 		) ENGINE=%s;
 	", APP_DB_ENGINE);
-	$db->Execute($sql);
+	$db->ExecuteMaster($sql);
 
 	$tables['jira_issue'] = 'jira_issue';
 }
@@ -89,11 +89,11 @@ list($columns, $indexes) = $db->metaTable('jira_issue');
 // Drop the version column
 
 if(isset($columns['jira_version_id'])) {
-	$db->Execute("ALTER TABLE jira_issue DROP COLUMN jira_version_id");
+	$db->ExecuteMaster("ALTER TABLE jira_issue DROP COLUMN jira_version_id");
 }
 
 if(!isset($columns['jira_versions'])) {
-	$db->Execute("ALTER TABLE jira_issue ADD COLUMN jira_versions VARCHAR(255) NOT NULL DEFAULT ''");
+	$db->ExecuteMaster("ALTER TABLE jira_issue ADD COLUMN jira_versions VARCHAR(255) NOT NULL DEFAULT ''");
 }
 
 // ===========================================================================
@@ -107,7 +107,7 @@ if(!isset($tables['jira_issue_to_version'])) {
 			PRIMARY KEY (jira_issue_id, jira_version_id)
 		) ENGINE=%s;
 	", APP_DB_ENGINE);
-	$db->Execute($sql);
+	$db->ExecuteMaster($sql);
 
 	$tables['jira_issue_to_version'] = 'jira_issue_to_version';
 }
@@ -123,7 +123,7 @@ if(!isset($tables['jira_issue_description'])) {
 			PRIMARY KEY (jira_issue_id)
 		) ENGINE=%s;
 	", APP_DB_ENGINE);
-	$db->Execute($sql);
+	$db->ExecuteMaster($sql);
 
 	$tables['jira_issue_description'] = 'jira_issue_description';
 }
@@ -143,7 +143,7 @@ if(!isset($tables['jira_issue_comment'])) {
 			INDEX jira_issue_id (jira_issue_id)
 		) ENGINE=%s;
 	", APP_DB_ENGINE);
-	$db->Execute($sql);
+	$db->ExecuteMaster($sql);
 
 	$tables['jira_issue_comment'] = 'jira_issue_comment';
 }

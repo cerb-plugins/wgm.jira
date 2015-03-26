@@ -17,7 +17,7 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 		$db = DevblocksPlatform::getDatabaseService();
 		
 		$sql = "INSERT INTO jira_project () VALUES ()";
-		$db->Execute($sql);
+		$db->ExecuteMaster($sql);
 		$id = $db->LastInsertId();
 		
 		self::update($id, $fields);
@@ -77,7 +77,13 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 	static function getAll($nocache=false) {
 		$cache = DevblocksPlatform::getCacheService();
 		if($nocache || null === ($projects = $cache->load(self::_CACHE_ALL))) {
-			$projects = self::getWhere(null, DAO_JiraProject::NAME, true);
+			$projects = self::getWhere(
+				null,
+				DAO_JiraProject::NAME,
+				true,
+				null,
+				Cerb_ORMHelper::OPT_GET_MASTER_ONLY
+			);
 			$cache->save($projects, self::_CACHE_ALL);
 		}
 		
@@ -91,7 +97,7 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 	 * @param integer $limit
 	 * @return Model_JiraProject[]
 	 */
-	static function getWhere($where=null, $sortBy=null, $sortAsc=true, $limit=null) {
+	static function getWhere($where=null, $sortBy=DAO_JiraProject::NAME, $sortAsc=true, $limit=null, $options=null) {
 		$db = DevblocksPlatform::getDatabaseService();
 
 		list($where_sql, $sort_sql, $limit_sql) = self::_getWhereSQL($where, $sortBy, $sortAsc, $limit);
@@ -103,7 +109,12 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 			$sort_sql.
 			$limit_sql
 		;
-		$rs = $db->Execute($sql);
+
+		if($options & Cerb_ORMHelper::OPT_GET_MASTER_ONLY) {
+			$rs = $db->ExecuteMaster($sql);
+		} else {
+			$rs = $db->ExecuteSlave($sql);
+		}
 		
 		return self::_getObjectsFromResult($rs);
 	}
@@ -113,6 +124,9 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 	 * @return Model_JiraProject
 	 */
 	static function get($id) {
+		if(empty($id))
+			return null;
+		
 		$projects = DAO_JiraProject::getAll();
 		
 		if(isset($projects[$id]))
@@ -231,7 +245,7 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 		
 		$ids_list = implode(',', $ids);
 		
-		$db->Execute(sprintf("DELETE FROM jira_project WHERE id IN (%s)", $ids_list));
+		$db->ExecuteMaster(sprintf("DELETE FROM jira_project WHERE id IN (%s)", $ids_list));
 		
 		// Fire event
 		$eventMgr = DevblocksPlatform::getEventService();
@@ -384,9 +398,9 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 			$sort_sql;
 			
 		if($limit > 0) {
-			$rs = $db->SelectLimit($sql,$limit,$page*$limit) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+			$rs = $db->SelectLimit($sql,$limit,$page*$limit) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs mysqli_result */
 		} else {
-			$rs = $db->Execute($sql) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs ADORecordSet */
+			$rs = $db->ExecuteSlave($sql) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); /* @var $rs mysqli_result */
 			$total = mysqli_num_rows($rs);
 		}
 		
@@ -406,7 +420,7 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 					($has_multiple_values ? "SELECT COUNT(DISTINCT jira_project.id) " : "SELECT COUNT(jira_project.id) ").
 					$join_sql.
 					$where_sql;
-				$total = $db->GetOne($count_sql);
+				$total = $db->GetOneSlave($count_sql);
 			}
 		}
 		
@@ -1118,7 +1132,6 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 		$view->renderFilters = false;
 		$view->renderTemplate = 'contextlinks_chooser';
 		
-		C4_AbstractViewLoader::setView($view_id, $view);
 		return $view;
 	}
 	
@@ -1143,7 +1156,6 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 		$view->addParamsRequired($params_req, true);
 		
 		$view->renderTemplate = 'context';
-		C4_AbstractViewLoader::setView($view_id, $view);
 		return $view;
 	}
 	
