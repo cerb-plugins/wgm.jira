@@ -4,14 +4,14 @@
 	<name>JIRA Integration</name>
 	<description>This plugin provides integration with Atlassian JIRA via their REST API.  It is intended to be a bridge used by other plugins to communicate with JIRA services.</description>
 	<author>Webgroup Media, LLC.</author>
-	<version>0.0.52</version>
+	<version>0.0.53</version>
 	<link>http://www.cerbweb.com/book/latest/plugins/wgm.jira</link>
 	<image>plugin.png</image>
  
  	<!-- Requirements -->
 
 	<requires>
-		<app_version min="7.0.3" max="7.0.99" />
+		<app_version min="7.1" max="7.1.99" />
 		<php_extension name="curl" />
 	</requires>
  
@@ -91,6 +91,12 @@
 				<name>Context_JiraProject</name>
 			</class>
 			<params>
+				<param key="names">
+					<value>
+						<data key="jira project" value="singular" />
+						<data key="jira projects" value="plural" />
+					</value>
+				</param>
 				<param key="alias" value="jira_project" />
 				<param key="dao_class" value="DAO_JiraProject" />
 				<param key="view_class" value="View_JiraProject" />
@@ -115,6 +121,13 @@
 				<name>Context_JiraIssue</name>
 			</class>
 			<params>
+				<param key="names">
+					<value>
+						<data key="jira issue" value="singular" />
+						<data key="jira issues" value="plural" />
+						<data key="jira" value="singular proper" />
+					</value>
+				</param>
 				<param key="alias" value="jira_issue" />
 				<param key="dao_class" value="DAO_JiraIssue" />
 				<param key="view_class" value="View_JiraIssue" />

@@ -1240,7 +1240,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 				
 				foreach($values as $v) {
 					if(false != (@$project = DAO_JiraProject::getByJiraId($v)))
-						$strings[] = $project->name;
+						$strings[] = DevblocksPlatform::strEscapeHtml($project->name);
 				}
 				
 				echo implode(' or ', $strings);
@@ -1253,7 +1253,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 				
 				foreach($values as $v) {
 					if(isset($project->statuses[$v]))
-						$strings[] = $project->statuses[$v]['name'];
+						$strings[] = DevblocksPlatform::strEscapeHtml($project->statuses[$v]['name']);
 				}
 				
 				echo implode(' or ', $strings);
@@ -1266,7 +1266,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 				foreach($values as $v) {
 					foreach($projects as $project) {
 						if(isset($project->issue_types[$v]))
-							$strings[] = $project->issue_types[$v]['name'];
+							$strings[] = DevblocksPlatform::strEscapeHtml($project->issue_types[$v]['name']);
 					}
 				}
 				
