@@ -1461,6 +1461,7 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 			'id' => $jira_issue->id,
 			'name' => sprintf("[%s] %s", $jira_issue->jira_key, $jira_issue->summary),
 			'permalink' => $url,
+			'updated' => $jira_issue->updated,
 		);
 	}
 	
@@ -1700,7 +1701,7 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 		return $view;
 	}
 	
-	function renderPeekPopup($context_id=0, $view_id='') {
+	function renderPeekPopup($context_id=0, $view_id='', $edit=false) {
 		$tpl = DevblocksPlatform::getTemplateService();
 		$tpl->assign('view_id', $view_id);
 		

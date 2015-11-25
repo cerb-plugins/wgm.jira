@@ -960,6 +960,7 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 			'id' => $jira_project->id,
 			'name' => $jira_project->name,
 			'permalink' => $url,
+			'updated' => 0, // [TODO]
 		);
 	}
 	
@@ -1159,7 +1160,7 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 		return $view;
 	}
 	
-	function renderPeekPopup($context_id=0, $view_id='') {
+	function renderPeekPopup($context_id=0, $view_id='', $edit=false) {
 		$tpl = DevblocksPlatform::getTemplateService();
 		$tpl->assign('view_id', $view_id);
 		
