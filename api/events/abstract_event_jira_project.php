@@ -29,9 +29,7 @@ abstract class AbstractEvent_JiraProject extends Extension_DevblocksEvent {
 			// Pull the latest record
 			list($results) = DAO_JiraProject::search(
 				array(),
-				array(
-					//new DevblocksSearchCriteria(SearchFields_Task::IS_CLOSED,'=',0),
-				),
+				array(),
 				10,
 				0,
 				SearchFields_JiraProject::ID,

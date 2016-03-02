@@ -50,19 +50,19 @@ class PageSection_ProfilesJiraProject extends Extension_PageSection {
 		$properties = array();
 			
 		$properties['is_sync'] = array(
-			'label' => ucfirst($translate->_('dao.jira_project.is_sync')),
+			'label' => mb_ucfirst($translate->_('dao.jira_project.is_sync')),
 			'type' => Model_CustomField::TYPE_CHECKBOX,
 			'value' => $jira_project->is_sync,
 		);
 		
 		$properties['last_synced_at'] = array(
-			'label' => ucfirst($translate->_('dao.jira_project.last_synced_at')),
+			'label' => mb_ucfirst($translate->_('dao.jira_project.last_synced_at')),
 			'type' => Model_CustomField::TYPE_DATE,
 			'value' => $jira_project->last_synced_at,
 		);
 		
 		$properties['url'] = array(
-			'label' => ucfirst($translate->_('common.url')),
+			'label' => mb_ucfirst($translate->_('common.url')),
 			'type' => Model_CustomField::TYPE_URL,
 			'value' => $jira_project->url,
 		);
