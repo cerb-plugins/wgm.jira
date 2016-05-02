@@ -274,7 +274,7 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 	public static function getSearchQueryComponents($columns, $params, $sortBy=null, $sortAsc=null) {
 		$fields = SearchFields_JiraProject::getFields();
 		
-		list($tables,$wheres) = parent::_parseSearchParams($params, $columns, $fields, $sortBy);
+		list($tables,$wheres) = parent::_parseSearchParams($params, $columns, $fields, $sortBy, array(), 'jira_project.id');
 		
 		$select_sql = sprintf("SELECT ".
 			"jira_project.id as %s, ".
