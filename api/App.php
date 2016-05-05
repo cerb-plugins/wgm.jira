@@ -180,7 +180,7 @@ class WgmJira_API {
 		if(!empty($params) && is_array($params))
 			$url .= '?' . http_build_query($params);
 		
-		$ch = curl_init($url);
+		$ch = DevblocksPlatform::curlInit($url);
 		
 		$headers = array();
 		
@@ -189,9 +189,6 @@ class WgmJira_API {
 		if(!empty($this->_user)) {
 			$headers[]= 'Authorization: Basic ' . base64_encode(sprintf("%s:%s", $this->_user, $this->_password));
 		}
-		
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 		
 		switch($verb) {
 			case 'post':
@@ -212,7 +209,7 @@ class WgmJira_API {
 		if(!empty($headers))
 			curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 		
-		$out = curl_exec($ch);
+		$out = DevblocksPlatform::curlExec($ch);
 		
 		$info = curl_getinfo($ch);
 
@@ -243,7 +240,7 @@ class WgmJira_API {
 		if(!empty($params) && is_array($params))
 			$url .= '?' . http_build_query($params);
 		
-		$ch = curl_init($url);
+		$ch = DevblocksPlatform::curlInit($url);
 		
 		if(!empty($this->_user)) {
 			curl_setopt($ch, CURLOPT_HTTPHEADER, array(
@@ -251,8 +248,7 @@ class WgmJira_API {
 			));
 		}
 		
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-		$out = curl_exec($ch);
+		$out = DevblocksPlatform::curlExec($ch);
 
 		$info = curl_getinfo($ch);
 		
