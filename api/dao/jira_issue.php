@@ -310,7 +310,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 	public static function getSearchQueryComponents($columns, $params, $sortBy=null, $sortAsc=null) {
 		$fields = SearchFields_JiraIssue::getFields();
 		
-		list($tables,$wheres) = parent::_parseSearchParams($params, $columns, $fields, $sortBy, array(), 'jira_issue.id');
+		list($tables,$wheres) = parent::_parseSearchParams($params, $columns, 'SearchFields_JiraIssue', $sortBy);
 		
 		$select_sql = sprintf("SELECT ".
 			"jira_issue.id as %s, ".
@@ -339,19 +339,10 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 			(isset($tables['context_link']) ? "INNER JOIN context_link ON (context_link.to_context = 'cerberusweb.contexts.jira.issue' AND context_link.to_context_id = jira_issue.id) " : " ").
 			'';
 		
-		// Custom field joins
-		list($select_sql, $join_sql, $has_multiple_values) = self::_appendSelectJoinSqlForCustomFieldTables(
-			$tables,
-			$params,
-			'jira_issue.id',
-			$select_sql,
-			$join_sql
-		);
-		
 		$where_sql = "".
 			(!empty($wheres) ? sprintf("WHERE %s ",implode(' AND ',$wheres)) : "WHERE 1 ");
 			
-		$sort_sql = self::_buildSortClause($sortBy, $sortAsc, $fields);
+		$sort_sql = self::_buildSortClause($sortBy, $sortAsc, $fields, $select_sql, 'SearchFields_JiraIssue');
 	
 		$args = array(
 			'join_sql' => &$join_sql,
@@ -387,28 +378,6 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 		settype($param_key, 'string');
 		
 		switch($param_key) {
-			// [TODO] Attribute for project id
-			case SearchFields_JiraIssue::FULLTEXT_CONTENT:
-				$search = Extension_DevblocksSearchSchema::get(Search_JiraIssue::ID);
-				$query = $search->getQueryFromParam($param);
-				
-				if(false === ($ids = $search->query($query, array()))) {
-					$args['where_sql'] .= 'AND 0 ';
-				
-				} elseif(is_array($ids)) {
-					$args['where_sql'] .= sprintf('AND %s IN (%s) ',
-						$from_index,
-						implode(', ', (!empty($ids) ? $ids : array(-1)))
-					);
-					
-				} elseif(is_string($ids)) {
-					$args['join_sql'] .= sprintf("INNER JOIN %s ON (%s.id=jira_issue.id) ",
-						$ids,
-						$ids
-					);
-				}
-				break;
-			
 			case SearchFields_JiraIssue::VIRTUAL_CONTEXT_LINK:
 				$args['has_multiple_values'] = true;
 				self::_searchComponentsVirtualContextLinks($param, $from_context, $from_index, $args['join_sql'], $args['where_sql']);
@@ -416,11 +385,6 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 		
 			case SearchFields_JiraIssue::VIRTUAL_HAS_FIELDSET:
 				self::_searchComponentsVirtualHasFieldset($param, $from_context, $from_index, $args['join_sql'], $args['where_sql']);
-				break;
-		
-			case SearchFields_JiraIssue::VIRTUAL_WATCHERS:
-				$args['has_multiple_values'] = true;
-				self::_searchComponentsVirtualWatchers($param, $from_context, $from_index, $args['join_sql'], $args['where_sql'], $args['tables']);
 				break;
 		}
 	}
@@ -495,7 +459,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 
 };
 
-class SearchFields_JiraIssue implements IDevblocksSearchFields {
+class SearchFields_JiraIssue extends DevblocksSearchFields {
 	const ID = 'j_id';
 	const PROJECT_ID = 'j_project_id';
 	const JIRA_ID = 'j_jira_id';
@@ -516,10 +480,55 @@ class SearchFields_JiraIssue implements IDevblocksSearchFields {
 	const CONTEXT_LINK = 'cl_context_from';
 	const CONTEXT_LINK_ID = 'cl_context_from_id';
 	
+	static private $_fields = null;
+	
+	static function getPrimaryKey() {
+		return 'jira_issue.id';
+	}
+	
+	static function getCustomFieldContextKeys() {
+		return array(
+			'cerberusweb.contexts.jira.issue' => new DevblocksSearchFieldContextKeys('jira_issue.id', self::ID),
+			'cerberusweb.contexts.jira.project' => new DevblocksSearchFieldContextKeys('jira_issue.project_id', self::PROJECT_ID),
+		);
+	}
+	
+	static function getWhereSQL(DevblocksSearchCriteria $param) {
+		switch($param->field) {
+			case self::FULLTEXT_CONTENT:
+				return self::_getWhereSQLFromFulltextField($param, Search_JiraIssue::ID, self::getPrimaryKey());
+				break;
+				
+			case self::VIRTUAL_WATCHERS:
+				return self::_getWhereSQLFromWatchersField($param, 'cerberusweb.contexts.jira.issue', self::getPrimaryKey());
+				break;
+				
+			default:
+				if('cf_' == substr($param->field, 0, 3)) {
+					return self::_getWhereSQLFromCustomFields($param);
+				} else {
+					return $param->getWhereSQL(self::getFields(), self::getPrimaryKey());
+				}
+				break;
+		}
+		
+		return false;
+	}
+	
 	/**
 	 * @return DevblocksSearchField[]
 	 */
 	static function getFields() {
+		if(is_null(self::$_fields))
+			self::$_fields = self::_getFields();
+		
+		return self::$_fields;
+	}
+	
+	/**
+	 * @return DevblocksSearchField[]
+	 */
+	static function _getFields() {
 		$translate = DevblocksPlatform::getTranslationService();
 		
 		$columns = array(
@@ -550,9 +559,7 @@ class SearchFields_JiraIssue implements IDevblocksSearchFields {
 		
 		// Custom fields with fieldsets
 		
-		$custom_columns = DevblocksSearchField::getCustomSearchFieldsByContexts(array(
-			'cerberusweb.contexts.jira.issue',
-		));
+		$custom_columns = DevblocksSearchField::getCustomSearchFieldsByContexts(array_keys(self::getCustomFieldContextKeys()));
 		
 		if(is_array($custom_columns))
 			$columns = array_merge($columns, $custom_columns);
@@ -774,6 +781,9 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 			$this->renderSortAsc,
 			$this->renderTotal
 		);
+		
+		$this->_lazyLoadCustomFieldsIntoObjects($objects, 'SearchFields_JiraIssue');
+		
 		return $objects;
 	}
 	
@@ -899,7 +909,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 		$search_fields = SearchFields_JiraIssue::getFields();
 		
 		$fields = array(
-			'_fulltext' => 
+			'text' => 
 				array(
 					'type' => DevblocksSearchCriteria::TYPE_FULLTEXT,
 					'options' => array('param_key' => SearchFields_JiraIssue::FULLTEXT_CONTENT),
@@ -1001,7 +1011,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 		}
 		
 		if(!empty($ft_examples)) {
-			$fields['_fulltext']['examples'] = $ft_examples;
+			$fields['text']['examples'] = $ft_examples;
 			$fields['content']['examples'] = $ft_examples;
 		}
 		
@@ -1014,106 +1024,96 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 		ksort($fields);
 		
 		return $fields;
-	}	
+	}
 	
-	function getParamsFromQuickSearchFields($fields) {
-		$search_fields = $this->getQuickSearchFields();
-		$params = DevblocksSearchCriteria::getParamsFromQueryFields($fields, $search_fields);
-
-		// Handle virtual fields and overrides
-		if(is_array($fields))
-		foreach($fields as $k => $v) {
-			switch($k) {
-				case 'project':
-					$field_keys = array(
-						'project' => SearchFields_JiraIssue::PROJECT_ID,
-					);
-					
-					@$field_key = $field_keys[$k];
-					
-					$oper = DevblocksSearchCriteria::OPER_IN;
-					
-					$patterns = DevblocksPlatform::parseCsvString($v);
-					$projects = DAO_JiraProject::getAll();
-					$values = array();
-					
-					if(is_array($patterns))
-					foreach($patterns as $pattern) {
-						foreach($projects as $project) {
-							if(false !== stripos($project->name, $pattern) || false !== stripos($project->jira_key, $pattern))
-								$values[$project->jira_id] = true;
-						}
+	function getParamFromQuickSearchFieldTokens($field, $tokens) {
+		switch($field) {
+			case 'project':
+				$field_key = SearchFields_JiraIssue::PROJECT_ID;
+				$oper = null;
+				$patterns = array();
+				
+				CerbQuickSearchLexer::getOperArrayFromTokens($tokens, $oper, $patterns);
+				
+				$projects = DAO_JiraProject::getAll();
+				$values = array();
+				
+				if(is_array($patterns))
+				foreach($patterns as $pattern) {
+					foreach($projects as $project) {
+						if(false !== stripos($project->name, $pattern) || false !== stripos($project->jira_key, $pattern))
+							$values[$project->jira_id] = true;
 					}
-					
-					$param = new DevblocksSearchCriteria(
-						$field_key,
-						$oper,
-						array_keys($values)
-					);
-					$params[$field_key] = $param;
-					break;
-					
-				case 'status':
-					$field_keys = array(
-						'status' => SearchFields_JiraIssue::JIRA_STATUS_ID,
-					);
-					
-					@$field_key = $field_keys[$k];
-					
-					$oper = DevblocksSearchCriteria::OPER_IN;
-					
-					$patterns = DevblocksPlatform::parseCsvString($v);
-					$statuses = DAO_JiraProject::getAllStatuses();
-					$values = array();
-					
-					if(is_array($patterns))
-					foreach($patterns as $pattern) {
-						foreach($statuses as $status_id => $status) {
-							if(false !== stripos($status['name'], $pattern))
-								$values[$status_id] = true;
-						}
+				}
+				
+				return new DevblocksSearchCriteria(
+					$field_key,
+					$oper,
+					array_keys($values)
+				);
+				break;
+				
+			case 'status':
+				$field_key = SearchFields_JiraIssue::JIRA_STATUS_ID;
+				$oper = null;
+				$patterns = array();
+				
+				CerbQuickSearchLexer::getOperArrayFromTokens($tokens, $oper, $patterns);
+				
+				$statuses = DAO_JiraProject::getAllStatuses();
+				$values = array();
+				
+				if(is_array($patterns))
+				foreach($patterns as $pattern) {
+					foreach($statuses as $status_id => $status) {
+						if(false !== stripos($status['name'], $pattern))
+							$values[$status_id] = true;
 					}
-					
-					$param = new DevblocksSearchCriteria(
-						$field_key,
-						$oper,
-						array_keys($values)
-					);
-					$params[$field_key] = $param;
-					break;
-					
-				case 'type':
-					$field_keys = array(
-						'type' => SearchFields_JiraIssue::JIRA_TYPE_ID,
-					);
-					
-					@$field_key = $field_keys[$k];
-					
-					$oper = DevblocksSearchCriteria::OPER_IN;
-					
-					$patterns = DevblocksPlatform::parseCsvString($v);
-					$types = DAO_JiraProject::getAllTypes();
-					$values = array();
-					
-					if(is_array($patterns))
-					foreach($patterns as $pattern) {
-						foreach($types as $type_id => $type) {
-							if(false !== stripos($type['name'], $pattern))
-								$values[$type_id] = true;
-						}
+				}
+				
+				return new DevblocksSearchCriteria(
+					$field_key,
+					$oper,
+					array_keys($values)
+				);
+				break;
+				
+			case 'type':
+				$field_key = SearchFields_JiraIssue::JIRA_TYPE_ID;
+				$oper = null;
+				$patterns = array();
+				
+				CerbQuickSearchLexer::getOperArrayFromTokens($tokens, $oper, $patterns);
+				
+				$types = DAO_JiraProject::getAllTypes();
+				$values = array();
+				
+				if(is_array($patterns))
+				foreach($patterns as $pattern) {
+					foreach($types as $type_id => $type) {
+						if(false !== stripos($type['name'], $pattern))
+							$values[$type_id] = true;
 					}
-					
-					$param = new DevblocksSearchCriteria(
-						$field_key,
-						$oper,
-						array_keys($values)
-					);
-					$params[$field_key] = $param;
-					break;
-			}
+				}
+				
+				return new DevblocksSearchCriteria(
+					$field_key,
+					$oper,
+					array_keys($values)
+				);
+				break;
+			
+			case 'watchers':
+				return DevblocksSearchCriteria::getWatcherParamFromTokens(SearchFields_JiraIssue::VIRTUAL_WATCHERS, $tokens);
+				break;
+				
+			default:
+				$search_fields = $this->getQuickSearchFields();
+				return DevblocksSearchCriteria::getParamFromQueryFieldTokens($field, $tokens, $search_fields);
+				break;
 		}
 		
-		return $params;
+		return false;
 	}
 	
 	function render() {
