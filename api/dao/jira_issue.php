@@ -837,13 +837,14 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 	function getSubtotalCounts($column) {
 		$counts = array();
 		$fields = $this->getFields();
+		$context = Context_JiraIssue::ID;
 
 		if(!isset($fields[$column]))
 			return array();
 		
 		switch($column) {
 			case SearchFields_JiraIssue::JIRA_VERSIONS:
-				$counts = $this->_getSubtotalCountForStringColumn('DAO_JiraIssue', $column);
+				$counts = $this->_getSubtotalCountForStringColumn($context, $column);
 				break;
 				
 			case SearchFields_JiraIssue::PROJECT_ID:
@@ -853,7 +854,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 				foreach($projects as $project_id => $project)
 					$label_map[$project->jira_id] = $project->name;
 				
-				$counts = $this->_getSubtotalCountForStringColumn('DAO_JiraIssue', $column, $label_map, 'in', 'options[]');
+				$counts = $this->_getSubtotalCountForStringColumn($context, $column, $label_map, 'in', 'options[]');
 				break;
 				
 			case SearchFields_JiraIssue::JIRA_STATUS_ID:
@@ -867,7 +868,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 					$label_map[$status_id] = $status['name'];
 				}
 				
-				$counts = $this->_getSubtotalCountForStringColumn('DAO_JiraIssue', $column, $label_map, 'in', 'options[]');
+				$counts = $this->_getSubtotalCountForStringColumn($context, $column, $label_map, 'in', 'options[]');
 				break;
 				
 			case SearchFields_JiraIssue::JIRA_TYPE_ID:
@@ -878,25 +879,25 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 					$label_map[$type_id] = $type['name'];
 				}
 				
-				$counts = $this->_getSubtotalCountForStringColumn('DAO_JiraIssue', $column, $label_map, 'in', 'options[]');
+				$counts = $this->_getSubtotalCountForStringColumn($context, $column, $label_map, 'in', 'options[]');
 				break;
 				
 			case SearchFields_JiraIssue::VIRTUAL_CONTEXT_LINK:
-				$counts = $this->_getSubtotalCountForContextLinkColumn('DAO_JiraIssue', 'cerberusweb.contexts.jira.issue', $column);
+				$counts = $this->_getSubtotalCountForContextLinkColumn($context, $column);
 				break;
 
 			case SearchFields_JiraIssue::VIRTUAL_HAS_FIELDSET:
-				$counts = $this->_getSubtotalCountForHasFieldsetColumn('DAO_JiraIssue', 'cerberusweb.contexts.jira.issue', $column);
+				$counts = $this->_getSubtotalCountForHasFieldsetColumn($context, $column);
 				break;
 				
 			case SearchFields_JiraIssue::VIRTUAL_WATCHERS:
-				$counts = $this->_getSubtotalCountForWatcherColumn('DAO_JiraIssue', $column);
+				$counts = $this->_getSubtotalCountForWatcherColumn($context, $column);
 				break;
 			
 			default:
 				// Custom fields
 				if('cf_' == substr($column,0,3)) {
-					$counts = $this->_getSubtotalCountForCustomColumn('DAO_JiraIssue', $column, 'jira_issue.id');
+					$counts = $this->_getSubtotalCountForCustomColumn($context, $column);
 				}
 				
 				break;

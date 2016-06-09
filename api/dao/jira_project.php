@@ -644,31 +644,32 @@ class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotal
 	function getSubtotalCounts($column) {
 		$counts = array();
 		$fields = $this->getFields();
+		$context = Context_JiraProject::ID;
 
 		if(!isset($fields[$column]))
 			return array();
 		
 		switch($column) {
 			case SearchFields_JiraProject::URL:
-				$counts = $this->_getSubtotalCountForStringColumn('DAO_JiraProject', $column);
+				$counts = $this->_getSubtotalCountForStringColumn($context, $column);
 				break;
 				
 			case SearchFields_JiraProject::VIRTUAL_CONTEXT_LINK:
-				$counts = $this->_getSubtotalCountForContextLinkColumn('DAO_JiraProject', Context_JiraProject::ID, $column);
+				$counts = $this->_getSubtotalCountForContextLinkColumn($context, $column);
 				break;
 				
 			case SearchFields_JiraProject::VIRTUAL_HAS_FIELDSET:
-				$counts = $this->_getSubtotalCountForHasFieldsetColumn('DAO_JiraProject', Context_JiraProject::ID, $column);
+				$counts = $this->_getSubtotalCountForHasFieldsetColumn($context, $column);
 				break;
 				
 			case SearchFields_JiraProject::VIRTUAL_WATCHERS:
-				$counts = $this->_getSubtotalCountForWatcherColumn('DAO_JiraProject', $column);
+				$counts = $this->_getSubtotalCountForWatcherColumn($context, $column);
 				break;
 			
 			default:
 				// Custom fields
 				if('cf_' == substr($column,0,3)) {
-					$counts = $this->_getSubtotalCountForCustomColumn('DAO_JiraProject', $column, 'jira_project.id');
+					$counts = $this->_getSubtotalCountForCustomColumn($context, $column);
 				}
 				
 				break;
