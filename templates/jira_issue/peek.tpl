@@ -8,7 +8,9 @@
 <input type="hidden" name="do_delete" value="0">
 <input type="hidden" name="_csrf_token" value="{$session.csrf_token}">
 
+{if $model}
 {$jira_project = $model->getProject()}
+{/if}
 
 <fieldset class="peek">
 	<legend>{'common.properties'|devblocks_translate}</legend>

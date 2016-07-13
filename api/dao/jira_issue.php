@@ -582,7 +582,13 @@ class Search_JiraIssue extends Extension_DevblocksSearchSchema {
 		return array();
 	}
 	
-	public function query($query, $attributes=array(), $limit=500) {
+	public function getFields() {
+		return array(
+			'content',
+		);
+	}
+	
+	public function query($query, $attributes=array(), $limit=null) {
 		if(false == ($engine = $this->getEngine()))
 			return false;
 		
@@ -658,18 +664,18 @@ class Search_JiraIssue extends Extension_DevblocksSearchSchema {
 					$id
 				));
 				
-				$comments = $issue->getComments();
-				
 				$doc = array(
-					'key' => $issue->jira_key,
-					'summary' => $issue->summary,
-					'description' => $issue->getDescription(),
-					'comments' => array(),
+					'content' => implode("\n", array(
+						$issue->jira_key,
+						$issue->summary,
+						$issue->getDescription(),
+					))
 				);
-
+				
+				$comments = $issue->getComments();
 				if(is_array($comments))
 				foreach($comments as $comment) {
-					$doc['comments'] = array('content' => $comment['body']);
+					$doc['content'] .= "\n" . $comment['body'];
 				}
 				
 				if(false === ($engine->index($this, $id, $doc)))
