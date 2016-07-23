@@ -1018,7 +1018,6 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 		return $labels;
 	}
 	
-	// [TODO] Interface
 	function getDefaultProperties() {
 		return array(
 			'jira_key',

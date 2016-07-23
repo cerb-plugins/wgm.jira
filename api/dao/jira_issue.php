@@ -1503,7 +1503,6 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 		return $labels;
 	}
 	
-	// [TODO] Interface
 	function getDefaultProperties() {
 		return array(
 			'project__label',
