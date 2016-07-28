@@ -1,8 +1,8 @@
 {$view_context = 'cerberusweb.contexts.jira.project'}
 {$view_fields = $view->getColumnsAvailable()}
-{assign var=results value=$view->getData()}
-{assign var=total value=$results[1]}
-{assign var=data value=$results[0]}
+{$results = $view->getData()}
+{$total = $results[1]}
+{$data = $results[0]}
 
 {include file="devblocks:cerberusweb.core::internal/views/view_marquee.tpl" view=$view}{$view_context = Context_JiraProject::ID}
 
@@ -69,13 +69,13 @@
 	{foreach from=$data item=result key=idx name=results}
 
 	{if $smarty.foreach.results.iteration % 2}
-		{assign var=tableRowClass value="even"}
+		{$tableRowClass = "even"}
 	{else}
-		{assign var=tableRowClass value="odd"}
+		{$tableRowClass = "odd"}
 	{/if}
 	<tbody style="cursor:pointer;">
 		<tr class="{$tableRowClass}">
-			<td align="center" rowspan="2" nowrap="nowrap" style="padding:5px;">
+			<td data-column="*_watchers" align="center" rowspan="2" nowrap="nowrap" style="padding:5px;">
 				{include file="devblocks:cerberusweb.core::internal/watchers/context_follow_button.tpl" context=$view_context context_id=$result.j_id}
 			</td>
 		</tr>
@@ -84,25 +84,25 @@
 			{if substr($column,0,3)=="cf_"}
 				{include file="devblocks:cerberusweb.core::internal/custom_fields/view/cell_renderer.tpl"}
 			{elseif $column == "j_name"}
-			<td>
+			<td data-column="{$column}">
 				<input type="checkbox" name="row_id[]" value="{$result.j_id}" style="display:none;">
 				<a href="{devblocks_url}c=profiles&type=jira_project&id={$result.j_id}-{$result.j_name|devblocks_permalink}{/devblocks_url}" class="subject">{$result.j_name}</a>
 				<button type="button" class="peek" onclick="genericAjaxPopup('peek','c=internal&a=showPeekPopup&context={$view_context}&context_id={$result.j_id}&view_id={$view->id}',null,false,'550');"><span class="glyphicons glyphicons-new-window-alt"></span></button>
 			</td>
 			{elseif $column=="j_is_sync"}
-				<td>
+				<td data-column="{$column}">
 					{if $result.j_is_sync}
 						<span class="glyphicons glyphicons-circle-ok" style="font-size:16px;color:rgb(80,80,80);"></span>
 					{/if}
 				</td>
 			{elseif $column == "j_last_synced_at"}
-				<td title="{$result.$column|devblocks_date}">
+				<td data-column="{$column}" title="{$result.$column|devblocks_date}">
 					{if !empty($result.$column)}
 						{$result.$column|devblocks_prettytime}&nbsp;
 					{/if}
 				</td>
 			{else}
-				<td>{$result.$column}</td>
+				<td data-column="{$column}">{$result.$column}</td>
 			{/if}
 		{/foreach}
 		</tr>

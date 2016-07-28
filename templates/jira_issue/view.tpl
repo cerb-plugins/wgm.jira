@@ -1,8 +1,8 @@
 {$view_context = 'cerberusweb.contexts.jira.issue'}
 {$view_fields = $view->getColumnsAvailable()}
-{assign var=results value=$view->getData()}
-{assign var=total value=$results[1]}
-{assign var=data value=$results[0]}
+{$results = $view->getData()}
+{$total = $results[1]}
+{$data = $results[0]}
 
 {include file="devblocks:cerberusweb.core::internal/views/view_marquee.tpl" view=$view}
 
@@ -71,16 +71,16 @@
 	{$project = DAO_JiraProject::getByJiraId($result.j_project_id)}
 
 	{if $smarty.foreach.results.iteration % 2}
-		{assign var=tableRowClass value="even"}
+		{$tableRowClass = "even"}
 	{else}
-		{assign var=tableRowClass value="odd"}
+		{$tableRowClass = "odd"}
 	{/if}
 	<tbody style="cursor:pointer;">
 		<tr class="{$tableRowClass}">
-			<td align="center" rowspan="2" nowrap="nowrap" style="padding:5px;">
+			<td data-column="*_watchers" align="center" rowspan="2" nowrap="nowrap" style="padding:5px;">
 				{include file="devblocks:cerberusweb.core::internal/watchers/context_follow_button.tpl" context=$view_context context_id=$result.j_id}
 			</td>
-			<td colspan="{$smarty.foreach.headers.total}">
+			<td data-column="label" colspan="{$smarty.foreach.headers.total}">
 				<input type="checkbox" name="row_id[]" value="{$result.j_id}" style="display:none;">
 				<a href="{devblocks_url}c=profiles&type=jira_issue&id={$result.j_id}-{$result.j_summary|devblocks_permalink}{/devblocks_url}" class="subject">{$result.j_summary}</a>
 				<button type="button" class="peek" onclick="genericAjaxPopup('peek','c=internal&a=showPeekPopup&context={$view_context}&context_id={$result.j_id}&view_id={$view->id}',null,false,'550');"><span class="glyphicons glyphicons-new-window-alt"></span></button>
@@ -92,33 +92,33 @@
 			{if substr($column,0,3)=="cf_"}
 				{include file="devblocks:cerberusweb.core::internal/custom_fields/view/cell_renderer.tpl"}
 			{elseif $column=="j_project_id"}
-				<td>
+				<td data-column="{$column}">
 					{if !empty($project)}{$project->name}{/if}
 				</td>
 			{elseif $column=="j_jira_type_id"}
-				<td>
+				<td data-column="{$column}">
 					{if !empty($project)}
 						{$type = $project->issue_types.{$result.$column}}
 						{if !empty($type)}{$type.name}{/if}
 					{/if}
 				</td>
 			{elseif $column=="j_jira_status_id"}
-				<td>
+				<td data-column="{$column}">
 					{if !empty($project)}
 						{$status = $project->statuses.{$result.$column}}
 						{if !empty($status)}{$status.name}{/if}
 					{/if}
 				</td>
 			{elseif $column=="j_jira_versions"}
-				<td>{$result.$column}</td>
+				<td data-column="{$column}">{$result.$column}</td>
 			{elseif $column=="j_created" || $column=="j_updated"}
-				<td title="{$result.$column|devblocks_date}">
+				<td data-column="{$column}" title="{$result.$column|devblocks_date}">
 					{if !empty($result.$column)}
 						{$result.$column|devblocks_prettytime}&nbsp;
 					{/if}
 				</td>
 			{elseif $column=="j_jira_key"}
-				<td>
+				<td data-column="{$column}">
 					{$base_url = DevblocksPlatform::getPluginSetting('wgm.jira','base_url','')}
 					{if !empty($base_url)}
 						<a href="{$base_url}/browse/{$result.j_jira_key}" target="_blank">{$result.$column}</a>
@@ -127,7 +127,7 @@
 					{/if}
 				</td>
 			{else}
-				<td>{$result.$column}</td>
+				<td data-column="{$column}">{$result.$column}</td>
 			{/if}
 		{/foreach}
 		</tr>
