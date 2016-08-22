@@ -11,6 +11,7 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 	const STATUSES_JSON = 'statuses_json';
 	const VERSIONS_JSON = 'versions_json';
 	const LAST_SYNCED_AT = 'last_synced_at';
+	const LAST_SYNCED_CHECKPOINT = 'last_synced_checkpoint';
 	const IS_SYNC = 'is_sync';
 
 	static function create($fields) {
@@ -107,7 +108,7 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 		list($where_sql, $sort_sql, $limit_sql) = self::_getWhereSQL($where, $sortBy, $sortAsc, $limit);
 		
 		// SQL
-		$sql = "SELECT id, jira_id, jira_key, name, url, issuetypes_json, statuses_json, versions_json, last_synced_at, is_sync ".
+		$sql = "SELECT id, jira_id, jira_key, name, url, issuetypes_json, statuses_json, versions_json, last_synced_at, last_synced_checkpoint, is_sync ".
 			"FROM jira_project ".
 			$where_sql.
 			$sort_sql.
@@ -215,13 +216,14 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 		
 		while($row = mysqli_fetch_assoc($rs)) {
 			$object = new Model_JiraProject();
-			$object->id = $row['id'];
+			$object->id = intval($row['id']);
 			$object->jira_id = $row['jira_id'];
 			$object->jira_key = $row['jira_key'];
 			$object->name = $row['name'];
 			$object->url = $row['url'];
-			$object->last_synced_at = $row['last_synced_at'];
-			$object->is_sync = $row['is_sync'];
+			$object->last_synced_at = intval($row['last_synced_at']);
+			$object->last_synced_checkpoint = intval($row['last_synced_checkpoint']);
+			$object->is_sync = intval($row['is_sync']) ? true : false;
 			
 			if(false !== (@$obj = json_decode($row['issuetypes_json'], true))) {
 				$object->issue_types = $obj;
@@ -527,16 +529,16 @@ class SearchFields_JiraProject extends DevblocksSearchFields {
 };
 
 class Model_JiraProject {
-	public $id;
-	public $jira_id;
-	public $jira_key;
-	public $name;
-	public $url;
+	public $id = 0;
+	public $jira_id = null;
+	public $jira_key = null;
+	public $name = null;
+	public $url = null;
 	public $issue_types = array();
 	public $statuses = array();
 	public $versions = array();
-	public $last_synced_at;
-	public $is_sync;
+	public $last_synced_at = 0;
+	public $is_sync = false;
 };
 
 class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotals, IAbstractView_QuickSearch {

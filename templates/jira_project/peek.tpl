@@ -12,34 +12,23 @@
 	<legend>{'common.properties'|devblocks_translate}</legend>
 	
 	<table cellspacing="0" cellpadding="2" border="0" width="98%">
-		<tr>
-			<td width="1%" nowrap="nowrap"><b>{'common.name'|devblocks_translate}:</b></td>
-			<td width="99%">
-				{$model->name}
-			</td>
-		</tr>
+		<tbody>
+			<tr>
+				<td width="1%" nowrap="nowrap">{'common.name'|devblocks_translate}:</td>
+				<td width="99%">
+					{$model->name}
+				</td>
+			</tr>
+			
+			<tr>
+				<td width="1%" nowrap="nowrap" valign="top">{'dao.jira_project.is_sync'|devblocks_translate|capitalize}: </td>
+				<td width="99%">
+					<label><input type="radio" name="is_sync" value="0" {if empty($model->is_sync)}checked="checked"{/if}> {'common.no'|devblocks_translate|capitalize}</label>
+					<label><input type="radio" name="is_sync" value="1" {if $model->is_sync}checked="checked"{/if}> {'common.yes'|devblocks_translate|capitalize}</label>
+				</td>
+			</tr>
+		</tbody>
 		
-		<tr>
-			<td width="1%" nowrap="nowrap" align="right" valign="top">{'dao.jira_project.is_sync'|devblocks_translate|capitalize}: </td>
-			<td width="99%">
-				<label><input type="radio" name="is_sync" value="1" {if $model->is_sync}checked="checked"{/if}> {'common.yes'|devblocks_translate|capitalize}</label>
-				<label><input type="radio" name="is_sync" value="0" {if empty($model->is_sync)}checked="checked"{/if}> {'common.no'|devblocks_translate|capitalize}</label>
-			</td>
-		</tr>
-		
-		{* Watchers *}
-		<tr>
-			<td width="0%" nowrap="nowrap" valign="top" align="right">{'common.watchers'|devblocks_translate|capitalize}: </td>
-			<td width="100%">
-				{if empty($model->id)}
-					<button type="button" class="chooser_watcher"><span class="glyphicons glyphicons-search"></span></button>
-					<ul class="chooser-container bubbles" style="display:block;"></ul>
-				{else}
-					{$object_watchers = DAO_ContextLink::getContextLinks('cerberusweb.contexts.jira.project', array($model->id), CerberusContexts::CONTEXT_WORKER)}
-					{include file="devblocks:cerberusweb.core::internal/watchers/context_follow_button.tpl" context='cerberusweb.contexts.jira.project' context_id=$model->id full=true}
-				{/if}
-			</td>
-		</tr>
 	</table>
 	
 </fieldset>
@@ -91,15 +80,11 @@
 	var $popup = genericAjaxPopupFetch('peek');
 	
 	$popup.one('popup_open', function(event,ui) {
-		var $textarea = $(this).find('textarea[name=comment]');
+		var $textarea = $popup.find('textarea[name=comment]');
 		
-		$(this).dialog('option','title',"{'Jira Project'|escape:'javascript' nofilter}");
-		
-		$(this).find('button.chooser_watcher').each(function() {
-			ajax.chooser(this,'cerberusweb.contexts.worker','add_watcher_ids', { autocomplete:true });
-		});
-		
-		$(this).find('input:text:first').focus();
+		$popup.dialog('option','title',"{'Jira Project'|escape:'javascript' nofilter}");
+
+		$popup.find('input:text:first').focus();
 
 		// @mentions
 		
