@@ -284,9 +284,6 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 			"jira_project.jira_key as %s, ".
 			"jira_project.name as %s, ".
 			"jira_project.url as %s, ".
-			"jira_project.issuetypes_json as %s, ".
-			"jira_project.statuses_json as %s, ".
-			"jira_project.versions_json as %s, ".
 			"jira_project.last_synced_at as %s, ".
 			"jira_project.is_sync as %s ",
 				SearchFields_JiraProject::ID,
@@ -294,9 +291,6 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 				SearchFields_JiraProject::JIRA_KEY,
 				SearchFields_JiraProject::NAME,
 				SearchFields_JiraProject::URL,
-				SearchFields_JiraProject::ISSUETYPES_JSON,
-				SearchFields_JiraProject::STATUSES_JSON,
-				SearchFields_JiraProject::VERSIONS_JSON,
 				SearchFields_JiraProject::LAST_SYNCED_AT,
 				SearchFields_JiraProject::IS_SYNC
 			);
