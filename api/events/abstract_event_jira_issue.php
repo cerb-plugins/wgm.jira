@@ -82,7 +82,7 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 		
 		$merge_labels = array();
 		$merge_values = array();
-		CerberusContexts::getContext('cerberusweb.contexts.jira.issue', $model, $merge_labels, $merge_values, null, true);
+		CerberusContexts::getContext(Context_JiraIssue::ID, $model, $merge_labels, $merge_values, null, true);
 
 			// Merge
 			CerberusContexts::merge(
@@ -144,7 +144,7 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 	}
 	
 	function renderSimulatorTarget($trigger, $event_model) {
-		$context = 'cerberusweb.contexts.jira.issue';
+		$context = Context_JiraIssue::ID;
 		$context_id = $event_model->params['context_id'];
 		DevblocksEventHelper::renderSimulatorTarget($context, $context_id, $trigger, $event_model);
 	}
@@ -153,11 +153,11 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 		$vals = array(
 			'issue_id' => array(
 				'label' => 'Issue',
-				'context' => 'cerberusweb.contexts.jira.issue',
+				'context' => Context_JiraIssue::ID,
 			),
 			'issue_project_id' => array(
 				'label' => 'Issue project',
-				'context' => 'cerberusweb.contexts.jira.project',
+				'context' => Context_JiraProject::ID,
 			),
 			'issue_project_watchers' => array(
 				'label' => 'Issue project watchers',
@@ -239,11 +239,11 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 
 				switch($as_token) {
 					case 'issue_link':
-						$from_context = 'cerberusweb.contexts.jira.issue';
+						$from_context = Context_JiraIssue::ID;
 						@$from_context_id = $dict->issue_id;
 						break;
 					case 'issue_project_link':
-						$from_context = 'cerberusweb.contexts.jira.project';
+						$from_context = Context_JiraProject::ID;
 						@$from_context_id = $dict->issue_project_id;
 						break;
 					default:

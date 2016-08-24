@@ -411,7 +411,10 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 				DAO_JiraProject::JIRA_ID => $project->id,
 				DAO_JiraProject::JIRA_KEY => $project->key,
 				DAO_JiraProject::NAME => $project->name,
-				DAO_JiraProject::URL => $project->url,
+				DAO_JiraProject::URL => isset($project->url) ? $project->url : '',
+				DAO_JiraProject::ISSUETYPES_JSON => json_encode(array()),
+				DAO_JiraProject::STATUSES_JSON => json_encode(array()),
+				DAO_JiraProject::VERSIONS_JSON => json_encode(array()),
 			);
 			
 			if(!empty($local_project)) {

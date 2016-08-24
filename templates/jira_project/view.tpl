@@ -95,7 +95,7 @@
 						<span class="glyphicons glyphicons-circle-ok" style="font-size:16px;color:rgb(80,80,80);"></span>
 					{/if}
 				</td>
-			{elseif $column == "j_last_synced_at"}
+			{elseif in_array($column, ["j_last_synced_at", "j_last_checked_at"])}
 				<td data-column="{$column}" title="{$result.$column|devblocks_date}">
 					{if !empty($result.$column)}
 						{$result.$column|devblocks_prettytime}&nbsp;
