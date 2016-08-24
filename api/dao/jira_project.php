@@ -146,10 +146,26 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 	
 	/**
 	 *
-	 * @param unknown_type $remote_id
+	 * @param integer $remote_id
 	 * @return Model_JiraProject|null
 	 */
-	static function getByJiraId($remote_id) {
+	static function getByJiraId($remote_id, $nocache=false) {
+		// If we're ignoring the cache, check the database directly
+		if($nocache) {
+			$results = DAO_JiraProject::getWhere(
+				sprintf("%s = %d",
+					SearchFields_JiraProject::JIRA_ID,
+					$remote_id
+				)
+			);
+			
+			if(is_array($results) && !empty($results))
+				return array_shift($results);
+			
+			return null;
+		}
+		
+		
 		$projects = DAO_JiraProject::getAll();
 		
 		foreach($projects as $project_id => $project) { /* @var $project Model_JiraProject */

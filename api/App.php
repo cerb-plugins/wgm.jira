@@ -417,7 +417,7 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 				$versions[$object->id] = $object;
 			}
 				
-			$local_project = DAO_JiraProject::getByJiraId($project->id);
+			$local_project = DAO_JiraProject::getByJiraId($project->id, true);
 
 			$fields = array(
 				DAO_JiraProject::JIRA_ID => $project->id,
