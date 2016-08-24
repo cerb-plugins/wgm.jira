@@ -424,12 +424,15 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 				DAO_JiraProject::JIRA_KEY => $project->key,
 				DAO_JiraProject::NAME => $project->name,
 				DAO_JiraProject::URL => $project->url,
-				DAO_JiraProject::ISSUETYPES_JSON => json_encode($issue_types),
-				DAO_JiraProject::STATUSES_JSON => json_encode($statuses),
-				DAO_JiraProject::VERSIONS_JSON => json_encode($versions),
 			);
 			
 			if(!empty($local_project)) {
+				// Only store the JSON info if we're syncing this project
+				if($local_project->is_sync) {
+					$fields[DAO_JiraProject::ISSUETYPES_JSON] = json_encode($issue_types);
+					$fields[DAO_JiraProject::STATUSES_JSON] = json_encode($statuses);
+					$fields[DAO_JiraProject::VERSIONS_JSON] = json_encode($versions);
+				}
 				DAO_JiraProject::update($local_project->id, $fields);
 		
 			} else {
