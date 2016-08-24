@@ -393,6 +393,7 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 			}
 		
 		// Sync projects
+		$logger->info("Requesting createmeta manifest");
 		$response = $jira->getIssueCreateMeta();
 		$projects = $response->projects;
 		
@@ -402,23 +403,10 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 			if(false == ($project = $jira->getProject($project_meta->key)))
 				continue;
 			
-			$issue_types = array();
-			$versions = array();
-				
-			if(isset($project_meta->issuetypes) && is_array($project_meta->issuetypes))
-				foreach($project_meta->issuetypes as $object) {
-				unset($object->self);
-				$issue_types[$object->id] = $object;
-			}
-
-			if(isset($project->versions) && is_array($project->versions))
-				foreach($project->versions as $object) {
-				unset($object->self);
-				$versions[$object->id] = $object;
-			}
-				
+			$logger->info(sprintf("Updating local project record for %s [%s]", $project->name, $project->key));
+			
 			$local_project = DAO_JiraProject::getByJiraId($project->id, true);
-
+			
 			$fields = array(
 				DAO_JiraProject::JIRA_ID => $project->id,
 				DAO_JiraProject::JIRA_KEY => $project->key,
@@ -429,6 +417,21 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 			if(!empty($local_project)) {
 				// Only store the JSON info if we're syncing this project
 				if($local_project->is_sync) {
+					$issue_types = array();
+					$versions = array();
+						
+					if(isset($project_meta->issuetypes) && is_array($project_meta->issuetypes))
+						foreach($project_meta->issuetypes as $object) {
+						unset($object->self);
+						$issue_types[$object->id] = $object;
+					}
+		
+					if(isset($project->versions) && is_array($project->versions))
+						foreach($project->versions as $object) {
+						unset($object->self);
+						$versions[$object->id] = $object;
+					}
+					
 					$fields[DAO_JiraProject::ISSUETYPES_JSON] = json_encode($issue_types);
 					$fields[DAO_JiraProject::STATUSES_JSON] = json_encode($statuses);
 					$fields[DAO_JiraProject::VERSIONS_JSON] = json_encode($versions);
@@ -436,15 +439,28 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 				DAO_JiraProject::update($local_project->id, $fields);
 		
 			} else {
+				$logger->info(sprintf("Creating new local project record for %s [%s]", $project->name, $project->key));
 				$local_id = DAO_JiraProject::create($fields);
 				$local_project = DAO_JiraProject::get($local_id);
 			}
-			
+		}
+		
+		// Pull the 10 least recently checked projects
+		
+		$local_projects = DAO_JiraProject::getWhere(
+			null,
+			DAO_JiraProject::LAST_CHECKED_AT,
+			true,
+			10
+		);
+		
+		if(is_array($local_projects))
+		foreach($local_projects as $local_project) {
 			if($local_project->is_sync) {
-				$logger->info(sprintf("Syncing project [%s] %s", $local_project->jira_key, $local_project->name));
+				$logger->info(sprintf("Syncing issues for project %s [%s]", $local_project->name, $local_project->jira_key));
 			
 				$startAt = 0;
-				$maxResults = 100;
+				$maxResults = 25;
 				
 				$last_synced_at = $local_project->last_synced_at;
 				$last_synced_checkpoint = $local_project->last_synced_checkpoint;
@@ -456,30 +472,29 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 					$last_synced_at
 				);
 				
-				if(false == ($response = $jira->getIssues(
+				$logger->info(sprintf("JQL: %s", $jql));
+				
+				if(false != ($response = $jira->getIssues(
 					$jql,
 					$maxResults,
 					'summary,created,updated,description,status,issuetype,fixVersions,project,comment',
 					$startAt
 				)
 				)) {
-					continue;
-				}
-		
-				foreach($response->issues as $object) {
-					$local_issue_id = WgmJira_API::importIssue($object);
-
-					$last_synced_at = strtotime($object->fields->updated);
-					$last_synced_checkpoint = strtotime($object->fields->created);
+					foreach($response->issues as $object) {
+						$local_issue_id = WgmJira_API::importIssue($object);
+						
+						$last_synced_at = strtotime($object->fields->updated);
+						$last_synced_checkpoint = strtotime($object->fields->created);
+					}
 				}
 		
 				// Set the last updated date on the project
-				if(!empty($last_synced_at)) {
-					DAO_JiraProject::update($local_project->id, array(
-						DAO_JiraProject::LAST_SYNCED_AT => $last_synced_at,
-						DAO_JiraProject::LAST_SYNCED_CHECKPOINT => $last_synced_checkpoint,
-					));
-				}
+				DAO_JiraProject::update($local_project->id, array(
+					DAO_JiraProject::LAST_CHECKED_AT => time(),
+					DAO_JiraProject::LAST_SYNCED_AT => $last_synced_at,
+					DAO_JiraProject::LAST_SYNCED_CHECKPOINT => $last_synced_checkpoint,
+				));
 			}
 		}
 	}

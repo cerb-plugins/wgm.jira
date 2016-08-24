@@ -13,8 +13,14 @@ if(!isset($tables['jira_project'])) {
 
 list($columns, $indexes) = $db->metaTable('jira_project');
 
+if(!isset($columns['last_checked_at']))
+	$changes[] = 'ADD COLUMN last_checked_at INT UNSIGNED NOT NULL DEFAULT 0';
+
 if(!isset($columns['last_synced_checkpoint']))
 	$changes[] = 'ADD COLUMN last_synced_checkpoint INT UNSIGNED NOT NULL DEFAULT 0';
+
+if(!isset($indexes['last_checked_at']))
+	$changes[] = 'ADD INDEX (last_checked_at)';
 
 if(!isset($indexes['last_synced_at']))
 	$changes[] = 'ADD INDEX (last_synced_at)';

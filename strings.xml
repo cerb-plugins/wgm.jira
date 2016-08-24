@@ -58,6 +58,9 @@
 		<tu tuid='dao.jira_project.versions_json'>
 			<tuv xml:lang="en_US"><seg>Versions</seg></tuv>
 		</tu>
+		<tu tuid='dao.jira_project.last_checked_at'>
+			<tuv xml:lang="en_US"><seg>Last Checked At</seg></tuv>
+		</tu>
 		<tu tuid='dao.jira_project.last_synced_at'>
 			<tuv xml:lang="en_US"><seg>Last Synced At</seg></tuv>
 		</tu>
