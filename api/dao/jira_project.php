@@ -15,14 +15,14 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 	const LAST_SYNCED_CHECKPOINT = 'last_synced_checkpoint';
 	const IS_SYNC = 'is_sync';
 
-	static function create($fields) {
+	static function create($fields, $check_deltas=true) {
 		$db = DevblocksPlatform::getDatabaseService();
 		
 		$sql = "INSERT INTO jira_project () VALUES ()";
 		$db->ExecuteMaster($sql);
 		$id = $db->LastInsertId();
 		
-		self::update($id, $fields);
+		self::update($id, $fields, $check_deltas);
 		
 		return $id;
 	}

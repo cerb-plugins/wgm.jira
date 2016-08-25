@@ -438,11 +438,12 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 					$fields[DAO_JiraProject::STATUSES_JSON] = json_encode($statuses);
 					$fields[DAO_JiraProject::VERSIONS_JSON] = json_encode($versions);
 				}
-				DAO_JiraProject::update($local_project->id, $fields);
+				
+				DAO_JiraProject::update($local_project->id, $fields, false);
 		
 			} else {
 				$logger->info(sprintf("Creating new local project record for %s [%s]", $project->name, $project->key));
-				$local_id = DAO_JiraProject::create($fields);
+				$local_id = DAO_JiraProject::create($fields, false);
 				$local_project = DAO_JiraProject::get($local_id);
 			}
 		}
