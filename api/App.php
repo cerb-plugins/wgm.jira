@@ -376,8 +376,8 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 
 	function _synchronize() {
 		$skip_projects = DevblocksPlatform::importGPC($_REQUEST['skip_projects'],'bool', false);
-		$max_projects = DevblocksPlatform::importGPC($_REQUEST['max_projects'],'integer', 10);
-		$max_issues = DevblocksPlatform::importGPC($_REQUEST['max_issues'],'integer', 25);
+		$max_projects = DevblocksPlatform::importGPC($_REQUEST['max_projects'],'integer', 20);
+		$max_issues = DevblocksPlatform::importGPC($_REQUEST['max_issues'],'integer', 20);
 		
 		$jira = WgmJira_API::getInstance();
 		$logger = DevblocksPlatform::getConsoleLog("JIRA");
@@ -460,7 +460,7 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 		// Pull the 10 least recently checked projects
 		
 		$local_projects = DAO_JiraProject::getWhere(
-			null,
+			sprintf("%s = 1", DAO_JiraProject::IS_SYNC),
 			DAO_JiraProject::LAST_CHECKED_AT,
 			true,
 			$max_projects
