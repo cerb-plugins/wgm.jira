@@ -375,81 +375,86 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 	}
 
 	function _synchronize() {
+		$skip_projects = DevblocksPlatform::importGPC($_REQUEST['skip_projects'],'bool', false);
+		
 		$jira = WgmJira_API::getInstance();
 		$logger = DevblocksPlatform::getConsoleLog("JIRA");
 
-		// Sync statuses
-		if(false == ($results = $jira->getStatuses()))
-			return;
-		
-		$statuses = array();
-		
-		if(is_array($results))
-			foreach($results as $object) {
-				unset($object->description);
-				unset($object->iconUrl);
-				unset($object->self);
-				$statuses[$object->id] = $object;
-			}
-		
-		// Sync projects
-		$logger->info("Requesting createmeta manifest");
-		$response = $jira->getIssueCreateMeta();
-		
-		if(is_array($response->projects))
-		foreach($response->projects as $project_meta) {
-			// Pull the full record for each project and merge with createmeta
-			if(false == ($project = $jira->getProject($project_meta->key)))
-				continue;
+		if(!$skip_projects) {
+			// Sync statuses
+			if(false == ($results = $jira->getStatuses()))
+				return;
 			
-			$logger->info(sprintf("Updating local project record for %s [%s]", $project->name, $project->key));
+			$statuses = array();
 			
-			$local_project = DAO_JiraProject::getByJiraId($project->id, true);
+			if(is_array($results))
+				foreach($results as $object) {
+					unset($object->description);
+					unset($object->iconUrl);
+					unset($object->self);
+					$statuses[$object->id] = $object;
+				}
 			
-			$fields = array(
-				DAO_JiraProject::JIRA_ID => $project->id,
-				DAO_JiraProject::JIRA_KEY => $project->key,
-				DAO_JiraProject::NAME => $project->name,
-				DAO_JiraProject::URL => isset($project->url) ? $project->url : '',
-				DAO_JiraProject::ISSUETYPES_JSON => json_encode(array()),
-				DAO_JiraProject::STATUSES_JSON => json_encode(array()),
-				DAO_JiraProject::VERSIONS_JSON => json_encode(array()),
-			);
+			// Sync projects
+			$logger->info("Requesting createmeta manifest");
+			$response = $jira->getIssueCreateMeta();
 			
-			if(!empty($local_project)) {
-				// Only store the JSON info if we're syncing this project
-				if($local_project->is_sync) {
-					$issue_types = array();
-					$versions = array();
+			if(is_array($response->projects))
+			foreach($response->projects as $project_meta) {
+				// Pull the full record for each project and merge with createmeta
+				if(false == ($project = $jira->getProject($project_meta->key)))
+					continue;
+				
+				$logger->info(sprintf("Updating local project record for %s [%s]", $project->name, $project->key));
+				
+				$local_project = DAO_JiraProject::getByJiraId($project->id, true);
+				
+				$fields = array(
+					DAO_JiraProject::JIRA_ID => $project->id,
+					DAO_JiraProject::JIRA_KEY => $project->key,
+					DAO_JiraProject::NAME => $project->name,
+					DAO_JiraProject::URL => isset($project->url) ? $project->url : '',
+					DAO_JiraProject::ISSUETYPES_JSON => json_encode(array()),
+					DAO_JiraProject::STATUSES_JSON => json_encode(array()),
+					DAO_JiraProject::VERSIONS_JSON => json_encode(array()),
+				);
+				
+				if(!empty($local_project)) {
+					// Only store the JSON info if we're syncing this project
+					if($local_project->is_sync) {
+						$issue_types = array();
+						$versions = array();
+							
+						if(isset($project_meta->issuetypes) && is_array($project_meta->issuetypes))
+							foreach($project_meta->issuetypes as $object) {
+							unset($object->self);
+							$issue_types[$object->id] = $object;
+						}
+			
+						if(isset($project->versions) && is_array($project->versions))
+							foreach($project->versions as $object) {
+							unset($object->self);
+							$versions[$object->id] = $object;
+						}
 						
-					if(isset($project_meta->issuetypes) && is_array($project_meta->issuetypes))
-						foreach($project_meta->issuetypes as $object) {
-						unset($object->self);
-						$issue_types[$object->id] = $object;
-					}
-		
-					if(isset($project->versions) && is_array($project->versions))
-						foreach($project->versions as $object) {
-						unset($object->self);
-						$versions[$object->id] = $object;
+						$fields[DAO_JiraProject::ISSUETYPES_JSON] = json_encode($issue_types);
+						$fields[DAO_JiraProject::STATUSES_JSON] = json_encode($statuses);
+						$fields[DAO_JiraProject::VERSIONS_JSON] = json_encode($versions);
 					}
 					
-					$fields[DAO_JiraProject::ISSUETYPES_JSON] = json_encode($issue_types);
-					$fields[DAO_JiraProject::STATUSES_JSON] = json_encode($statuses);
-					$fields[DAO_JiraProject::VERSIONS_JSON] = json_encode($versions);
+					DAO_JiraProject::update($local_project->id, $fields, false);
+			
+				} else {
+					$logger->info(sprintf("Creating new local project record for %s [%s]", $project->name, $project->key));
+					$local_id = DAO_JiraProject::create($fields, false);
+					$local_project = DAO_JiraProject::get($local_id);
 				}
-				
-				DAO_JiraProject::update($local_project->id, $fields, false);
-		
-			} else {
-				$logger->info(sprintf("Creating new local project record for %s [%s]", $project->name, $project->key));
-				$local_id = DAO_JiraProject::create($fields, false);
-				$local_project = DAO_JiraProject::get($local_id);
 			}
+			
+			// [TODO] Flush context changes for DAO_Project (remove $check_deltas=false)
+			unset($response);
 		}
-		
-		unset($response);
-		
+			
 		// Pull the 10 least recently checked projects
 		
 		$local_projects = DAO_JiraProject::getWhere(
