@@ -395,10 +395,9 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 		// Sync projects
 		$logger->info("Requesting createmeta manifest");
 		$response = $jira->getIssueCreateMeta();
-		$projects = $response->projects;
 		
-		if(is_array($projects))
-		foreach($projects as $project_meta) {
+		if(is_array($response->projects))
+		foreach($response->projects as $project_meta) {
 			// Pull the full record for each project and merge with createmeta
 			if(false == ($project = $jira->getProject($project_meta->key)))
 				continue;
@@ -447,6 +446,8 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 				$local_project = DAO_JiraProject::get($local_id);
 			}
 		}
+		
+		unset($response);
 		
 		// Pull the 10 least recently checked projects
 		
