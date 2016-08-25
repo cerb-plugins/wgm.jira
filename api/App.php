@@ -377,6 +377,7 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 	function _synchronize() {
 		$skip_projects = DevblocksPlatform::importGPC($_REQUEST['skip_projects'],'bool', false);
 		$max_projects = DevblocksPlatform::importGPC($_REQUEST['max_projects'],'integer', 10);
+		$max_issues = DevblocksPlatform::importGPC($_REQUEST['max_issues'],'integer', 25);
 		
 		$jira = WgmJira_API::getInstance();
 		$logger = DevblocksPlatform::getConsoleLog("JIRA");
@@ -471,7 +472,7 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 				$logger->info(sprintf("Syncing issues for project %s [%s]", $local_project->name, $local_project->jira_key));
 			
 				$startAt = 0;
-				$maxResults = 25;
+				$maxResults = $max_issues;
 				
 				$last_synced_at = $local_project->last_synced_at;
 				$last_synced_checkpoint = $local_project->last_synced_checkpoint;
