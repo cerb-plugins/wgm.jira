@@ -70,11 +70,19 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 	}
 	
 	function setEvent(Model_DevblocksEvent $event_model=null, Model_TriggerEvent $trigger=null) {
+		$logger = DevblocksPlatform::getConsoleLog();
+		
 		$labels = array();
 		$values = array();
+		
+		if(!empty($event_model))
+			$logger->debug(sprintf("EVENT PARAMS: %s", json_encode($event_model)));
 
 		// We can accept a model object or a context_id
 		@$model = $event_model->params['context_model'] ?: $event_model->params['context_id'];
+		
+		if(!empty($event_model))
+			$logger->debug(sprintf("EVENT CONTEXT MODEL: %s", json_encode($model)));
 		
 		/**
 		 * Issue
@@ -99,6 +107,9 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 		 */
 			
 		@$comment_id = $event_model->params['comment_id'];
+		
+		if(!empty($event_model))
+			$logger->debug(sprintf("EVENT COMMENT ID: %d", $comment_id));
 
 		if(get_class($this) == 'Event_JiraIssueCommented') {
 			$merge_token_labels = array(
@@ -226,6 +237,9 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 	}
 	
 	function runConditionExtension($token, $as_token, $trigger, $params, DevblocksDictionaryDelegate $dict) {
+		$logger = DevblocksPlatform::getConsoleLog();
+		$logger->debug(sprintf("RUN CONDITION: %s", $token));
+		
 		$pass = true;
 		
 		switch($as_token) {
@@ -419,6 +433,9 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 	}
 	
 	function runActionExtension($token, $trigger, $params, DevblocksDictionaryDelegate $dict) {
+		$logger = DevblocksPlatform::getConsoleLog();
+		$logger->debug(sprintf("RUN ACTION: %s", $token));
+		
 		@$issue_id = $dict->issue_id;
 
 		if(empty($issue_id))
