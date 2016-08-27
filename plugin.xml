@@ -240,7 +240,7 @@
 				<name>WgmJira_EventActionApiCall</name>
 			</class>
 			<params>
-				<param key="label" value="Execute an API request to JIRA" />
+				<param key="label" value="Execute API request to JIRA" />
 				<param key="events">
 					<value>
 						<data key="*" />
