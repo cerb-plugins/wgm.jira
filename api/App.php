@@ -100,8 +100,8 @@ class WgmJira_API {
 			0
 		);
 		
-		if($response->issues)
-			return current($response->issues);
+		if($response['issues'])
+			return current($response['issues']);
 		
 		return false;
 	}
@@ -272,26 +272,26 @@ class WgmJira_API {
 		
 		$fix_versions = array();
 		
-		if(is_array($object->fields->fixVersions))
-		foreach($object->fields->fixVersions as $fix_version) {
-			$fix_versions[$fix_version->id] = $fix_version->name;
+		if(is_array($object['fields']['fixVersions']))
+		foreach($object['fields']['fixVersions'] as $fix_version) {
+			$fix_versions[$fix_version['id']] = $fix_version['name'];
 		}
 		
 		// Fields
 		
 		$fields = array(
-			DAO_JiraIssue::JIRA_ID => $object->id,
-			DAO_JiraIssue::JIRA_KEY => $object->key,
-			DAO_JiraIssue::JIRA_STATUS_ID => $object->fields->status->id,
+			DAO_JiraIssue::JIRA_ID => $object['id'],
+			DAO_JiraIssue::JIRA_KEY => $object['key'],
+			DAO_JiraIssue::JIRA_STATUS_ID => $object['fields']['status']['id'],
 			DAO_JiraIssue::JIRA_VERSIONS => implode(', ', $fix_versions),
-			DAO_JiraIssue::JIRA_TYPE_ID => $object->fields->issuetype->id,
-			DAO_JiraIssue::PROJECT_ID => $object->fields->project->id,
-			DAO_JiraIssue::SUMMARY => $object->fields->summary,
-			DAO_JiraIssue::CREATED => strtotime($object->fields->created),
-			DAO_JiraIssue::UPDATED => strtotime($object->fields->updated),
+			DAO_JiraIssue::JIRA_TYPE_ID => $object['fields']['issuetype']['id'],
+			DAO_JiraIssue::PROJECT_ID => $object['fields']['project']['id'],
+			DAO_JiraIssue::SUMMARY => $object['fields']['summary'],
+			DAO_JiraIssue::CREATED => strtotime($object['fields']['created']),
+			DAO_JiraIssue::UPDATED => strtotime($object['fields']['updated']),
 		);
 		
-		$local_issue = DAO_JiraIssue::getByJiraId($object->id);
+		$local_issue = DAO_JiraIssue::getByJiraId($object['id']);
 		
 		if(!empty($local_issue)) {
 			$local_issue_id = $local_issue->id;
@@ -308,23 +308,23 @@ class WgmJira_API {
 		
 		// Store description content
 		
-		DAO_JiraIssue::setDescription($object->id, $object->fields->description);
+		DAO_JiraIssue::setDescription($object['id'], $object['fields']['description']);
 		
 		// Comments
 		
-		if(isset($object->fields->comment->comments) && is_array($object->fields->comment->comments))
-		foreach($object->fields->comment->comments as $comment) {
+		if(isset($object['fields']['comment']['comments']) && is_array($object['fields']['comment']['comments']))
+		foreach($object['fields']['comment']['comments'] as $comment) {
 			$result = DAO_JiraIssue::saveComment(
-				$comment->id,
-				$object->id,
-				@strtotime($comment->created),
-				$comment->author->displayName,
-				$comment->body
+				$comment['id'],
+				$object['id'],
+				@strtotime($comment['created']),
+				$comment['author']['displayName'],
+				$comment['body']
 			);
 			
 			// If we inserted, trigger 'New JIRA issue comment' event
 			if($result == 1)
-				Event_JiraIssueCommented::trigger($local_issue_id, $comment->id);
+				Event_JiraIssueCommented::trigger($local_issue_id, $comment['id']);
 		}
 		
 		// Links
@@ -381,32 +381,32 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 			$statuses = array();
 			
 			if(is_array($results))
-				foreach($results as $object) {
-					unset($object->description);
-					unset($object->iconUrl);
-					unset($object->self);
-					$statuses[$object->id] = $object;
-				}
+			foreach($results as $object) {
+				unset($object['description']);
+				unset($object['iconUrl']);
+				unset($object['self']);
+				$statuses[$object['id']] = $object;
+			}
 			
 			// Sync projects
 			$logger->info("Requesting createmeta manifest");
 			$response = $jira->getIssueCreateMeta();
 			
-			if(is_array($response->projects))
-			foreach($response->projects as $project_meta) {
+			if(is_array($response['projects']))
+			foreach($response['projects'] as $project_meta) {
 				// Pull the full record for each project and merge with createmeta
-				if(false == ($project = $jira->getProject($project_meta->key)))
+				if(false == ($project = $jira->getProject($project_meta['key'])))
 					continue;
 				
-				$logger->info(sprintf("Updating local project record for %s [%s]", $project->name, $project->key));
+				$logger->info(sprintf("Updating local project record for %s [%s]", $project['name'], $project['key']));
 				
-				$local_project = DAO_JiraProject::getByJiraId($project->id, true);
+				$local_project = DAO_JiraProject::getByJiraId($project['id'], true);
 				
 				$fields = array(
-					DAO_JiraProject::JIRA_ID => $project->id,
-					DAO_JiraProject::JIRA_KEY => $project->key,
-					DAO_JiraProject::NAME => $project->name,
-					DAO_JiraProject::URL => isset($project->url) ? $project->url : '',
+					DAO_JiraProject::JIRA_ID => $project['id'],
+					DAO_JiraProject::JIRA_KEY => $project['key'],
+					DAO_JiraProject::NAME => $project['name'],
+					DAO_JiraProject::URL => isset($project['url']) ? $project['url'] : '',
 					DAO_JiraProject::ISSUETYPES_JSON => json_encode(array()),
 					DAO_JiraProject::STATUSES_JSON => json_encode(array()),
 					DAO_JiraProject::VERSIONS_JSON => json_encode(array()),
@@ -418,16 +418,16 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 						$issue_types = array();
 						$versions = array();
 							
-						if(isset($project_meta->issuetypes) && is_array($project_meta->issuetypes))
-							foreach($project_meta->issuetypes as $object) {
-							unset($object->self);
-							$issue_types[$object->id] = $object;
+						if(isset($project_meta['issuetypes']) && is_array($project_meta['issuetypes']))
+							foreach($project_meta['issuetypes'] as $object) {
+							unset($object['self']);
+							$issue_types[$object['id']] = $object;
 						}
 			
-						if(isset($project->versions) && is_array($project->versions))
-							foreach($project->versions as $object) {
-							unset($object->self);
-							$versions[$object->id] = $object;
+						if(isset($project['versions']) && is_array($project['versions']))
+							foreach($project['versions'] as $object) {
+							unset($object['self']);
+							$versions[$object['id']] = $object;
 						}
 						
 						$fields[DAO_JiraProject::ISSUETYPES_JSON] = json_encode($issue_types);
@@ -438,7 +438,7 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 					DAO_JiraProject::update($local_project->id, $fields, false);
 			
 				} else {
-					$logger->info(sprintf("Creating new local project record for %s [%s]", $project->name, $project->key));
+					$logger->info(sprintf("Creating new local project record for %s [%s]", $project['name'], $project['key']));
 					$local_id = DAO_JiraProject::create($fields, false);
 					$local_project = DAO_JiraProject::get($local_id);
 				}
@@ -484,11 +484,11 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 					$startAt
 				)
 				)) {
-					foreach($response->issues as $object) {
+					foreach($response['issues'] as $object) {
 						$local_issue_id = WgmJira_API::importIssue($object);
 						
-						$last_synced_at = strtotime($object->fields->updated);
-						$last_synced_checkpoint = strtotime($object->fields->created);
+						$last_synced_at = strtotime($object['fields']['updated']);
+						$last_synced_checkpoint = strtotime($object['fields']['created']);
 					}
 				}
 		
@@ -681,7 +681,7 @@ class ServiceProvider_Jira extends Extension_ServiceProvider implements IService
 		$jira->setBaseUrl($params['base_url']);
 		$jira->setAuth($params['jira_user'], $params['jira_password']);
 		
-		if(false == ($json = $jira->getMyself()) || !isset($json->displayName))
+		if(false == ($json = $jira->getMyself()) || !isset($json['displayName']))
 			return json_encode(array('status' => false, 'error' => "Failed to authenticate to the JIRA API."));
 		
 		$id = DAO_ConnectedAccount::create(array(
