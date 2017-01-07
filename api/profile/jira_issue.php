@@ -86,7 +86,7 @@ class PageSection_ProfilesJiraIssue extends Extension_PageSection {
 		);
 		
 		$properties['updated'] = array(
-			'label' => mb_ucfirst($translate->_('common.updated')),
+			'label' => DevblocksPlatform::translateCapitalized('common.updated'),
 			'type' => Model_CustomField::TYPE_DATE,
 			'value' => $jira_issue->updated,
 		);
@@ -115,7 +115,7 @@ class PageSection_ProfilesJiraIssue extends Extension_PageSection {
 					DAO_ContextLink::getContextLinkCounts(
 						'cerberusweb.contexts.jira.issue',
 						$jira_issue->id,
-						array(CerberusContexts::CONTEXT_WORKER, CerberusContexts::CONTEXT_CUSTOM_FIELDSET)
+						array(CerberusContexts::CONTEXT_CUSTOM_FIELDSET)
 					),
 			),
 		);
@@ -127,7 +127,7 @@ class PageSection_ProfilesJiraIssue extends Extension_PageSection {
 					DAO_ContextLink::getContextLinkCounts(
 						'cerberusweb.contexts.jira.project',
 						$jira_issue->project_id,
-						array(CerberusContexts::CONTEXT_WORKER, CerberusContexts::CONTEXT_CUSTOM_FIELDSET)
+						array(CerberusContexts::CONTEXT_CUSTOM_FIELDSET)
 					),
 			);
 		}

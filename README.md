@@ -1,7 +1,7 @@
 Cerb Plugins - wgm.jira
 ===========================================
-Copyright (C) 2012 Webgroup Media, LLC.  
-[http://www.cerberusweb.com/](http://www.cerberusweb.com/)  
+Copyright (C) 2017 Webgroup Media, LLC.  
+[http://cerb.io/](http://cerb.io/)  
 
 What's this?
 ------------
@@ -9,12 +9,12 @@ This plugin provides integration with [Atlassian JIRA](http://www.atlassian.com/
 
 Installation
 ------------
-* In your helpdesk, download the plugin from **Setup->Plugins->Library**.
-* Enter the URL to your JIRA installation.
+* In Cerb, download the plugin from **Setup->Plugins->Library**.
+* Add a connected account from **Search->Connected Accounts**.
 
 Credits
 -------
-This plugin was developed by [WebGroup Media, LLC](http://www.cerberusweb.com/).
+This plugin was developed by [Webgroup Media, LLC](http://www.cerberusweb.com/).
 
 License
 -------

@@ -90,7 +90,7 @@ class PageSection_ProfilesJiraProject extends Extension_PageSection {
 					DAO_ContextLink::getContextLinkCounts(
 						'cerberusweb.contexts.jira.project',
 						$jira_project->id,
-						array(CerberusContexts::CONTEXT_WORKER, CerberusContexts::CONTEXT_CUSTOM_FIELDSET)
+						array(CerberusContexts::CONTEXT_CUSTOM_FIELDSET)
 					),
 			),
 		);
@@ -140,18 +140,6 @@ class PageSection_ProfilesJiraProject extends Extension_PageSection {
 					DAO_JiraProject::NAME => $name,
 				);
 				$id = DAO_JiraProject::create($fields);
-				
-				// Watchers
-				@$add_watcher_ids = DevblocksPlatform::sanitizeArray(DevblocksPlatform::importGPC($_REQUEST['add_watcher_ids'],'array',array()),'integer',array('unique','nonzero'));
-				if(!empty($add_watcher_ids))
-					CerberusContexts::addWatchers('cerberusweb.contexts.jira.project', $id, $add_watcher_ids);
-				
-				// Context Link (if given)
-				@$link_context = DevblocksPlatform::importGPC($_REQUEST['link_context'],'string','');
-				@$link_context_id = DevblocksPlatform::importGPC($_REQUEST['link_context_id'],'integer','');
-				if(!empty($id) && !empty($link_context) && !empty($link_context_id)) {
-					DAO_ContextLink::setLink('cerberusweb.contexts.jira.project', $id, $link_context, $link_context_id);
-				}
 				
 				if(!empty($view_id) && !empty($id))
 					C4_AbstractView::setMarqueeContextCreated($view_id, 'cerberusweb.contexts.jira.project', $id);

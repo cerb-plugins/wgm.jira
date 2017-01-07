@@ -1,0 +1,1 @@
+<a href="{devblocks_url}c=config&a=jira{/devblocks_url}">{'wgm.jira.common'|devblocks_translate}</a>

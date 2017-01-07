@@ -1,4 +1,15 @@
-{* [TODO] Secure API paths from plugin config *}
+<b>{'common.connected_account'|devblocks_translate|capitalize}:</b>
+<div style="margin-left:10px;margin-bottom:10px;">
+	<button type="button" class="chooser-abstract" data-field-name="{$namePrefix}[connected_account_id]" data-context="{CerberusContexts::CONTEXT_CONNECTED_ACCOUNT}" data-single="true" data-query="service:jira"><span class="glyphicons glyphicons-search"></span></button>
+	<ul class="bubbles chooser-container">
+		{if $connected_account}
+		<li>
+			<input type="hidden" name="{$namePrefix}[connected_account_id]" value="{$connected_account->id}">
+			<a href="javascript:;" class="cerb-peek-trigger no-underline" data-context="{CerberusContexts::CONTEXT_CONNECTED_ACCOUNT}" data-context-id="{$connected_account->id}">{$connected_account->name}</a>
+		</li>
+		{/if}
+	</ul>
+</div>
 
 <b>API Path:</b>
 <div style="margin-left:10px;margin-bottom:10px;">
@@ -32,17 +43,27 @@
 </div>
 
 <script type="text/javascript">
-var $action = $('fieldset#{$namePrefix}');
-$action.find('textarea').autosize();
-
-$action.find('select.jira-api-verb').change(function() {
-	var $container = $(this).closest('fieldset');
-	var $div_json = $container.find('div.jira-api-json');
-	var val = $(this).val();
+$(function() {
+	var $action = $('fieldset#{$namePrefix}');
+	$action.find('textarea').autosize();
 	
-	if(val == 'post' || val == 'put')
-		$div_json.show().find('textarea').autosize();
-	else
-		$div_json.fadeOut();
+	$action.find('.cerb-peek-trigger')
+		.cerbPeekTrigger()
+		;
+
+	$action.find('.chooser-abstract')
+		.cerbChooserTrigger()
+		;
+	
+	$action.find('select.jira-api-verb').change(function() {
+		var $container = $(this).closest('fieldset');
+		var $div_json = $container.find('div.jira-api-json');
+		var val = $(this).val();
+		
+		if(val == 'post' || val == 'put')
+			$div_json.show().find('textarea').autosize();
+		else
+			$div_json.fadeOut();
+	});
 });
 </script>

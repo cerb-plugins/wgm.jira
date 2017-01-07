@@ -1,82 +1,55 @@
 <?php
-if(class_exists('Extension_PluginSetup')):
-class WgmJira_Setup extends Extension_PluginSetup {
-	const POINT = 'wgmjira.setup';
+class WgmJira_SetupPageSection extends Extension_PageSection {
+	const ID = 'wgm.jira.setup.section';
 	
 	function render() {
 		$tpl = DevblocksPlatform::getTemplateService();
 
-		$params = array(
-			'base_url' => DevblocksPlatform::getPluginSetting('wgm.jira','base_url',''),
-			'jira_user' => DevblocksPlatform::getPluginSetting('wgm.jira','jira_user',''),
-			'jira_password' => DevblocksPlatform::getPluginSetting('wgm.jira','jira_password',''),
-		);
-		$tpl->assign('params', $params);
+		$visit = CerberusApplication::getVisit();
+		$visit->set(ChConfigurationPage::ID, 'jira');
+		
+		$sync_account_id = DevblocksPlatform::getPluginSetting('wgm.jira','sync_account_id',0);
+		
+		if(!empty($sync_account_id)) {
+			if(false != ($sync_account = DAO_ConnectedAccount::get($sync_account_id)))
+				$tpl->assign('sync_account', $sync_account);
+		}
 		
 		$tpl->display('devblocks:wgm.jira::setup/index.tpl');
 	}
 	
-	function save(&$errors) {
+	function saveJsonAction() {
 		try {
-			@$base_url = DevblocksPlatform::importGPC($_REQUEST['base_url'],'string','');
-			@$jira_user = DevblocksPlatform::importGPC($_REQUEST['jira_user'],'string','');
-			@$jira_password = DevblocksPlatform::importGPC($_REQUEST['jira_password'],'string','');
+			@$sync_account_id = DevblocksPlatform::importGPC($_REQUEST['sync_account_id'],'integer',0);
 			
-			if(empty($base_url))
-				throw new Exception("The base URL is required.");
+			DevblocksPlatform::setPluginSetting('wgm.freshbooks', 'sync_account_id', $sync_account_id);
 			
-			$base_url = rtrim($base_url,'/');
-			
-			// Test connection
-			$jira = WgmJira_API::getInstance();
-			$jira->setBaseUrl($base_url);
-			$jira->setAuth($jira_user, $jira_password);
-			
-			// Show the actual error
-			if(false === $jira->getServerInfo())
-				throw new Exception($jira->getLastError());
-			
-			DevblocksPlatform::setPluginSetting('wgm.jira','base_url',$base_url);
-			DevblocksPlatform::setPluginSetting('wgm.jira','jira_user',$jira_user);
-			DevblocksPlatform::setPluginSetting('wgm.jira','jira_password',$jira_password);
-
-			return true;
+			echo json_encode(array('status'=>true, 'message'=>'Saved!'));
+			return;
 			
 		} catch (Exception $e) {
-			$errors[] = $e->getMessage();
-			return false;
+			echo json_encode(array('status'=>false, 'error'=>$e->getMessage()));
+			return;
 		}
 	}
 };
-endif;
+
+class WgmJira_SetupPluginsMenuItem extends Extension_PageMenuItem {
+	const ID = 'wgm.jira.setup.menu.plugins';
+	
+	function render() {
+		$tpl = DevblocksPlatform::getTemplateService();
+		$tpl->display('devblocks:wgm.jira::setup/menu_item.tpl');
+	}
+};
+
 
 class WgmJira_API {
-	private static $_instance = null;
 	private $_base_url = '';
 	private $_user = '';
 	private $_password = '';
 	private $_errors = array();
 	
-	/**
-	 * @return WgmJira_API
-	 */
-	public static function getInstance() {
-		if(null == self::$_instance) {
-			self::$_instance = new WgmJira_API();
-		}
-		
-		return self::$_instance;
-	}
-	
-	private function __construct() {
-		$base_url = DevblocksPlatform::getPluginSetting('wgm.jira','base_url','');
-		$user = DevblocksPlatform::getPluginSetting('wgm.jira','jira_user','');
-		$password = DevblocksPlatform::getPluginSetting('wgm.jira','jira_password','');
-		
-		$this->setBaseUrl($base_url);
-		$this->setAuth($user, $password);
-	}
-
 	public function setBaseUrl($url) {
 		$this->_base_url = rtrim($url,'/');
 	}
@@ -84,6 +57,10 @@ class WgmJira_API {
 	public function setAuth($user, $password) {
 		$this->_user = $user;
 		$this->_password = $password;
+	}
+	
+	function getMyself() {
+		return $this->_get('/rest/api/2/myself');
 	}
 	
 	function getServerInfo() {
@@ -258,7 +235,7 @@ class WgmJira_API {
 			$this->_errors = array(curl_error($ch));
 			$json = false;
 			
-		} elseif(!empty($out) && false == ($json = json_decode($out))) {
+		} elseif(!empty($out) && false == ($json = json_decode($out, true))) {
 			$this->_errors = array('Error decoding JSON response');
 			$json = false;
 			
@@ -379,7 +356,21 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 		@$max_projects = DevblocksPlatform::importGPC($_REQUEST['max_projects'],'integer', 20);
 		@$max_issues = DevblocksPlatform::importGPC($_REQUEST['max_issues'],'integer', 20);
 		
-		$jira = WgmJira_API::getInstance();
+		if(false == ($sync_id = DevblocksPlatform::getPluginSetting('wgm.jira', 'sync_account_id', null)))
+			return;
+		
+		if(false == ($connected_account = DAO_ConnectedAccount::get($sync_id)))
+			return;
+		
+		if($connected_account->extension_id != ServiceProvider_Jira::ID)
+			return;
+		
+		$credentials = $connected_account->decryptParams();
+		
+		$jira = new WgmJira_API();
+		$jira->setBaseUrl($credentials['base_url']);
+		$jira->setAuth($credentials['jira_user'], $credentials['jira_password']);
+		
 		$logger = DevblocksPlatform::getConsoleLog("JIRA");
 
 		if(!$skip_projects) {
@@ -542,17 +533,24 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 if(class_exists('Extension_DevblocksEventAction')):
 class WgmJira_EventActionApiCall extends Extension_DevblocksEventAction {
 	function render(Extension_DevblocksEvent $event, Model_TriggerEvent $trigger, $params=array(), $seq=null) {
+		$active_worker = CerberusApplication::getActiveWorker();
 		$tpl = DevblocksPlatform::getTemplateService();
 		$tpl->assign('params', $params);
 		
 		if(!is_null($seq))
 			$tpl->assign('namePrefix', 'action'.$seq);
 		
+		if(isset($params['connected_account_id'])) {
+			if(false != ($connected_account = DAO_ConnectedAccount::get($params['connected_account_id']))) {
+				if(Context_ConnectedAccount::isReadableByActor($connected_account, $active_worker))
+					$tpl->assign('connected_account', $connected_account);
+			}
+		}
+		
 		$tpl->display('devblocks:wgm.jira::events/action_jira_api_call.tpl');
 	}
 	
 	function simulate($token, Model_TriggerEvent $trigger, $params, DevblocksDictionaryDelegate $dict) {
-		$jira = WgmJira_API::getInstance();
 		$tpl_builder = DevblocksPlatform::getTemplateBuilder();
 		
 		$out = null;
@@ -562,6 +560,7 @@ class WgmJira_EventActionApiCall extends Extension_DevblocksEventAction {
 		@$json = $tpl_builder->build($params['json'], $dict);
 		@$response_placeholder = $params['response_placeholder'];
 		@$run_in_simulator = $params['run_in_simulator'];
+		@$connected_account_id = $params['connected_account_id'];
 		
 		if(empty($api_verb))
 			return "[ERROR] API verb is required.";
@@ -571,6 +570,15 @@ class WgmJira_EventActionApiCall extends Extension_DevblocksEventAction {
 		
 		if(empty($response_placeholder))
 			return "[ERROR] No result placeholder given.";
+		
+		if(empty($connected_account_id))
+			return "[ERROR] No connected account is configured.";
+		
+		if(false == ($connected_account = DAO_ConnectedAccount::get($connected_account_id)))
+			return "[ERROR] No connected account is configured.";
+			
+		if(!Context_ConnectedAccount::isReadableByActor($connected_account, $trigger->getBot()))
+			return "[ERROR] This bot is now allowed to use this connected account.";
 		
 		// Output
 		$out = sprintf(">>> Sending request to JIRA API:\n%s %s\n%s\n",
@@ -585,7 +593,7 @@ class WgmJira_EventActionApiCall extends Extension_DevblocksEventAction {
 			$this->run($token, $trigger, $params, $dict);
 			
 			$out .= sprintf(">>> API response is:\n\n%s\n\n",
-				DevblocksPlatform::strFormatJson(json_encode($dict->$response_placeholder))
+				DevblocksPlatform::strFormatJson($dict->$response_placeholder)
 			);
 			
 			// Placeholder
@@ -598,19 +606,34 @@ class WgmJira_EventActionApiCall extends Extension_DevblocksEventAction {
 	}
 	
 	function run($token, Model_TriggerEvent $trigger, $params, DevblocksDictionaryDelegate $dict) {
-		$jira = WgmJira_API::getInstance();
 		$tpl_builder = DevblocksPlatform::getTemplateBuilder();
 		
 		@$api_verb = $params['api_verb'];
 		@$api_path = $tpl_builder->build($params['api_path'], $dict);
 		@$json = $tpl_builder->build($params['json'], $dict);
 		@$response_placeholder = $params['response_placeholder'];
+		@$connected_account_id = $params['connected_account_id'];
 		
 		if(empty($api_verb) || empty($api_path))
 			return false;
 		
 		if(empty($response_placeholder))
 			return false;
+		
+		if(empty($connected_account_id))
+			return false;
+		
+		if(false == ($connected_account = DAO_ConnectedAccount::get($connected_account_id)))
+			return false;
+			
+		if(!Context_ConnectedAccount::isReadableByActor($connected_account, $trigger->getBot()))
+			return false;
+		
+		$credentials = $connected_account->decryptParams();
+		
+		$jira = new WgmJira_API();
+		$jira->setBaseUrl($credentials['base_url']);
+		$jira->setAuth($credentials['jira_user'], $credentials['jira_password']);
 		
 		$response = $jira->execute($api_verb, $api_path, array(), $json);
 		
@@ -620,3 +643,66 @@ class WgmJira_EventActionApiCall extends Extension_DevblocksEventAction {
 	}
 };
 endif;
+
+class ServiceProvider_Jira extends Extension_ServiceProvider implements IServiceProvider_Popup, IServiceProvider_HttpRequestSigner {
+	const ID = 'wgm.jira.service.provider';
+	
+	function renderPopup() {
+		$this->_renderPopupAuthForm();
+	}
+	
+	function renderAuthForm() {
+		@$view_id = DevblocksPlatform::importGPC($_REQUEST['view_id'], 'string', '');
+		
+		$tpl = DevblocksPlatform::getTemplateService();
+		
+		$tpl->assign('view_id', $view_id);
+		
+		$tpl->display('devblocks:wgm.jira::provider/setup.tpl');
+	}
+	
+	function saveAuthFormAndReturnJson() {
+		@$params = DevblocksPlatform::importGPC($_POST['params'], 'array', array());
+		
+		$active_worker = CerberusApplication::getActiveWorker();
+		
+		if(!isset($params['base_url']) || empty($params['base_url']))
+			return json_encode(array('status' => false, 'error' => "The 'Base URL' is required."));
+		
+		if(!isset($params['jira_user']) || empty($params['jira_user']))
+			return json_encode(array('status' => false, 'error' => "The 'JIRA User' is required."));
+		
+		if(!isset($params['jira_password']) || empty($params['jira_password']))
+			return json_encode(array('status' => false, 'error' => "The 'JIRA Password' is required."));
+		
+		// Test the credentials
+		
+		$jira = new WgmJira_API();
+		$jira->setBaseUrl($params['base_url']);
+		$jira->setAuth($params['jira_user'], $params['jira_password']);
+		
+		if(false == ($json = $jira->getMyself()) || !isset($json->displayName))
+			return json_encode(array('status' => false, 'error' => "Failed to authenticate to the JIRA API."));
+		
+		$id = DAO_ConnectedAccount::create(array(
+			DAO_ConnectedAccount::NAME => sprintf('JIRA: %s', $json->displayName),
+			DAO_ConnectedAccount::EXTENSION_ID => ServiceProvider_Jira::ID,
+			DAO_ConnectedAccount::OWNER_CONTEXT => CerberusContexts::CONTEXT_WORKER,
+			DAO_ConnectedAccount::OWNER_CONTEXT_ID => $active_worker->id,
+		));
+		
+		DAO_ConnectedAccount::setAndEncryptParams($id, $params);
+		
+		return json_encode(array('status' => true, 'id' => $id));
+	}
+	
+	function authenticateHttpRequest(Model_ConnectedAccount $account, &$ch, &$verb, &$url, &$body, &$headers) {
+		$credentials = $account->decryptParams();
+		
+		if(!isset($credentials['jira_user']) && !isset($credentials['jira_password']))
+			return false;
+		
+		$headers[] = 'Authorization: Basic ' . base64_encode(sprintf("%s:%s", $credentials['jira_user'], $credentials['jira_password']));
+		return true;
+	}
+}

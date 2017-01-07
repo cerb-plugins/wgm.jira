@@ -100,9 +100,6 @@
 	<pre class="emailbody">{$model->getDescription()|escape:'html'|devblocks_hyperlinks nofilter}</pre>
 </fieldset>
 
-{* Comments *}
-{include file="devblocks:cerberusweb.core::internal/peek/peek_comments_pager.tpl" comments=$comments}
-
 <fieldset class="peek">
 	<legend>{'common.comment'|devblocks_translate|capitalize}</legend>
 	<textarea name="comment" rows="2" cols="45" style="width:98%;" placeholder="{'comment.notify.at_mention'|devblocks_translate}"></textarea>
