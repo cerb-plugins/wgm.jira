@@ -1585,7 +1585,7 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 				
 			case 'links':
 				$links = $this->_lazyLoadLinks($context, $context_id);
-				$values = array_merge($values, $fields);
+				$values = array_merge($values, $links);
 				break;
 				
 			case 'watchers':
