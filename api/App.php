@@ -644,56 +644,46 @@ class WgmJira_EventActionApiCall extends Extension_DevblocksEventAction {
 };
 endif;
 
-class ServiceProvider_Jira extends Extension_ServiceProvider implements IServiceProvider_Popup, IServiceProvider_HttpRequestSigner {
+class ServiceProvider_Jira extends Extension_ServiceProvider implements IServiceProvider_HttpRequestSigner {
 	const ID = 'wgm.jira.service.provider';
 	
-	function renderPopup() {
-		$this->_renderPopupAuthForm();
-	}
-	
-	function renderAuthForm() {
-		@$view_id = DevblocksPlatform::importGPC($_REQUEST['view_id'], 'string', '');
-		
+	function renderConfigForm(Model_ConnectedAccount $account) {
 		$tpl = DevblocksPlatform::getTemplateService();
-		
-		$tpl->assign('view_id', $view_id);
-		
-		$tpl->display('devblocks:wgm.jira::provider/setup.tpl');
-	}
-	
-	function saveAuthFormAndReturnJson() {
-		@$params = DevblocksPlatform::importGPC($_POST['params'], 'array', array());
-		
 		$active_worker = CerberusApplication::getActiveWorker();
 		
-		if(!isset($params['base_url']) || empty($params['base_url']))
-			return json_encode(array('status' => false, 'error' => "The 'Base URL' is required."));
+		$params = $account->decryptParams($active_worker);
+		$tpl->assign('params', $params);
 		
-		if(!isset($params['jira_user']) || empty($params['jira_user']))
-			return json_encode(array('status' => false, 'error' => "The 'JIRA User' is required."));
+		$tpl->display('devblocks:wgm.jira::provider/edit_params.tpl');
+	}
+	
+	function saveConfigForm(Model_ConnectedAccount $account, array &$params) {
+		@$edit_params = DevblocksPlatform::importGPC($_POST['params'], 'array', array());
+	
+		$active_worker = CerberusApplication::getActiveWorker();
 		
-		if(!isset($params['jira_password']) || empty($params['jira_password']))
-			return json_encode(array('status' => false, 'error' => "The 'JIRA Password' is required."));
+		if(!isset($edit_params['base_url']) || empty($edit_params['base_url']))
+			return "The 'Base URL' is required.";
+		
+		if(!isset($edit_params['jira_user']) || empty($edit_params['jira_user']))
+			return "The 'JIRA User' is required.";
+		
+		if(!isset($edit_params['jira_password']) || empty($edit_params['jira_password']))
+			return "The 'JIRA Password' is required.";
 		
 		// Test the credentials
 		
 		$jira = new WgmJira_API();
-		$jira->setBaseUrl($params['base_url']);
-		$jira->setAuth($params['jira_user'], $params['jira_password']);
+		$jira->setBaseUrl($edit_params['base_url']);
+		$jira->setAuth($edit_params['jira_user'], $edit_params['jira_password']);
 		
 		if(false == ($json = $jira->getMyself()) || !isset($json['displayName']))
-			return json_encode(array('status' => false, 'error' => "Failed to authenticate to the JIRA API."));
+			return "Failed to authenticate to the JIRA API.";
 		
-		$id = DAO_ConnectedAccount::create(array(
-			DAO_ConnectedAccount::NAME => sprintf('JIRA: %s', $json->displayName),
-			DAO_ConnectedAccount::EXTENSION_ID => ServiceProvider_Jira::ID,
-			DAO_ConnectedAccount::OWNER_CONTEXT => CerberusContexts::CONTEXT_WORKER,
-			DAO_ConnectedAccount::OWNER_CONTEXT_ID => $active_worker->id,
-		));
+		foreach($edit_params as $k => $v)
+			$params[$k] = $v;
 		
-		DAO_ConnectedAccount::setAndEncryptParams($id, $params);
-		
-		return json_encode(array('status' => true, 'id' => $id));
+		return true;
 	}
 	
 	function authenticateHttpRequest(Model_ConnectedAccount $account, &$ch, &$verb, &$url, &$body, &$headers) {

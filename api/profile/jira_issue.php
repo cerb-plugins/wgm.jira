@@ -121,7 +121,7 @@ class PageSection_ProfilesJiraIssue extends Extension_PageSection {
 		);
 		
 		// [TODO] This is using JIRA ids rather than Cerb ones
-		if(isset($jira_issue->project_id)) {
+		if(!empty($jira_issue->project_id)) {
 			$properties_links['cerberusweb.contexts.jira.project'] = array(
 				$jira_issue->project_id => 
 					DAO_ContextLink::getContextLinkCounts(
@@ -138,14 +138,6 @@ class PageSection_ProfilesJiraIssue extends Extension_PageSection {
 		
 		$tpl->assign('properties', $properties);
 			
-		// Macros
-		
-		$macros = DAO_TriggerEvent::getReadableByActor(
-			$active_worker,
-			'event.macro.jira_issue'
-		);
-		$tpl->assign('macros', $macros);
-
 		// Tabs
 		$tab_manifests = Extension_ContextProfileTab::getExtensions(false, 'cerberusweb.contexts.jira.issue');
 		$tpl->assign('tab_manifests', $tab_manifests);
