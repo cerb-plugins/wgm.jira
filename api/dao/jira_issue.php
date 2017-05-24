@@ -1654,16 +1654,27 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 		$tpl = DevblocksPlatform::getTemplateService();
 		$tpl->assign('view_id', $view_id);
 		
+		$context = Context_JiraIssue::ID;
+		$active_worker = CerberusApplication::getActiveWorker();
+		
 		// Params
 		
 		$tpl->assign('jira_base_url', DevblocksPlatform::getPluginSetting('wgm.jira','base_url',''));
 		
 		// Model
 		
-		if(!empty($context_id) && null != ($jira_issue = DAO_JiraIssue::get($context_id))) {
-			$tpl->assign('model', $jira_issue);
-		}
+		if(empty($context_id) || null == ($jira_issue = DAO_JiraIssue::get($context_id)))
+			return;
 		
+		$tpl->assign('model', $jira_issue);
+		
+		// Dictionary
+		$labels = array();
+		$values = array();
+		CerberusContexts::getContext($context, $jira_issue, $labels, $values, '', true, false);
+		$dict = DevblocksDictionaryDelegate::instance($values);
+		$tpl->assign('dict', $dict);
+	
 		$custom_fields = DAO_CustomField::getByContext('cerberusweb.contexts.jira.issue', false);
 		$tpl->assign('custom_fields', $custom_fields);
 		
@@ -1677,6 +1688,11 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 		$comments = DAO_Comment::getByContext('cerberusweb.contexts.jira.issue', $context_id);
 		$comments = array_reverse($comments, true);
 		$tpl->assign('comments', $comments);
+		
+		// Interactions
+		$interactions = Event_GetInteractionsForWorker::getInteractionsByPointAndWorker('record:' . $context, $dict, $active_worker);
+		$interactions_menu = Event_GetInteractionsForWorker::getInteractionMenu($interactions);
+		$tpl->assign('interactions_menu', $interactions_menu);
 		
 		$tpl->display('devblocks:wgm.jira::jira_issue/peek.tpl');
 	}

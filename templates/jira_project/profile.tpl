@@ -2,45 +2,31 @@
 {$page_context_id = $jira_project->id}
 {$is_writeable = Context_JiraProject::isWriteableByActor($jira_project, $active_worker)}
 
-<div style="float:left">
-	<h1>{$jira_project->name}</h1>
-</div>
-
-<div style="float:right;">
-{$ctx = Extension_DevblocksContext::get($page_context)}
-{include file="devblocks:cerberusweb.core::search/quick_search.tpl" view=$ctx->getSearchView() return_url="{devblocks_url}c=search&context={$ctx->manifest->params.alias}{/devblocks_url}"}
-</div>
-
-<div style="clear:both;"></div>
+<h1>{$jira_project->name}</h1>
 
 <div class="cerb-profile-toolbar">
 	<form class="toolbar" action="{devblocks_url}{/devblocks_url}" onsubmit="return false;" style="margin-bottom:5px;">
 		<input type="hidden" name="_csrf_token" value="{$session.csrf_token}">
 		
-		<!-- Toolbar -->
-		
-		<span>
-		{$object_watchers = DAO_ContextLink::getContextLinks($page_context, array($page_context_id), CerberusContexts::CONTEXT_WORKER)}
-		{include file="devblocks:cerberusweb.core::internal/watchers/context_follow_button.tpl" context=$page_context context_id=$page_context_id full=true}
+		<span id="spanInteractions">
+		{include file="devblocks:cerberusweb.core::events/interaction/interactions_menu.tpl"}
 		</span>
-		
-		<!-- Macros -->
-		{if $is_writeable}
-		{devblocks_url assign=return_url full=true}c=profiles&type=jira_project&id={$page_context_id}-{$jira_project->name|devblocks_permalink}{/devblocks_url}
-		{include file="devblocks:cerberusweb.core::internal/macros/display/button.tpl" context=$page_context context_id=$page_context_id macro_event="event.macro.jira_project" return_url=$return_url}
-		{/if}
 		
 		<!-- Edit -->
 		{if $is_writeable}
 		<button type="button" id="btnDisplayJiraProjectEdit" title="{'common.edit'|devblocks_translate|capitalize}"><span class="glyphicons glyphicons-cogwheel"></span></button>
 		{/if}
+		
+		<span>
+		{$object_watchers = DAO_ContextLink::getContextLinks($page_context, array($page_context_id), CerberusContexts::CONTEXT_WORKER)}
+		{include file="devblocks:cerberusweb.core::internal/watchers/context_follow_button.tpl" context=$page_context context_id=$page_context_id full=true}
+		</span>
 	</form>
 	
 	{if $pref_keyboard_shortcuts}
 		<small>
 		{'common.keyboard'|devblocks_translate|lower}:
 		(<b>e</b>) {'common.edit'|devblocks_translate|lower}
-		{if !empty($macros)}(<b>m</b>) {'common.macros'|devblocks_translate|lower} {/if}
 		(<b>1-9</b>) change tab
 		</small>
 	{/if}
@@ -109,6 +95,10 @@ $(function() {
 			document.location.reload();
 		});
 	});
+	
+	// Interactions
+	var $interaction_container = $('#spanInteractions');
+	{include file="devblocks:cerberusweb.core::events/interaction/interactions_menu.js.tpl"}
 });
 </script>
 

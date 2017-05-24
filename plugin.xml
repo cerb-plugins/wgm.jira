@@ -11,14 +11,14 @@
  	<!-- Requirements -->
 
 	<requires>
-		<app_version min="7.4" max="7.4.99" />
+		<app_version min="8.0" max="8.0.99" />
 		<php_extension name="curl" />
 	</requires>
  
 	<!-- Plugin Dependencies -->
 	
 	<dependencies>
-		<require plugin_id="cerberusweb.core" version="7.4.0" />
+		<require plugin_id="cerberusweb.core" version="8.0.0" />
 	</dependencies>
 
 	<!-- Patches -->
@@ -291,7 +291,7 @@
 		
 		<extension point="devblocks.event">
 			<id>wgmjira.event.issue.created</id>
-			<name>JIRA issue created</name>
+			<name>New JIRA issue</name>
 			<class>
 				<file>api/events/jira_issue_created.php</file>
 				<name>Event_JiraIssueCreated</name>
@@ -308,7 +308,7 @@
 		
 		<extension point="devblocks.event">
 			<id>wgmjira.event.issue.commented</id>
-			<name>JIRA issue commented on</name>
+			<name>New comment on JIRA issue</name>
 			<class>
 				<file>api/events/jira_issue_commented.php</file>
 				<name>Event_JiraIssueCommented</name>
@@ -325,7 +325,7 @@
 		
 		<extension point="devblocks.event">
 			<id>wgmjira.event.issue.status.changed</id>
-			<name>JIRA issue status changed</name>
+			<name>New status on JIRA issue</name>
 			<class>
 				<file>api/events/jira_issue_status_changed.php</file>
 				<name>Event_JiraIssueStatusChanged</name>
@@ -342,7 +342,7 @@
 		
 		<extension point="devblocks.event">
 			<id>event.macro.jira_issue</id>
-			<name>Custom JIRA issue behavior</name>
+			<name>Custom behavior on JIRA issue</name>
 			<class>
 				<file>api/events/jira_issue_macro.php</file>
 				<name>Event_JiraIssueMacro</name>
@@ -357,12 +357,17 @@
 						<data key="cerberusweb.contexts.worker" />
 					</value>
 				</param>
+				<param key="options">
+					<value>
+						<data key="visibility" />
+					</value>
+				</param>
 			</params>
 		</extension>
 		
 		<extension point="devblocks.event">
 			<id>event.macro.jira_project</id>
-			<name>Custom JIRA project behavior</name>
+			<name>Custom behavior on JIRA project</name>
 			<class>
 				<file>api/events/jira_project_macro.php</file>
 				<name>Event_JiraProjectMacro</name>
@@ -375,6 +380,11 @@
 						<data key="cerberusweb.contexts.group" />
 						<data key="cerberusweb.contexts.role" />
 						<data key="cerberusweb.contexts.worker" />
+					</value>
+				</param>
+				<param key="options">
+					<value>
+						<data key="visibility" />
 					</value>
 				</param>
 			</params>

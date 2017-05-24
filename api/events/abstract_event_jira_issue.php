@@ -73,6 +73,24 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 		$labels = array();
 		$values = array();
 		
+		/**
+		 * Behavior
+		 */
+		
+		$merge_labels = array();
+		$merge_values = array();
+		CerberusContexts::getContext(CerberusContexts::CONTEXT_BEHAVIOR, $trigger, $merge_labels, $merge_values, null, true);
+
+			// Merge
+			CerberusContexts::merge(
+				'behavior_',
+				'',
+				$merge_labels,
+				$merge_values,
+				$labels,
+				$values
+			);
+		
 		// We can accept a model object or a context_id
 		@$model = $event_model->params['context_model'] ?: $event_model->params['context_id'];
 		
@@ -160,6 +178,14 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 	
 	function getValuesContexts($trigger) {
 		$vals = array(
+			'behavior_id' => array(
+				'label' => 'Behavior',
+				'context' => CerberusContexts::CONTEXT_BEHAVIOR,
+			),
+			'behavior_bot_id' => array(
+				'label' => 'Behavior',
+				'context' => CerberusContexts::CONTEXT_BOT,
+			),
 			'issue_id' => array(
 				'label' => 'Issue',
 				'context' => Context_JiraIssue::ID,
@@ -379,7 +405,7 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 				break;
 				
 			default:
-				if(preg_match('#set_cf_(.*?)_custom_([0-9]+)#', $token, $matches)) {
+				if(preg_match('#set_cf_(.*?_*)custom_([0-9]+)#', $token, $matches)) {
 					$field_id = $matches[2];
 					$custom_field = DAO_CustomField::get($field_id);
 					DevblocksEventHelper::renderActionSetCustomField($custom_field, $trigger);
@@ -421,7 +447,7 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 				return DevblocksEventHelper::simulateActionSetLinks($trigger, $params, $dict);
 				break;
 			default:
-				if(preg_match('#set_cf_(.*?)_custom_([0-9]+)#', $token))
+				if(preg_match('#set_cf_(.*?_*)custom_([0-9]+)#', $token))
 					return DevblocksEventHelper::simulateActionSetCustomField($token, $params, $dict);
 				break;
 		}
@@ -463,7 +489,7 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 				break;
 				
 			default:
-				if(preg_match('#set_cf_(.*?)_custom_([0-9]+)#', $token))
+				if(preg_match('#set_cf_(.*?_*)custom_([0-9]+)#', $token))
 					return DevblocksEventHelper::runActionSetCustomField($token, $params, $dict);
 				break;
 		}

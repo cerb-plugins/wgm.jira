@@ -20,6 +20,8 @@ class PageSection_ProfilesJiraProject extends Extension_PageSection {
 		$tpl = DevblocksPlatform::getTemplateService();
 		$visit = CerberusApplication::getVisit();
 		$translate = DevblocksPlatform::getTranslationService();
+		
+		$context = Context_JiraProject::ID;
 		$active_worker = CerberusApplication::getActiveWorker();
 		
 		$response = DevblocksPlatform::getHttpResponse();
@@ -34,6 +36,13 @@ class PageSection_ProfilesJiraProject extends Extension_PageSection {
 			return;
 		}
 		$tpl->assign('jira_project', $jira_project);
+		
+		// Dictionary
+		$labels = array();
+		$values = array();
+		CerberusContexts::getContext($context, $jira_project, $labels, $values, '', true, false);
+		$dict = DevblocksDictionaryDelegate::instance($values);
+		$tpl->assign('dict', $dict);
 	
 		// Tab persistence
 		
@@ -104,6 +113,11 @@ class PageSection_ProfilesJiraProject extends Extension_PageSection {
 		// Tabs
 		$tab_manifests = Extension_ContextProfileTab::getExtensions(false, 'cerberusweb.contexts.jira.project');
 		$tpl->assign('tab_manifests', $tab_manifests);
+		
+		// Interactions
+		$interactions = Event_GetInteractionsForWorker::getInteractionsByPointAndWorker('record:' . $context, $dict, $active_worker);
+		$interactions_menu = Event_GetInteractionsForWorker::getInteractionMenu($interactions);
+		$tpl->assign('interactions_menu', $interactions_menu);
 		
 		// Template
 		$tpl->display('devblocks:wgm.jira::jira_project/profile.tpl');
