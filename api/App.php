@@ -3,7 +3,7 @@ class WgmJira_SetupPageSection extends Extension_PageSection {
 	const ID = 'wgm.jira.setup.section';
 	
 	function render() {
-		$tpl = DevblocksPlatform::getTemplateService();
+		$tpl = DevblocksPlatform::services()->template();
 
 		$visit = CerberusApplication::getVisit();
 		$visit->set(ChConfigurationPage::ID, 'jira');
@@ -38,7 +38,7 @@ class WgmJira_SetupPluginsMenuItem extends Extension_PageMenuItem {
 	const ID = 'wgm.jira.setup.menu.plugins';
 	
 	function render() {
-		$tpl = DevblocksPlatform::getTemplateService();
+		$tpl = DevblocksPlatform::services()->template();
 		$tpl->display('devblocks:wgm.jira::setup/menu_item.tpl');
 	}
 };
@@ -343,7 +343,7 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 	const ID = 'wgmjira.cron';
 
 	public function run() {
-		$logger = DevblocksPlatform::getConsoleLog("JIRA");
+		$logger = DevblocksPlatform::services()->log("JIRA");
 		$logger->info("Started");
 		
 		$this->_synchronize();
@@ -371,7 +371,7 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 		$jira->setBaseUrl($credentials['base_url']);
 		$jira->setAuth($credentials['jira_user'], $credentials['jira_password']);
 		
-		$logger = DevblocksPlatform::getConsoleLog("JIRA");
+		$logger = DevblocksPlatform::services()->log("JIRA");
 
 		if(!$skip_projects) {
 			// Sync statuses
@@ -503,7 +503,7 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 	}
 	
 	public function configure($instance) {
-		$tpl = DevblocksPlatform::getTemplateService();
+		$tpl = DevblocksPlatform::services()->template();
 		$tpl->cache_lifetime = "0";
 
 		// Load settings
@@ -534,7 +534,7 @@ if(class_exists('Extension_DevblocksEventAction')):
 class WgmJira_EventActionApiCall extends Extension_DevblocksEventAction {
 	function render(Extension_DevblocksEvent $event, Model_TriggerEvent $trigger, $params=array(), $seq=null) {
 		$active_worker = CerberusApplication::getActiveWorker();
-		$tpl = DevblocksPlatform::getTemplateService();
+		$tpl = DevblocksPlatform::services()->template();
 		$tpl->assign('params', $params);
 		
 		if(!is_null($seq))
@@ -551,7 +551,7 @@ class WgmJira_EventActionApiCall extends Extension_DevblocksEventAction {
 	}
 	
 	function simulate($token, Model_TriggerEvent $trigger, $params, DevblocksDictionaryDelegate $dict) {
-		$tpl_builder = DevblocksPlatform::getTemplateBuilder();
+		$tpl_builder = DevblocksPlatform::services()->templateBuilder();
 		
 		$out = null;
 		
@@ -606,7 +606,7 @@ class WgmJira_EventActionApiCall extends Extension_DevblocksEventAction {
 	}
 	
 	function run($token, Model_TriggerEvent $trigger, $params, DevblocksDictionaryDelegate $dict) {
-		$tpl_builder = DevblocksPlatform::getTemplateBuilder();
+		$tpl_builder = DevblocksPlatform::services()->templateBuilder();
 		
 		@$api_verb = $params['api_verb'];
 		@$api_path = $tpl_builder->build($params['api_path'], $dict);
@@ -648,7 +648,7 @@ class ServiceProvider_Jira extends Extension_ServiceProvider implements IService
 	const ID = 'wgm.jira.service.provider';
 	
 	function renderConfigForm(Model_ConnectedAccount $account) {
-		$tpl = DevblocksPlatform::getTemplateService();
+		$tpl = DevblocksPlatform::services()->template();
 		$active_worker = CerberusApplication::getActiveWorker();
 		
 		$params = $account->decryptParams($active_worker);

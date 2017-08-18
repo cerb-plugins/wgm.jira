@@ -17,7 +17,7 @@
 
 class PageSection_ProfilesJiraIssue extends Extension_PageSection {
 	function render() {
-		$tpl = DevblocksPlatform::getTemplateService();
+		$tpl = DevblocksPlatform::services()->template();
 		$visit = CerberusApplication::getVisit();
 		$translate = DevblocksPlatform::getTranslationService();
 		
@@ -201,7 +201,7 @@ class PageSection_ProfilesJiraIssue extends Extension_PageSection {
 		@$view_id = DevblocksPlatform::importGPC($_REQUEST['view_id'],'string');
 		
 		$active_worker = CerberusApplication::getActiveWorker();
-		$url_writer = DevblocksPlatform::getUrlService();
+		$url_writer = DevblocksPlatform::services()->url();
 		
 		// Generate hash
 		$hash = md5($view_id.$active_worker->id.time());
@@ -275,7 +275,7 @@ class PageSection_ProfilesJiraIssue extends Extension_PageSection {
 		@$context_id = DevblocksPlatform::importGPC($_REQUEST['context_id'],'integer',0);
 		@$point = DevblocksPlatform::importGPC($_REQUEST['point'],'string','contact.history');
 		
-		$tpl = DevblocksPlatform::getTemplateService();
+		$tpl = DevblocksPlatform::services()->template();
 		$translate = DevblocksPlatform::getTranslationService();
 		
 		if(empty($context_id))
@@ -299,7 +299,7 @@ class PageSection_ProfilesJiraIssue extends Extension_PageSection {
 		if(empty($project_key) || false == ($project = DAO_JiraProject::getByJiraKey($project_key)))
 			return;
 		
-		$tpl = DevblocksPlatform::getTemplateService();
+		$tpl = DevblocksPlatform::services()->template();
 		
 		$tpl->assign('namePrefix', $name_prefix);
 		$tpl->assign('params', $params);

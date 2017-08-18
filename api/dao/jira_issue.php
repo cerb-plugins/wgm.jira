@@ -1,18 +1,81 @@
 <?php
 class DAO_JiraIssue extends Cerb_ORMHelper {
+	const CREATED = 'created';
 	const ID = 'id';
-	const PROJECT_ID = 'project_id';
 	const JIRA_ID = 'jira_id';
 	const JIRA_KEY = 'jira_key';
+	const JIRA_STATUS_ID = 'jira_status_id';
 	const JIRA_TYPE_ID = 'jira_type_id';
 	const JIRA_VERSIONS = 'jira_versions';
-	const JIRA_STATUS_ID = 'jira_status_id';
+	const PROJECT_ID = 'project_id';
 	const SUMMARY = 'summary';
-	const CREATED = 'created';
 	const UPDATED = 'updated';
+	
+	private function __construct() {}
 
+	static function getFields() {
+		$validation = DevblocksPlatform::services()->validation();
+		
+		// int(10) unsigned
+		$validation
+			->addField(self::CREATED)
+			->timestamp()
+			;
+		// int(10) unsigned
+		$validation
+			->addField(self::ID)
+			->id()
+			->setEditable(false)
+			;
+		// int(10) unsigned
+		$validation
+			->addField(self::JIRA_ID)
+			->id()
+			;
+		// varchar(32)
+		$validation
+			->addField(self::JIRA_KEY)
+			->string()
+			->setMaxLength(32)
+			;
+		// smallint(5) unsigned
+		$validation
+			->addField(self::JIRA_STATUS_ID)
+			->uint(2)
+			;
+		// smallint(5) unsigned
+		$validation
+			->addField(self::JIRA_TYPE_ID)
+			->uint(2)
+			;
+		// varchar(255)
+		$validation
+			->addField(self::JIRA_VERSIONS)
+			->string()
+			->setMaxLength(255)
+			;
+		// int(10) unsigned
+		$validation
+			->addField(self::PROJECT_ID)
+			->id()
+			;
+		// varchar(255)
+		$validation
+			->addField(self::SUMMARY)
+			->string()
+			->setMaxLength(255)
+			;
+		// int(10) unsigned
+		$validation
+			->addField(self::UPDATED)
+			->timestamp()
+			;
+
+		return $validation->getFields();
+	}
+	
 	static function create($fields) {
-		$db = DevblocksPlatform::getDatabaseService();
+		$db = DevblocksPlatform::services()->database();
 		
 		$sql = "INSERT INTO jira_issue () VALUES ()";
 		$db->ExecuteMaster($sql);
@@ -48,7 +111,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 				self::_processUpdateEvents($batch_ids, $fields);
 				
 				// Trigger an event about the changes
-				$eventMgr = DevblocksPlatform::getEventService();
+				$eventMgr = DevblocksPlatform::services()->event();
 				$eventMgr->trigger(
 					new Model_DevblocksEvent(
 						'dao.jira_issue.update',
@@ -113,7 +176,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 	 * @return Model_JiraIssue[]
 	 */
 	static function getWhere($where=null, $sortBy=null, $sortAsc=true, $limit=null) {
-		$db = DevblocksPlatform::getDatabaseService();
+		$db = DevblocksPlatform::services()->database();
 
 		list($where_sql, $sort_sql, $limit_sql) = self::_getWhereSQL($where, $sortBy, $sortAsc, $limit);
 		
@@ -152,7 +215,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 	}
 	
 	static function randomComment($issue_id=null) {
-		$db = DevblocksPlatform::getDatabaseService();
+		$db = DevblocksPlatform::services()->database();
 		
 		// With a specific issue ID?
 		if($issue_id && false != ($comment_id = $db->GetOneSlave(sprintf("SELECT jira_comment_id FROM jira_issue_comment WHERE jira_issue_id = %d ORDER BY RAND() LIMIT 1", $issue_id))))
@@ -171,13 +234,13 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 	}
 	
 	static function getDescription($issue_id) {
-		$db = DevblocksPlatform::getDatabaseService();
+		$db = DevblocksPlatform::services()->database();
 		
 		return $db->GetOneSlave(sprintf("SELECT description FROM jira_issue_description WHERE jira_issue_id = %d", $issue_id));
 	}
 	
 	static function setDescription($issue_id, $description) {
-		$db = DevblocksPlatform::getDatabaseService();
+		$db = DevblocksPlatform::services()->database();
 		
 		$db->ExecuteMaster(sprintf("REPLACE INTO jira_issue_description (jira_issue_id, description) VALUES (%d, %s)",
 			$issue_id,
@@ -189,7 +252,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 	
 	static function setVersions($issue_id, $fix_version_ids) {
 		if(!is_array($fix_version_ids)) $fix_version_ids = array($fix_version_ids);
-		$db = DevblocksPlatform::getDatabaseService();
+		$db = DevblocksPlatform::services()->database();
 		
 		$db->ExecuteMaster(sprintf("DELETE FROM jira_issue_to_version WHERE jira_issue_id = %d", $issue_id));
 		
@@ -204,7 +267,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 	}
 	
 	static function saveComment($comment_id, $issue_id, $created, $author, $body) {
-		$db = DevblocksPlatform::getDatabaseService();
+		$db = DevblocksPlatform::services()->database();
 		
 		$result = $db->ExecuteMaster(sprintf("REPLACE INTO jira_issue_comment (jira_comment_id, jira_issue_id, created, jira_author, body) ".
 			"VALUES (%d, %d, %d, %s, %s)",
@@ -219,7 +282,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 	}
 	
 	static function getComments($issue_id) {
-		$db = DevblocksPlatform::getDatabaseService();
+		$db = DevblocksPlatform::services()->database();
 
 		$results = $db->GetArraySlave(sprintf("SELECT jira_comment_id, jira_issue_id, created, jira_author, body ".
 			"FROM jira_issue_comment ".
@@ -232,7 +295,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 	}
 	
 	static function getComment($comment_id) {
-		$db = DevblocksPlatform::getDatabaseService();
+		$db = DevblocksPlatform::services()->database();
 
 		$results = $db->GetRowSlave(sprintf("SELECT jira_comment_id, jira_issue_id, created, jira_author, body ".
 			"FROM jira_issue_comment ".
@@ -276,7 +339,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 	
 	static function delete($ids) {
 		if(!is_array($ids)) $ids = array($ids);
-		$db = DevblocksPlatform::getDatabaseService();
+		$db = DevblocksPlatform::services()->database();
 		
 		if(empty($ids))
 			return;
@@ -293,7 +356,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 		// [TODO] Maint
 		
 		// Fire event
-		$eventMgr = DevblocksPlatform::getEventService();
+		$eventMgr = DevblocksPlatform::services()->event();
 		$eventMgr->trigger(
 			new Model_DevblocksEvent(
 				'context.delete',
@@ -393,7 +456,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 	 * @return array
 	 */
 	static function search($columns, $params, $limit=10, $page=0, $sortBy=null, $sortAsc=null, $withCounts=true) {
-		$db = DevblocksPlatform::getDatabaseService();
+		$db = DevblocksPlatform::services()->database();
 		
 		// Build search queries
 		$query_parts = self::getSearchQueryComponents($columns,$params,$sortBy,$sortAsc);
@@ -491,8 +554,8 @@ class SearchFields_JiraIssue extends DevblocksSearchFields {
 				break;
 			
 			case self::VIRTUAL_PROJECT_SEARCH:
-				$sql = "jira_issue.project_id IN (SELECT jira_id FROM jira_project WHERE id IN (%s))";
-				return self::_getWhereSQLFromVirtualSearchSqlField($param, 'cerberusweb.contexts.jira.project', $sql);
+				$sql = "SELECT jira_id FROM jira_project WHERE id IN (%s)";
+				return self::_getWhereSQLFromVirtualSearchSqlField($param, 'cerberusweb.contexts.jira.project', $sql, 'jira_issue.project_id');
 				break;
 				
 			case self::VIRTUAL_WATCHERS:
@@ -620,7 +683,7 @@ class Search_JiraIssue extends Extension_DevblocksSearchSchema {
 	}
 	
 	public function index($stop_time=null) {
-		$logger = DevblocksPlatform::getConsoleLog();
+		$logger = DevblocksPlatform::services()->log();
 		
 		if(false == ($engine = $this->getEngine()))
 			return false;
@@ -1109,7 +1172,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 	function render() {
 		$this->_sanitize();
 		
-		$tpl = DevblocksPlatform::getTemplateService();
+		$tpl = DevblocksPlatform::services()->template();
 		$tpl->assign('id', $this->id);
 		$tpl->assign('view', $this);
 
@@ -1127,7 +1190,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 	}
 
 	function renderCriteria($field) {
-		$tpl = DevblocksPlatform::getTemplateService();
+		$tpl = DevblocksPlatform::services()->template();
 		$tpl->assign('id', $this->id);
 
 		switch($field) {
@@ -1388,14 +1451,14 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 		if(empty($context_id))
 			return '';
 	
-		$url_writer = DevblocksPlatform::getUrlService();
+		$url_writer = DevblocksPlatform::services()->url();
 		$url = $url_writer->writeNoProxy('c=profiles&type=jira_issue&id='.$context_id, true);
 		return $url;
 	}
 	
 	function getMeta($context_id) {
 		$jira_issue = DAO_JiraIssue::get($context_id);
-		$url_writer = DevblocksPlatform::getUrlService();
+		$url_writer = DevblocksPlatform::services()->url();
 		
 		$url = $this->profileGetUrl($context_id);
 		$friendly = DevblocksPlatform::strToPermalink($jira_issue->summary);
@@ -1536,7 +1599,7 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 			// [TODO] Content
 			
 			// URL
-			$url_writer = DevblocksPlatform::getUrlService();
+			$url_writer = DevblocksPlatform::services()->url();
 			$token_values['record_url'] = $url_writer->writeNoProxy(sprintf("c=profiles&type=jira_issue&id=%d-%s",$jira_issue->id, DevblocksPlatform::strToPermalink($jira_issue->summary)), true);
 		}
 		
@@ -1555,6 +1618,20 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 		);
 
 		return true;
+	}
+	
+	function getKeyToDaoFieldMap() {
+		return [
+			'created' => DAO_JiraIssue::CREATED,
+			'id' => DAO_JiraIssue::ID,
+			'jira_id' => DAO_JiraIssue::JIRA_ID,
+			'jira_key' => DAO_JiraIssue::JIRA_KEY,
+			'jira_status_id' => DAO_JiraIssue::JIRA_STATUS_ID,
+			'jira_type_id' => DAO_JiraIssue::JIRA_TYPE_ID,
+			'project_id' => DAO_JiraIssue::PROJECT_ID,
+			'summary' => DAO_JiraIssue::SUMMARY,
+			'updated' => DAO_JiraIssue::UPDATED,
+		];
 	}
 
 	function lazyLoadContextValues($token, $dictionary) {
@@ -1651,7 +1728,7 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 	}
 	
 	function renderPeekPopup($context_id=0, $view_id='', $edit=false) {
-		$tpl = DevblocksPlatform::getTemplateService();
+		$tpl = DevblocksPlatform::services()->template();
 		$tpl->assign('view_id', $view_id);
 		
 		$context = Context_JiraIssue::ID;

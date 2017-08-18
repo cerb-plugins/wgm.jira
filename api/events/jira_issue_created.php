@@ -8,7 +8,7 @@ class Event_JiraIssueCreated extends AbstractEvent_JiraIssue {
 	}
 	
 	static function trigger($context_id, $variables=array()) {
-		$events = DevblocksPlatform::getEventService();
+		$events = DevblocksPlatform::services()->event();
 		return $events->trigger(
 			new Model_DevblocksEvent(
 				self::ID,
