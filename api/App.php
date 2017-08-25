@@ -22,7 +22,7 @@ class WgmJira_SetupPageSection extends Extension_PageSection {
 		try {
 			@$sync_account_id = DevblocksPlatform::importGPC($_REQUEST['sync_account_id'],'integer',0);
 			
-			DevblocksPlatform::setPluginSetting('wgm.freshbooks', 'sync_account_id', $sync_account_id);
+			DevblocksPlatform::setPluginSetting('wgm.jira', 'sync_account_id', $sync_account_id);
 			
 			echo json_encode(array('status'=>true, 'message'=>'Saved!'));
 			return;
@@ -530,7 +530,6 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 	}
 };
 
-if(class_exists('Extension_DevblocksEventAction')):
 class WgmJira_EventActionApiCall extends Extension_DevblocksEventAction {
 	function render(Extension_DevblocksEvent $event, Model_TriggerEvent $trigger, $params=array(), $seq=null) {
 		$active_worker = CerberusApplication::getActiveWorker();
@@ -642,7 +641,6 @@ class WgmJira_EventActionApiCall extends Extension_DevblocksEventAction {
 		}
 	}
 };
-endif;
 
 class ServiceProvider_Jira extends Extension_ServiceProvider implements IServiceProvider_HttpRequestSigner {
 	const ID = 'wgm.jira.service.provider';

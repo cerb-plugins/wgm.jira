@@ -4,7 +4,7 @@
 	<name>JIRA Integration</name>
 	<description>This plugin provides integration with Atlassian JIRA via their REST API.  It is intended to be a bridge used by other plugins to communicate with JIRA services.</description>
 	<author>Webgroup Media, LLC.</author>
-	<version>0.3.0</version>
+	<version>0.3.1</version>
 	<link>http://www.cerbweb.com/book/latest/plugins/wgm.jira</link>
 	<image>plugin.png</image>
  
@@ -119,10 +119,7 @@
 				<param key="acl">
 					<value>
 						<data key="comment" />
-						<data key="create" />
-						<data key="delete" />
 						<data key="export" />
-						<data key="update" />
 					</value>
 				</param>
 			</params>
