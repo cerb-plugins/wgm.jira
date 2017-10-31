@@ -70,7 +70,12 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 			->addField(self::UPDATED)
 			->timestamp()
 			;
-
+		$validation
+			->addField('_links')
+			->string()
+			->setMaxLength(65535)
+			;
+			
 		return $validation->getFields();
 	}
 	
@@ -89,6 +94,9 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 	static function update($ids, $fields, $check_deltas=true) {
 		if(!is_array($ids))
 			$ids = array($ids);
+		
+		$context = Context_JiraIssue::ID;
+		self::_updateAbstract($context, $ids, $fields);
 		
 		// Make a diff for the requested objects in batches
 		
@@ -884,7 +892,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 					
 				// Valid custom fields
 				default:
-					if('cf_' == substr($field_key,0,3))
+					if(DevblocksPlatform::strStartsWith($field_key, 'cf_'))
 						$pass = $this->_canSubtotalCustomField($field_key);
 					break;
 			}
@@ -1432,6 +1440,10 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocksContextProfile, IDevblocksContextPeek {
 	const ID = 'cerberusweb.contexts.jira.issue';
 	
+	static function isCreateableByActor(array $fields, $actor) {
+		return false;
+	}
+	
 	static function isReadableByActor($models, $actor) {
 		// Everyone can view
 		return CerberusContexts::allowEverything($models);
@@ -1627,10 +1639,21 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 			'jira_key' => DAO_JiraIssue::JIRA_KEY,
 			'jira_status_id' => DAO_JiraIssue::JIRA_STATUS_ID,
 			'jira_type_id' => DAO_JiraIssue::JIRA_TYPE_ID,
+			'links' => '_links',
 			'project_id' => DAO_JiraIssue::PROJECT_ID,
 			'summary' => DAO_JiraIssue::SUMMARY,
 			'updated' => DAO_JiraIssue::UPDATED,
 		];
+	}
+	
+	function getDaoFieldsFromKeyAndValue($key, $value, &$out_fields, &$error) {
+		switch(DevblocksPlatform::strLower($key)) {
+			case 'links':
+				$this->_getDaoFieldsLinks($value, $out_fields, $error);
+				break;
+		}
+		
+		return true;
 	}
 
 	function lazyLoadContextValues($token, $dictionary) {

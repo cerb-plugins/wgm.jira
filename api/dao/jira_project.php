@@ -35,12 +35,14 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 		$validation
 			->addField(self::JIRA_ID)
 			->id()
+			->setRequired(true)
 			;
 		// varchar(32)
 		$validation
 			->addField(self::JIRA_KEY)
 			->string()
 			->setMaxLength(32)
+			->setRequired(true)
 			;
 		// smallint(5) unsigned
 		$validation
@@ -62,19 +64,26 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 		$validation
 			->addField(self::PROJECT_ID)
 			->id()
+			->setRequired(true)
 			;
 		// varchar(255)
 		$validation
 			->addField(self::SUMMARY)
 			->string()
 			->setMaxLength(255)
+			->setRequired(true)
 			;
 		// int(10) unsigned
 		$validation
 			->addField(self::UPDATED)
 			->timestamp()
 			;
-
+		$validation
+			->addField('_links')
+			->string()
+			->setMaxLength(65535)
+			;
+			
 		return $validation->getFields();
 	}
 	
@@ -93,6 +102,9 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 	static function update($ids, $fields, $check_deltas=true) {
 		if(!is_array($ids))
 			$ids = array($ids);
+		
+		$context = Context_JiraProject::ID;
+		self::_updateAbstract($context, $ids, $fields);
 		
 		// Make a diff for the requested objects in batches
 		
@@ -698,7 +710,7 @@ class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotal
 					
 				// Valid custom fields
 				default:
-					if('cf_' == substr($field_key,0,3))
+					if(DevblocksPlatform::strStartsWith($field_key, 'cf_'))
 						$pass = $this->_canSubtotalCustomField($field_key);
 					break;
 			}
@@ -992,6 +1004,10 @@ class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotal
 class Context_JiraProject extends Extension_DevblocksContext implements IDevblocksContextProfile, IDevblocksContextPeek {
 	const ID = 'cerberusweb.contexts.jira.project';
 	
+	static function isCreateableByActor(array $fields, $actor) {
+		return true;
+	}
+	
 	static function isReadableByActor($models, $actor) {
 		// Everyone can view
 		return CerberusContexts::allowEverything($models);
@@ -1159,9 +1175,20 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 			'jira_key' => DAO_JiraProject::JIRA_KEY,
 			'last_checked_at' => DAO_JiraProject::LAST_CHECKED_AT,
 			'last_synced_at' => DAO_JiraProject::LAST_SYNCED_AT,
+			'links' => '_links',
 			'name' => DAO_JiraProject::NAME,
 			'url' => DAO_JiraProject::URL,
 		];
+	}
+	
+	function getDaoFieldsFromKeyAndValue($key, $value, &$out_fields, &$error) {
+		switch(DevblocksPlatform::strLower($key)) {
+			case 'links':
+				$this->_getDaoFieldsLinks($value, $out_fields, $error);
+				break;
+		}
+		
+		return true;
 	}
 
 	function lazyLoadContextValues($token, $dictionary) {
