@@ -1004,10 +1004,6 @@ class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotal
 class Context_JiraProject extends Extension_DevblocksContext implements IDevblocksContextProfile, IDevblocksContextPeek {
 	const ID = 'cerberusweb.contexts.jira.project';
 	
-	static function isCreateableByActor(array $fields, $actor) {
-		return true;
-	}
-	
 	static function isReadableByActor($models, $actor) {
 		// Everyone can view
 		return CerberusContexts::allowEverything($models);
