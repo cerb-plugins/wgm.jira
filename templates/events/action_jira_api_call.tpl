@@ -44,8 +44,7 @@
 
 <script type="text/javascript">
 $(function() {
-	var $action = $('fieldset#{$namePrefix}');
-	$action.find('textarea').autosize();
+	var $action = $('#{$namePrefix}_{$nonce}');
 	
 	$action.find('.cerb-peek-trigger')
 		.cerbPeekTrigger()
@@ -61,7 +60,7 @@ $(function() {
 		var val = $(this).val();
 		
 		if(val == 'post' || val == 'put')
-			$div_json.show().find('textarea').autosize();
+			$div_json.show();
 		else
 			$div_json.fadeOut();
 	});
