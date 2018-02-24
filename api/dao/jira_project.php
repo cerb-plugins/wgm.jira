@@ -773,7 +773,7 @@ class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotal
 					'type' => DevblocksSearchCriteria::TYPE_NUMBER,
 					'options' => array('param_key' => SearchFields_JiraProject::ID),
 					'examples' => [
-						['type' => 'chooser', 'context' => 'cerberusweb.contexts.jira.project', 'q' => ''],
+						['type' => 'chooser', 'context' => Context_JiraProject::ID, 'q' => ''],
 					]
 				),
 			'isSync' => 
@@ -1242,7 +1242,6 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 		$view->renderSortBy = SearchFields_JiraProject::LAST_CHECKED_AT;
 		$view->renderSortAsc = false;
 		$view->renderLimit = 10;
-		$view->renderFilters = false;
 		$view->renderTemplate = 'contextlinks_chooser';
 		
 		return $view;

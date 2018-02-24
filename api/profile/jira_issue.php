@@ -103,26 +103,26 @@ class PageSection_ProfilesJiraIssue extends Extension_PageSection {
 	
 		// Custom Fields
 
-		@$values = array_shift(DAO_CustomFieldValue::getValuesByContextIds('cerberusweb.contexts.jira.issue', $jira_issue->id)) or array();
+		@$values = array_shift(DAO_CustomFieldValue::getValuesByContextIds(Context_JiraIssue::ID, $jira_issue->id)) or array();
 		$tpl->assign('custom_field_values', $values);
 		
-		$properties_cfields = Page_Profiles::getProfilePropertiesCustomFields('cerberusweb.contexts.jira.issue', $values);
+		$properties_cfields = Page_Profiles::getProfilePropertiesCustomFields(Context_JiraIssue::ID, $values);
 		
 		if(!empty($properties_cfields))
 			$properties = array_merge($properties, $properties_cfields);
 		
 		// Custom Fieldsets
 
-		$properties_custom_fieldsets = Page_Profiles::getProfilePropertiesCustomFieldsets('cerberusweb.contexts.jira.issue', $jira_issue->id, $values);
+		$properties_custom_fieldsets = Page_Profiles::getProfilePropertiesCustomFieldsets(Context_JiraIssue::ID, $jira_issue->id, $values);
 		$tpl->assign('properties_custom_fieldsets', $properties_custom_fieldsets);
 		
 		// Link counts
 		
 		$properties_links = array(
-			'cerberusweb.contexts.jira.issue' => array(
+			Context_JiraIssue::ID => array(
 				$jira_issue->id => 
 					DAO_ContextLink::getContextLinkCounts(
-						'cerberusweb.contexts.jira.issue',
+						Context_JiraIssue::ID,
 						$jira_issue->id,
 						array(CerberusContexts::CONTEXT_CUSTOM_FIELDSET)
 					),
@@ -131,10 +131,10 @@ class PageSection_ProfilesJiraIssue extends Extension_PageSection {
 		
 		// [TODO] This is using JIRA ids rather than Cerb ones
 		if(!empty($jira_issue->project_id)) {
-			$properties_links['cerberusweb.contexts.jira.project'] = array(
+			$properties_links[Context_JiraProject::ID] = array(
 				$jira_issue->project_id => 
 					DAO_ContextLink::getContextLinkCounts(
-						'cerberusweb.contexts.jira.project',
+						Context_JiraProject::ID,
 						$jira_issue->project_id,
 						array(CerberusContexts::CONTEXT_CUSTOM_FIELDSET)
 					),
@@ -148,7 +148,7 @@ class PageSection_ProfilesJiraIssue extends Extension_PageSection {
 		$tpl->assign('properties', $properties);
 			
 		// Tabs
-		$tab_manifests = Extension_ContextProfileTab::getExtensions(false, 'cerberusweb.contexts.jira.issue');
+		$tab_manifests = Extension_ContextProfileTab::getExtensions(false, Context_JiraIssue::ID);
 		$tpl->assign('tab_manifests', $tab_manifests);
 		
 		// Interactions
@@ -182,7 +182,7 @@ class PageSection_ProfilesJiraIssue extends Extension_PageSection {
 				
 				$fields = array(
 					DAO_Comment::CREATED => time(),
-					DAO_Comment::CONTEXT => 'cerberusweb.contexts.jira.issue',
+					DAO_Comment::CONTEXT => Context_JiraIssue::ID,
 					DAO_Comment::CONTEXT_ID => $id,
 					DAO_Comment::COMMENT => $comment,
 					DAO_Comment::OWNER_CONTEXT => CerberusContexts::CONTEXT_WORKER,
@@ -191,9 +191,10 @@ class PageSection_ProfilesJiraIssue extends Extension_PageSection {
 				$comment_id = DAO_Comment::create($fields, $also_notify_worker_ids);
 			}
 			
-			// Custom fields
-			@$field_ids = DevblocksPlatform::importGPC($_REQUEST['field_ids'], 'array', array());
-			DAO_CustomFieldValue::handleFormPost('cerberusweb.contexts.jira.issue', $id, $field_ids);
+			// Custom field saves
+			@$field_ids = DevblocksPlatform::importGPC($_POST['field_ids'], 'array', []);
+			if(!DAO_CustomFieldValue::handleFormPost(Context_JiraIssue::ID, $id, $field_ids, $error))
+				throw new Exception_DevblocksAjaxValidationError($error);
 		}
 	}
 	

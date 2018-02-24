@@ -1,4 +1,4 @@
-{$view_context = 'cerberusweb.contexts.jira.issue'}
+{$view_context = Context_JiraIssue::ID}
 {$view_fields = $view->getColumnsAvailable()}
 {$results = $view->getData()}
 {$total = $results[1]}

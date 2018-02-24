@@ -1,4 +1,4 @@
-{$page_context = 'cerberusweb.contexts.jira.project'}
+{$page_context = Context_JiraProject::ID}
 {$page_context_id = $jira_project->id}
 {$is_writeable = Context_JiraProject::isWriteableByActor($jira_project, $active_worker)}
 

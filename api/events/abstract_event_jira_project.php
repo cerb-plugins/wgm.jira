@@ -83,7 +83,7 @@ abstract class AbstractEvent_JiraProject extends Extension_DevblocksEvent {
 		
 		$merge_labels = array();
 		$merge_values = array();
-		CerberusContexts::getContext('cerberusweb.contexts.jira.project', $model, $merge_labels, $merge_values, null, true);
+		CerberusContexts::getContext(Context_JiraProject::ID, $model, $merge_labels, $merge_values, null, true);
 
 			// Merge
 			CerberusContexts::merge(
@@ -104,7 +104,7 @@ abstract class AbstractEvent_JiraProject extends Extension_DevblocksEvent {
 	}
 	
 	function renderSimulatorTarget($trigger, $event_model) {
-		$context = 'cerberusweb.contexts.jira.project';
+		$context = Context_JiraProject::ID;
 		$context_id = $event_model->params['context_id'];
 		DevblocksEventHelper::renderSimulatorTarget($context, $context_id, $trigger, $event_model);
 	}
@@ -121,7 +121,7 @@ abstract class AbstractEvent_JiraProject extends Extension_DevblocksEvent {
 			),
 			'project_id' => array(
 				'label' => 'Project',
-				'context' => 'cerberusweb.contexts.jira.project',
+				'context' => Context_JiraProject::ID,
 			),
 			'project_watchers' => array(
 				'label' => 'Project watchers',
@@ -189,7 +189,7 @@ abstract class AbstractEvent_JiraProject extends Extension_DevblocksEvent {
 
 				switch($as_token) {
 					case 'project_link':
-						$from_context = 'cerberusweb.contexts.jira.project';
+						$from_context = Context_JiraProject::ID;
 						@$from_context_id = $dict->project_id;
 						break;
 					default:

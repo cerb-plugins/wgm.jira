@@ -1,4 +1,4 @@
-{$view_context = 'cerberusweb.contexts.jira.project'}
+{$view_context = Context_JiraProject::ID}
 {$view_fields = $view->getColumnsAvailable()}
 {$results = $view->getData()}
 {$total = $results[1]}

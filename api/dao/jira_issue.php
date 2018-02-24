@@ -107,7 +107,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 			
 			// Send events
 			if($check_deltas) {
-				CerberusContexts::checkpointChanges('cerberusweb.contexts.jira.issue', $batch_ids);
+				CerberusContexts::checkpointChanges(Context_JiraIssue::ID, $batch_ids);
 			}
 			
 			// Make changes
@@ -130,7 +130,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 				);
 				
 				// Log the context update
-				DevblocksPlatform::markContextChanged('cerberusweb.contexts.jira.issue', $batch_ids);
+				DevblocksPlatform::markContextChanged(Context_JiraIssue::ID, $batch_ids);
 			}
 		}
 	}
@@ -149,7 +149,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 		
 		// Load records only if they're needed
 		
-		if(false == ($before_models = CerberusContexts::getCheckpoints('cerberusweb.contexts.jira.issue', $ids)))
+		if(false == ($before_models = CerberusContexts::getCheckpoints(Context_JiraIssue::ID, $ids)))
 			return;
 		
 		foreach($before_models as $id => $before_model) {
@@ -369,7 +369,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 			new Model_DevblocksEvent(
 				'context.delete',
 				array(
-					'context' => 'cerberusweb.contexts.jira.issue',
+					'context' => Context_JiraIssue::ID,
 					'context_ids' => $ids
 				)
 			)
@@ -438,7 +438,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 		if(!is_a($param, 'DevblocksSearchCriteria'))
 			return;
 			
-		$from_context = 'cerberusweb.contexts.jira.issue';
+		$from_context = Context_JiraIssue::ID;
 		$from_index = 'jira_issue.id';
 		
 		$param_key = $param->field;
@@ -545,8 +545,8 @@ class SearchFields_JiraIssue extends DevblocksSearchFields {
 	
 	static function getCustomFieldContextKeys() {
 		return array(
-			'cerberusweb.contexts.jira.issue' => new DevblocksSearchFieldContextKeys('jira_issue.id', self::ID),
-			'cerberusweb.contexts.jira.project' => new DevblocksSearchFieldContextKeys('jira_issue.project_id', self::PROJECT_ID),
+			Context_JiraIssue::ID => new DevblocksSearchFieldContextKeys('jira_issue.id', self::ID),
+			Context_JiraProject::ID => new DevblocksSearchFieldContextKeys('jira_issue.project_id', self::PROJECT_ID),
 		);
 	}
 	
@@ -557,16 +557,16 @@ class SearchFields_JiraIssue extends DevblocksSearchFields {
 				break;
 				
 			case self::VIRTUAL_CONTEXT_LINK:
-				return self::_getWhereSQLFromContextLinksField($param, 'cerberusweb.contexts.jira.issue', self::getPrimaryKey());
+				return self::_getWhereSQLFromContextLinksField($param, Context_JiraIssue::ID, self::getPrimaryKey());
 				break;
 			
 			case self::VIRTUAL_PROJECT_SEARCH:
 				$sql = "SELECT jira_id FROM jira_project WHERE id IN (%s)";
-				return self::_getWhereSQLFromVirtualSearchSqlField($param, 'cerberusweb.contexts.jira.project', $sql, 'jira_issue.project_id');
+				return self::_getWhereSQLFromVirtualSearchSqlField($param, Context_JiraProject::ID, $sql, 'jira_issue.project_id');
 				break;
 				
 			case self::VIRTUAL_WATCHERS:
-				return self::_getWhereSQLFromWatchersField($param, 'cerberusweb.contexts.jira.issue', self::getPrimaryKey());
+				return self::_getWhereSQLFromWatchersField($param, Context_JiraIssue::ID, self::getPrimaryKey());
 				break;
 				
 			default:
@@ -1000,7 +1000,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 					'type' => DevblocksSearchCriteria::TYPE_NUMBER,
 					'options' => array('param_key' => SearchFields_JiraIssue::ID),
 					'examples' => [
-						['type' => 'chooser', 'context' => 'cerberusweb.contexts.jira.issue', 'q' => ''],
+						['type' => 'chooser', 'context' => Context_JiraIssue::ID, 'q' => ''],
 					]
 				),
 			'key' => 
@@ -1016,7 +1016,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 					'type' => DevblocksSearchCriteria::TYPE_VIRTUAL,
 					'options' => array('param_key' => SearchFields_JiraIssue::VIRTUAL_PROJECT_SEARCH),
 					'examples' => [
-						['type' => 'search', 'context' => 'cerberusweb.contexts.jira.project', 'q' => ''],
+						['type' => 'search', 'context' => Context_JiraProject::ID, 'q' => ''],
 					]
 			),
 			'status' => 
@@ -1075,8 +1075,8 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 		
 		// Add searchable custom fields
 		
-		$fields = self::_appendFieldsFromQuickSearchContext('cerberusweb.contexts.jira.issue', $fields, null);
-		$fields = self::_appendFieldsFromQuickSearchContext('cerberusweb.contexts.jira.project', $fields, 'project');
+		$fields = self::_appendFieldsFromQuickSearchContext(Context_JiraIssue::ID, $fields, null);
+		$fields = self::_appendFieldsFromQuickSearchContext(Context_JiraProject::ID, $fields, 'project');
 		
 		// Engine/schema examples: Fulltext
 		
@@ -1184,7 +1184,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 		$tpl->assign('view', $this);
 
 		// Custom fields
-		$custom_fields = DAO_CustomField::getByContext('cerberusweb.contexts.jira.issue');
+		$custom_fields = DAO_CustomField::getByContext(Context_JiraIssue::ID);
 		$tpl->assign('custom_fields', $custom_fields);
 
 		// Projects
@@ -1278,7 +1278,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 				break;
 				
 			case SearchFields_JiraIssue::VIRTUAL_HAS_FIELDSET:
-				$this->_renderCriteriaHasFieldset($tpl, 'cerberusweb.contexts.jira.issue');
+				$this->_renderCriteriaHasFieldset($tpl, Context_JiraIssue::ID);
 				break;
 				
 			case SearchFields_JiraIssue::VIRTUAL_WATCHERS:
@@ -1613,7 +1613,7 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 		// JIRA Project
 		$merge_token_labels = array();
 		$merge_token_values = array();
-		CerberusContexts::getContext('cerberusweb.contexts.jira.project', null, $merge_token_labels, $merge_token_values, '', true);
+		CerberusContexts::getContext(Context_JiraProject::ID, null, $merge_token_labels, $merge_token_values, '', true);
 
 		CerberusContexts::merge(
 			'project_',
@@ -1656,7 +1656,7 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 		if(!isset($dictionary['id']))
 			return;
 		
-		$context = 'cerberusweb.contexts.jira.issue';
+		$context = Context_JiraIssue::ID;
 		$context_id = $dictionary['id'];
 		
 		@$is_loaded = $dictionary['_loaded'];
@@ -1719,7 +1719,6 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 		$view->renderSortAsc = false;
 		$view->renderLimit = 10;
 		$view->renderTemplate = 'contextlinks_chooser';
-		$view->renderFilters = false;
 		return $view;
 	}
 	
@@ -1770,17 +1769,17 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 		$dict = DevblocksDictionaryDelegate::instance($values);
 		$tpl->assign('dict', $dict);
 	
-		$custom_fields = DAO_CustomField::getByContext('cerberusweb.contexts.jira.issue', false);
+		$custom_fields = DAO_CustomField::getByContext(Context_JiraIssue::ID, false);
 		$tpl->assign('custom_fields', $custom_fields);
 		
 		if(!empty($context_id)) {
-			$custom_field_values = DAO_CustomFieldValue::getValuesByContextIds('cerberusweb.contexts.jira.issue', $context_id);
+			$custom_field_values = DAO_CustomFieldValue::getValuesByContextIds(Context_JiraIssue::ID, $context_id);
 			if(isset($custom_field_values[$context_id]))
 				$tpl->assign('custom_field_values', $custom_field_values[$context_id]);
 		}
 
 		// Comments
-		$comments = DAO_Comment::getByContext('cerberusweb.contexts.jira.issue', $context_id);
+		$comments = DAO_Comment::getByContext(Context_JiraIssue::ID, $context_id);
 		$comments = array_reverse($comments, true);
 		$tpl->assign('comments', $comments);
 		
