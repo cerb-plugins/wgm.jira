@@ -277,12 +277,14 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 	static function saveComment($comment_id, $issue_id, $created, $author, $body) {
 		$db = DevblocksPlatform::services()->database();
 		
-		$result = $db->ExecuteMaster(sprintf("REPLACE INTO jira_issue_comment (jira_comment_id, jira_issue_id, created, jira_author, body) ".
-			"VALUES (%d, %d, %d, %s, %s)",
+		$result = $db->ExecuteMaster(sprintf("INSERT INTO jira_issue_comment (jira_comment_id, jira_issue_id, created, jira_author, body) ".
+			"VALUES (%d, %d, %d, %s, %s) ".
+			"ON DUPLICATE KEY UPDATE body = %s",
 			$comment_id,
 			$issue_id,
 			$created,
 			$db->qstr($author),
+			$db->qstr($body),
 			$db->qstr($body)
 		));
 		
