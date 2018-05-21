@@ -270,7 +270,7 @@ class WgmJira_API {
 		
 		// Fix versions
 		
-		$fix_versions = array();
+		$fix_versions = [];
 		
 		if(is_array($object['fields']['fixVersions']))
 		foreach($object['fields']['fixVersions'] as $fix_version) {
@@ -484,6 +484,7 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 					$startAt
 				)
 				)) {
+					if(isset($response['issues']))
 					foreach($response['issues'] as $object) {
 						$local_issue_id = WgmJira_API::importIssue($object);
 						

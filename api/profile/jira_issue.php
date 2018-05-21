@@ -17,147 +17,15 @@
 
 class PageSection_ProfilesJiraIssue extends Extension_PageSection {
 	function render() {
-		$tpl = DevblocksPlatform::services()->template();
-		$visit = CerberusApplication::getVisit();
-		$translate = DevblocksPlatform::getTranslationService();
-		
-		$context = Context_JiraIssue::ID;
-		$active_worker = CerberusApplication::getActiveWorker();
-		
 		$response = DevblocksPlatform::getHttpResponse();
 		$stack = $response->path;
 		@array_shift($stack); // profiles
 		@array_shift($stack); // jira_issue
-		$id = array_shift($stack); // 123
+		$context_id = intval(array_shift($stack)); // 123
 
-		@$id = intval($id);
+		$context = Context_JiraIssue::ID;
 		
-		if(null == ($jira_issue = DAO_JiraIssue::get($id))) {
-			return;
-		}
-		$tpl->assign('jira_issue', $jira_issue);
-	
-		// Dictionary
-		$labels = array();
-		$values = array();
-		CerberusContexts::getContext($context, $jira_issue, $labels, $values, '', true, false);
-		$dict = DevblocksDictionaryDelegate::instance($values);
-		$tpl->assign('dict', $dict);
-		
-		// Tab persistence
-		
-		$point = 'profiles.jira_issue.tab';
-		$tpl->assign('point', $point);
-		
-		if(null == (@$tab_selected = $stack[0])) {
-			$tab_selected = $visit->get($point, '');
-		}
-		$tpl->assign('tab_selected', $tab_selected);
-	
-		// Properties
-			
-		$properties = array();
-		
-		$properties['jira_key'] = array(
-			'label' => mb_ucfirst($translate->_('dao.jira_issue.jira_key')),
-			'type' => Model_CustomField::TYPE_SINGLE_LINE,
-			'value' => $jira_issue->jira_key,
-		);
-		
-		$properties['jira_project_id'] = array(
-			'label' => mb_ucfirst($translate->_('dao.jira_issue.project_id')),
-			'type' => '',
-			'value' => $jira_issue->getProject(),
-		);
-		
-		$properties['jira_versions'] = array(
-			'label' => mb_ucfirst($translate->_('dao.jira_issue.jira_versions')),
-			'type' => Model_CustomField::TYPE_SINGLE_LINE,
-			'value' => $jira_issue->jira_versions,
-		);
-		
-		$properties['jira_type_id'] = array(
-			'label' => mb_ucfirst($translate->_('dao.jira_issue.jira_type_id')),
-			'type' => Model_CustomField::TYPE_SINGLE_LINE,
-			'value' => ($jira_type = $jira_issue->getType()) ? $jira_type['name'] : '',
-		);
-		
-		$properties['jira_status_id'] = array(
-			'label' => mb_ucfirst($translate->_('dao.jira_issue.jira_status_id')),
-			'type' => Model_CustomField::TYPE_SINGLE_LINE,
-			'value' => ($jira_status = $jira_issue->getStatus()) ? $jira_status['name'] : '',
-		);
-		
-		$properties['created'] = array(
-			'label' => mb_ucfirst($translate->_('common.created')),
-			'type' => Model_CustomField::TYPE_DATE,
-			'value' => $jira_issue->created,
-		);
-		
-		$properties['updated'] = array(
-			'label' => DevblocksPlatform::translateCapitalized('common.updated'),
-			'type' => Model_CustomField::TYPE_DATE,
-			'value' => $jira_issue->updated,
-		);
-			
-	
-		// Custom Fields
-
-		@$values = array_shift(DAO_CustomFieldValue::getValuesByContextIds(Context_JiraIssue::ID, $jira_issue->id)) or array();
-		$tpl->assign('custom_field_values', $values);
-		
-		$properties_cfields = Page_Profiles::getProfilePropertiesCustomFields(Context_JiraIssue::ID, $values);
-		
-		if(!empty($properties_cfields))
-			$properties = array_merge($properties, $properties_cfields);
-		
-		// Custom Fieldsets
-
-		$properties_custom_fieldsets = Page_Profiles::getProfilePropertiesCustomFieldsets(Context_JiraIssue::ID, $jira_issue->id, $values);
-		$tpl->assign('properties_custom_fieldsets', $properties_custom_fieldsets);
-		
-		// Link counts
-		
-		$properties_links = array(
-			Context_JiraIssue::ID => array(
-				$jira_issue->id => 
-					DAO_ContextLink::getContextLinkCounts(
-						Context_JiraIssue::ID,
-						$jira_issue->id,
-						array(CerberusContexts::CONTEXT_CUSTOM_FIELDSET)
-					),
-			),
-		);
-		
-		// [TODO] This is using JIRA ids rather than Cerb ones
-		if(!empty($jira_issue->project_id)) {
-			$properties_links[Context_JiraProject::ID] = array(
-				$jira_issue->project_id => 
-					DAO_ContextLink::getContextLinkCounts(
-						Context_JiraProject::ID,
-						$jira_issue->project_id,
-						array(CerberusContexts::CONTEXT_CUSTOM_FIELDSET)
-					),
-			);
-		}
-		
-		$tpl->assign('properties_links', $properties_links);
-		
-		// Properties
-		
-		$tpl->assign('properties', $properties);
-			
-		// Tabs
-		$tab_manifests = Extension_ContextProfileTab::getExtensions(false, Context_JiraIssue::ID);
-		$tpl->assign('tab_manifests', $tab_manifests);
-		
-		// Interactions
-		$interactions = Event_GetInteractionsForWorker::getInteractionsByPointAndWorker('record:' . $context, $dict, $active_worker);
-		$interactions_menu = Event_GetInteractionsForWorker::getInteractionMenu($interactions);
-		$tpl->assign('interactions_menu', $interactions_menu);
-		
-		// Template
-		$tpl->display('devblocks:wgm.jira::jira_issue/profile.tpl');
+		Page_Profiles::renderProfile($context, $context_id);
 	}
 	
 	function savePeekAction() {

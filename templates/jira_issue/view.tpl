@@ -119,7 +119,7 @@
 				<td data-column="{$column}">
 					{$base_url = DevblocksPlatform::getPluginSetting('wgm.jira','base_url','')}
 					{if !empty($base_url)}
-						<a href="{$base_url}/browse/{$result.j_jira_key}" target="_blank">{$result.$column}</a>
+						<a href="{$base_url}/browse/{$result.j_jira_key}" target="_blank" rel="noopener noreferrer">{$result.$column}</a>
 					{else}
 						{$result.$column}
 					{/if}

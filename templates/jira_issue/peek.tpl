@@ -26,7 +26,7 @@
 		<tr>
 			<td width="1%" nowrap="nowrap" valign="top"><b>{'dao.jira_issue.jira_key'|devblocks_translate|capitalize}:</b></td>
 			<td width="99%">
-				<a href="{$jira_base_url}/browse/{$model->jira_key}" target="_blank">{$model->jira_key}</a>
+				<a href="{$jira_base_url}/browse/{$model->jira_key}" target="_blank" rel="noopener noreferrer">{$model->jira_key}</a>
 			</td>
 		</tr>
 		<tr>
