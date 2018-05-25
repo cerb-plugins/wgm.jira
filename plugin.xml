@@ -4,17 +4,17 @@
 	<name>JIRA Integration</name>
 	<description>This plugin provides integration with Atlassian JIRA via their REST API.  It is intended to be a bridge used by other plugins to communicate with JIRA services.</description>
 	<author>Webgroup Media, LLC.</author>
-	<version>0.6.0</version>
+	<version>0.6.1</version>
 	<link>http://www.cerbweb.com/book/latest/plugins/wgm.jira</link>
 	<image>plugin.png</image>
- 
- 	<!-- Requirements -->
+
+	<!-- Requirements -->
 
 	<requires>
 		<app_version min="9.0" max="9.0.99" />
 		<php_extension name="curl" />
 	</requires>
- 
+
 	<!-- Plugin Dependencies -->
 	
 	<dependencies>
@@ -27,6 +27,7 @@
 		<patch version="6.0.0" revision="5" file="patches/6.0.0.php" />
 		<patch version="7.2.0" revision="10" file="patches/7.2.0.php" />
 		<patch version="7.3.0" revision="11" file="patches/7.3.0.php" />
+		<patch version="9.0.0" revision="12" file="patches/9.0.0.php" />
 	</patches>
 	
 	<!-- Exported Classes -->
@@ -84,7 +85,7 @@
 	</class_loader>
 
 	<!-- Extensions -->
- 
+
 	<extensions>
 
 		<!-- Contexts -->

@@ -25,7 +25,7 @@ class PageSection_ProfilesJiraProject extends Extension_PageSection {
 
 		$context = Context_JiraProject::ID;
 		
-		Page_Profiles::renderProfile($context, $context_id);
+		Page_Profiles::renderProfile($context, $context_id, $stack);
 	}
 	
 	function savePeekAction() {

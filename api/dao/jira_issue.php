@@ -944,7 +944,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 			
 			default:
 				// Custom fields
-				if('cf_' == substr($column,0,3)) {
+				if(DevblocksPlatform::strStartsWith($column, 'cf_')) {
 					$counts = $this->_getSubtotalCountForCustomColumn($context, $column);
 				}
 				
@@ -1377,8 +1377,11 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 		
 		$properties['jira_project_id'] = array(
 			'label' => mb_ucfirst($translate->_('dao.jira_issue.project_id')),
-			'type' => '',
-			'value' => $model->getProject(),
+			'type' => Model_CustomField::TYPE_LINK,
+			'value' => $model->getProject()->id,
+			'params' => [
+				'context' => Context_JiraProject::ID,
+			],
 		);
 		
 		$properties['jira_versions'] = array(
@@ -1487,7 +1490,7 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 		}
 		
 		// Token labels
-		$token_labels = array(
+		$token_labels = [
 			'_label' => $prefix,
 			'id' => $prefix.$translate->_('common.id'),
 			'jira_key' => $prefix.$translate->_('dao.jira_issue.jira_key'),
@@ -1499,10 +1502,10 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 			'updated' => $prefix.$translate->_('common.updated'),
 			'jira_versions' => $prefix.$translate->_('dao.jira_issue.jira_versions'),
 			'record_url' => $prefix.$translate->_('common.url.record'),
-		);
+		];
 		
 		// Token types
-		$token_types = array(
+		$token_types = [
 			'_label' => 'context_url',
 			'id' => Model_CustomField::TYPE_NUMBER,
 			'jira_key' => Model_CustomField::TYPE_SINGLE_LINE,
@@ -1514,7 +1517,7 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 			'updated' => Model_CustomField::TYPE_DATE,
 			'jira_versions' => Model_CustomField::TYPE_SINGLE_LINE,
 			'record_url' => Model_CustomField::TYPE_URL,
-		);
+		];
 		
 		// Custom field/fieldset token labels
 		if(false !== ($custom_field_labels = $this->_getTokenLabelsFromCustomFields($fields, $prefix)) && is_array($custom_field_labels))
@@ -1525,7 +1528,7 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 			$token_types = array_merge($token_types, $custom_field_types);
 		
 		// Token values
-		$token_values = array();
+		$token_values = [];
 		
 		$token_values['_context'] = Context_JiraIssue::ID;
 		$token_values['_types'] = $token_types;
@@ -1542,6 +1545,7 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 			$token_values['jira_key'] = $jira_issue->jira_key;
 			$token_values['jira_type_id'] = $jira_issue->jira_type_id;
 			$token_values['jira_type'] = (is_array($type) ? $type['name'] : '');
+			$token_values['jira_project_id'] = $jira_issue->project_id;
 			$token_values['jira_status_id'] = $jira_issue->jira_status_id;
 			$token_values['jira_status'] = (is_array($status) ? $status['name'] : '');
 			$token_values['summary'] = $jira_issue->summary;
@@ -1549,7 +1553,7 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 			$token_values['updated'] = $jira_issue->updated;
 			$token_values['jira_versions'] = $jira_issue->jira_versions;
 			
-			$token_values['project_id'] = $jira_issue->project_id;
+			$token_values['project_id'] = $project->id;
 			
 			// Custom fields
 			$token_values = $this->_importModelCustomFieldsAsValues($jira_issue, $token_values);
@@ -1562,8 +1566,7 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 		}
 		
 		// JIRA Project
-		$merge_token_labels = array();
-		$merge_token_values = array();
+		$merge_token_labels = $merge_token_values = [];
 		CerberusContexts::getContext(Context_JiraProject::ID, null, $merge_token_labels, $merge_token_values, '', true);
 
 		CerberusContexts::merge(

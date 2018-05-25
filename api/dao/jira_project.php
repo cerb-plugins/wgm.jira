@@ -722,7 +722,7 @@ class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotal
 			
 			default:
 				// Custom fields
-				if('cf_' == substr($column,0,3)) {
+				if(DevblocksPlatform::strStartsWith($column, 'cf_')) {
 					$counts = $this->_getSubtotalCountForCustomColumn($context, $column);
 				}
 				
@@ -981,19 +981,19 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 		$properties['is_sync'] = array(
 			'label' => mb_ucfirst($translate->_('dao.jira_project.is_sync')),
 			'type' => Model_CustomField::TYPE_CHECKBOX,
-			'value' => $jira_project->is_sync,
+			'value' => $model->is_sync,
 		);
 		
 		$properties['last_synced_at'] = array(
 			'label' => mb_ucfirst($translate->_('dao.jira_project.last_synced_at')),
 			'type' => Model_CustomField::TYPE_DATE,
-			'value' => $jira_project->last_synced_at,
+			'value' => $model->last_synced_at,
 		);
 		
 		$properties['url'] = array(
 			'label' => mb_ucfirst($translate->_('common.url')),
 			'type' => Model_CustomField::TYPE_URL,
-			'value' => $jira_project->url,
+			'value' => $model->url,
 		);
 		
 		return $properties;
