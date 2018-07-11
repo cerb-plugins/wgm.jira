@@ -9,38 +9,29 @@
 <input type="hidden" name="do_delete" value="0">
 <input type="hidden" name="_csrf_token" value="{$session.csrf_token}">
 
-<fieldset class="peek">
-	<legend>{'common.properties'|devblocks_translate}</legend>
-	
-	<table cellspacing="0" cellpadding="2" border="0" width="98%">
-		<tbody>
-			<tr>
-				<td width="1%" nowrap="nowrap">{'common.name'|devblocks_translate}:</td>
-				<td width="99%">
-					{$model->name}
-				</td>
-			</tr>
-			
-			<tr>
-				<td width="1%" nowrap="nowrap" valign="top">{'dao.jira_project.is_sync'|devblocks_translate|capitalize}: </td>
-				<td width="99%">
-					<label><input type="radio" name="is_sync" value="0" {if empty($model->is_sync)}checked="checked"{/if}> {'common.no'|devblocks_translate|capitalize}</label>
-					<label><input type="radio" name="is_sync" value="1" {if $model->is_sync}checked="checked"{/if}> {'common.yes'|devblocks_translate|capitalize}</label>
-				</td>
-			</tr>
-		</tbody>
+<table cellspacing="0" cellpadding="2" border="0" width="98%" style="margin-bottom:10px;">
+	<tbody>
+		<tr>
+			<td width="1%" nowrap="nowrap">{'common.name'|devblocks_translate}:</td>
+			<td width="99%">
+				{$model->name}
+			</td>
+		</tr>
 		
-	</table>
+		<tr>
+			<td width="1%" nowrap="nowrap" valign="top">{'dao.jira_project.is_sync'|devblocks_translate|capitalize}: </td>
+			<td width="99%">
+				<label><input type="radio" name="is_sync" value="0" {if empty($model->is_sync)}checked="checked"{/if}> {'common.no'|devblocks_translate|capitalize}</label>
+				<label><input type="radio" name="is_sync" value="1" {if $model->is_sync}checked="checked"{/if}> {'common.yes'|devblocks_translate|capitalize}</label>
+			</td>
+		</tr>
+	</tbody>
 	
-</fieldset>
-
-{if !empty($custom_fields)}
-<fieldset class="peek">
-	<legend>{'common.custom_fields'|devblocks_translate}</legend>
-	{include file="devblocks:cerberusweb.core::internal/custom_fields/bulk/form.tpl" bulk=false}
-</fieldset>
-{/if}
-
+	{if !empty($custom_fields)}
+	{include file="devblocks:cerberusweb.core::internal/custom_fields/bulk/form.tpl" bulk=false tbody=true}
+	{/if}
+</table>
+	
 {include file="devblocks:cerberusweb.core::internal/custom_fieldsets/peek_custom_fieldsets.tpl" context=$peek_context context_id=$model->id}
 
 <fieldset class="peek">

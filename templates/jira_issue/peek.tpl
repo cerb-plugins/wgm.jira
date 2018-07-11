@@ -13,85 +13,78 @@
 {$jira_project = $model->getProject()}
 {/if}
 
-<fieldset class="peek">
-	<legend>{'common.properties'|devblocks_translate}</legend>
+<table cellspacing="0" cellpadding="2" border="0" width="98%" style="margin-bottom:10px;">
+	<tr>
+		<td width="1%" nowrap="nowrap" valign="top"><b>{'common.name'|devblocks_translate|capitalize}:</b></td>
+		<td width="99%">
+			{$model->summary}
+		</td>
+	</tr>
+	<tr>
+		<td width="1%" nowrap="nowrap" valign="top"><b>{'dao.jira_issue.jira_key'|devblocks_translate|capitalize}:</b></td>
+		<td width="99%">
+			<a href="{$jira_base_url}/browse/{$model->jira_key}" target="_blank" rel="noopener noreferrer">{$model->jira_key}</a>
+		</td>
+	</tr>
+	<tr>
+		<td width="1%" nowrap="nowrap" valign="top"><b>{'dao.jira_issue.project_id'|devblocks_translate|capitalize}:</b></td>
+		<td width="99%">
+			{if $jira_project}
+				{$jira_project->name}
+			{/if}
+		</td>
+	</tr>
+	<tr>
+		<td width="1%" nowrap="nowrap" valign="top"><b>{'dao.jira_issue.jira_versions'|devblocks_translate|capitalize}:</b></td>
+		<td width="99%">
+			{$model->jira_versions|default:'(none)'}
+		</td>
+	</tr>
+	<tr>
+		<td width="1%" nowrap="nowrap" valign="top"><b>{'dao.jira_issue.jira_type_id'|devblocks_translate|capitalize}:</b></td>
+		<td width="99%">
+			{$type = $model->getType()}
+			{$type.name}
+		</td>
+	</tr>
+	<tr>
+		<td width="1%" nowrap="nowrap" valign="top"><b>{'dao.jira_issue.jira_status_id'|devblocks_translate|capitalize}:</b></td>
+		<td width="99%">
+			{$status = $model->getStatus()}
+			{$status.name}
+		</td>
+	</tr>
+	<tr>
+		<td width="1%" nowrap="nowrap" valign="top"><b>{'common.created'|devblocks_translate|capitalize}:</b></td>
+		<td width="99%">
+			{$model->created|devblocks_date} ({$model->created|devblocks_prettytime})</abbr>
+		</td>
+	</tr>
+	<tr>
+		<td width="1%" nowrap="nowrap" valign="top"><b>{'common.updated'|devblocks_translate|capitalize}:</b></td>
+		<td width="99%">
+			{$model->updated|devblocks_date} ({$model->updated|devblocks_prettytime})</abbr>
+		</td>
+	</tr>
 	
-	<table cellspacing="0" cellpadding="2" border="0" width="98%">
-		<tr>
-			<td width="1%" nowrap="nowrap" valign="top"><b>{'common.name'|devblocks_translate|capitalize}:</b></td>
-			<td width="99%">
-				{$model->summary}
-			</td>
-		</tr>
-		<tr>
-			<td width="1%" nowrap="nowrap" valign="top"><b>{'dao.jira_issue.jira_key'|devblocks_translate|capitalize}:</b></td>
-			<td width="99%">
-				<a href="{$jira_base_url}/browse/{$model->jira_key}" target="_blank" rel="noopener noreferrer">{$model->jira_key}</a>
-			</td>
-		</tr>
-		<tr>
-			<td width="1%" nowrap="nowrap" valign="top"><b>{'dao.jira_issue.project_id'|devblocks_translate|capitalize}:</b></td>
-			<td width="99%">
-				{if $jira_project}
-					{$jira_project->name}
-				{/if}
-			</td>
-		</tr>
-		<tr>
-			<td width="1%" nowrap="nowrap" valign="top"><b>{'dao.jira_issue.jira_versions'|devblocks_translate|capitalize}:</b></td>
-			<td width="99%">
-				{$model->jira_versions|default:'(none)'}
-			</td>
-		</tr>
-		<tr>
-			<td width="1%" nowrap="nowrap" valign="top"><b>{'dao.jira_issue.jira_type_id'|devblocks_translate|capitalize}:</b></td>
-			<td width="99%">
-				{$type = $model->getType()}
-				{$type.name}
-			</td>
-		</tr>
-		<tr>
-			<td width="1%" nowrap="nowrap" valign="top"><b>{'dao.jira_issue.jira_status_id'|devblocks_translate|capitalize}:</b></td>
-			<td width="99%">
-				{$status = $model->getStatus()}
-				{$status.name}
-			</td>
-		</tr>
-		<tr>
-			<td width="1%" nowrap="nowrap" valign="top"><b>{'common.created'|devblocks_translate|capitalize}:</b></td>
-			<td width="99%">
-				{$model->created|devblocks_date} ({$model->created|devblocks_prettytime})</abbr>
-			</td>
-		</tr>
-		<tr>
-			<td width="1%" nowrap="nowrap" valign="top"><b>{'common.updated'|devblocks_translate|capitalize}:</b></td>
-			<td width="99%">
-				{$model->updated|devblocks_date} ({$model->updated|devblocks_prettytime})</abbr>
-			</td>
-		</tr>
-		
-		{* Watchers *}
-		<tr>
-			<td width="0%" nowrap="nowrap" valign="top" align="right">{'common.watchers'|devblocks_translate|capitalize|capitalize}: </td>
-			<td width="100%">
-				{if empty($model->id)}
-					<button type="button" class="chooser_watcher"><span class="glyphicons glyphicons-search"></span></button>
-					<ul class="chooser-container bubbles" style="display:block;"></ul>
-				{else}
-					{$object_watchers = DAO_ContextLink::getContextLinks(Context_JiraIssue::ID, array($model->id), CerberusContexts::CONTEXT_WORKER)}
-					{include file="devblocks:cerberusweb.core::internal/watchers/context_follow_button.tpl" context=Context_JiraIssue::ID context_id=$model->id full=true}
-				{/if}
-			</td>
-		</tr>
-	</table>
-</fieldset>
-
-{if !empty($custom_fields)}
-<fieldset class="peek">
-	<legend>{'common.custom_fields'|devblocks_translate}</legend>
-	{include file="devblocks:cerberusweb.core::internal/custom_fields/bulk/form.tpl" bulk=false}
-</fieldset>
-{/if}
+	{* Watchers *}
+	<tr>
+		<td width="0%" nowrap="nowrap" valign="top" align="right">{'common.watchers'|devblocks_translate|capitalize|capitalize}: </td>
+		<td width="100%">
+			{if empty($model->id)}
+				<button type="button" class="chooser_watcher"><span class="glyphicons glyphicons-search"></span></button>
+				<ul class="chooser-container bubbles" style="display:block;"></ul>
+			{else}
+				{$object_watchers = DAO_ContextLink::getContextLinks(Context_JiraIssue::ID, array($model->id), CerberusContexts::CONTEXT_WORKER)}
+				{include file="devblocks:cerberusweb.core::internal/watchers/context_follow_button.tpl" context=Context_JiraIssue::ID context_id=$model->id full=true}
+			{/if}
+		</td>
+	</tr>
+	
+	{if !empty($custom_fields)}
+	{include file="devblocks:cerberusweb.core::internal/custom_fields/bulk/form.tpl" bulk=false tbody=true}
+	{/if}
+</table>
 
 {include file="devblocks:cerberusweb.core::internal/custom_fieldsets/peek_custom_fieldsets.tpl" context=$peek_context context_id=$model->id}
 

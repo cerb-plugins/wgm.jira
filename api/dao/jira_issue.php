@@ -564,6 +564,32 @@ class SearchFields_JiraIssue extends DevblocksSearchFields {
 		return false;
 	}
 	
+	static function getFieldForSubtotalKey($key, array $query_fields, array $search_fields, $primary_key) {
+		switch($key) {
+			case 'project':
+				$key = 'project.id';
+				break;
+		}
+		
+		return parent::getFieldForSubtotalKey($key, $query_fields, $search_fields, $primary_key);
+	}
+	
+	static function getLabelsForKeyValues($key, $values) {
+		switch($key) {
+			case SearchFields_JiraIssue::PROJECT_ID:
+				$models = DAO_JiraProject::getIds($values);
+				return array_column(DevblocksPlatform::objectsToArrays($models), 'name', 'id');
+				break;
+				
+			case SearchFields_JiraIssue::ID:
+				$models = DAO_JiraIssue::getIds($values);
+				return array_column(DevblocksPlatform::objectsToArrays($models), 'summary', 'id');
+				break;
+		}
+		
+		return parent::getLabelsForKeyValues($key, $values);
+	}
+	
 	/**
 	 * @return DevblocksSearchField[]
 	 */
@@ -1003,6 +1029,14 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 					'options' => array('param_key' => SearchFields_JiraIssue::VIRTUAL_PROJECT_SEARCH),
 					'examples' => [
 						['type' => 'search', 'context' => Context_JiraProject::ID, 'q' => ''],
+					]
+			),
+			'project.id' => 
+				array(
+					'type' => DevblocksSearchCriteria::TYPE_NUMBER,
+					'options' => array('param_key' => SearchFields_JiraIssue::PROJECT_ID),
+					'examples' => [
+						['type' => 'chooser', 'context' => Context_JiraProject::ID, 'q' => ''],
 					]
 			),
 			'status' => 
