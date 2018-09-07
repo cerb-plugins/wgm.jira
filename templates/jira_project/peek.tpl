@@ -1,5 +1,5 @@
 {$peek_context = Context_JiraProject::ID}
-<form action="{devblocks_url}{/devblocks_url}" method="post" id="frmJiraProjectPeek">
+<form action="{devblocks_url}{/devblocks_url}" method="post" id="frmJiraProjectPeek" onsubmit="return false;">
 <input type="hidden" name="c" value="profiles">
 <input type="hidden" name="a" value="handleSectionAction">
 <input type="hidden" name="section" value="jira_project">

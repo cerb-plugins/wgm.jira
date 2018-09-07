@@ -4,7 +4,7 @@
 	<name>JIRA Integration</name>
 	<description>This plugin provides integration with Atlassian JIRA via their REST API.  It is intended to be a bridge used by other plugins to communicate with JIRA services.</description>
 	<author>Webgroup Media, LLC.</author>
-	<version>0.6.3</version>
+	<version>0.6.4</version>
 	<link>http://www.cerbweb.com/book/latest/plugins/wgm.jira</link>
 	<image>plugin.png</image>
 
@@ -239,24 +239,6 @@
 			<params>
 				<param key="page_id" value="core.page.profiles" />
 				<param key="uri" value="jira_issue" />
-			</params>
-		</extension>
-		
-		<!-- Mobile Profile Blocks -->
-
-		<extension point="mobile.profile.block">
-			<id>jira.mobile.profile.block.issue</id>
-			<name>Mobile JIRA issue profile</name>
-			<class>
-				<file>api/mobile/profiles.php</file>
-				<name>MobileProfile_JiraIssue</name>
-			</class>
-			<params>
-				<param key="contexts">
-					<value>
-						<data key="cerberusweb.contexts.jira.issue" />
-					</value>
-				</param>
 			</params>
 		</extension>
 		

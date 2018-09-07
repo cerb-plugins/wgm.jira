@@ -1,5 +1,5 @@
 {$peek_context = Context_JiraIssue::ID}
-<form action="{devblocks_url}{/devblocks_url}" method="post" id="frmJiraIssuePeek">
+<form action="{devblocks_url}{/devblocks_url}" method="post" id="frmJiraIssuePeek" onsubmit="return false;">
 <input type="hidden" name="c" value="profiles">
 <input type="hidden" name="a" value="handleSectionAction">
 <input type="hidden" name="section" value="jira_issue">
@@ -76,7 +76,7 @@
 				<ul class="chooser-container bubbles" style="display:block;"></ul>
 			{else}
 				{$object_watchers = DAO_ContextLink::getContextLinks(Context_JiraIssue::ID, array($model->id), CerberusContexts::CONTEXT_WORKER)}
-				{include file="devblocks:cerberusweb.core::internal/watchers/context_follow_button.tpl" context=Context_JiraIssue::ID context_id=$model->id full=true}
+				{include file="devblocks:cerberusweb.core::internal/watchers/context_follow_button.tpl" context=Context_JiraIssue::ID context_id=$model->id full_label=true}
 			{/if}
 		</td>
 	</tr>
