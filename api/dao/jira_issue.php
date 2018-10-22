@@ -277,7 +277,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 	static function saveComment($comment_id, $issue_id, $created, $author, $body) {
 		$db = DevblocksPlatform::services()->database();
 		
-		$result = $db->ExecuteMaster(sprintf("INSERT INTO jira_issue_comment (jira_comment_id, jira_issue_id, created, jira_author, body) ".
+		$db->ExecuteMaster(sprintf("INSERT INTO jira_issue_comment (jira_comment_id, jira_issue_id, created, jira_author, body) ".
 			"VALUES (%d, %d, %d, %s, %s) ".
 			"ON DUPLICATE KEY UPDATE body = %s",
 			$comment_id,
@@ -322,7 +322,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 	 * @return Model_JiraIssue[]
 	 */
 	static private function _getObjectsFromResult($rs) {
-		$objects = array();
+		$objects = [];
 		
 		if(!($rs instanceof mysqli_result))
 			return false;
@@ -383,7 +383,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 	public static function getSearchQueryComponents($columns, $params, $sortBy=null, $sortAsc=null) {
 		$fields = SearchFields_JiraIssue::getFields();
 		
-		list($tables,$wheres) = parent::_parseSearchParams($params, $columns, 'SearchFields_JiraIssue', $sortBy);
+		list(,$wheres) = parent::_parseSearchParams($params, $columns, 'SearchFields_JiraIssue', $sortBy);
 		
 		$select_sql = sprintf("SELECT ".
 			"jira_issue.id as %s, ".
@@ -415,12 +415,6 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 			
 		$sort_sql = self::_buildSortClause($sortBy, $sortAsc, $fields, $select_sql, 'SearchFields_JiraIssue');
 	
-		$args = array(
-			'join_sql' => &$join_sql,
-			'where_sql' => &$where_sql,
-			'tables' => &$tables,
-		);
-		
 		return array(
 			'primary_table' => 'jira_issue',
 			'select' => $select_sql,
@@ -470,7 +464,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 		if(!($rs instanceof mysqli_result))
 			return false;
 		
-		$results = array();
+		$results = [];
 		
 		while($row = mysqli_fetch_assoc($rs)) {
 			$object_id = intval($row[SearchFields_JiraIssue::ID]);
@@ -652,7 +646,7 @@ class Search_JiraIssue extends Extension_DevblocksSearchSchema {
 	}
 	
 	public function getAttributes() {
-		return array();
+		return [];
 	}
 	
 	public function getFields() {
@@ -661,7 +655,7 @@ class Search_JiraIssue extends Extension_DevblocksSearchSchema {
 		);
 	}
 	
-	public function query($query, $attributes=array(), $limit=null) {
+	public function query($query, $attributes=[], $limit=null) {
 		if(false == ($engine = $this->getEngine()))
 			return false;
 		
@@ -872,7 +866,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 	function getSubtotalFields() {
 		$all_fields = $this->getParamsAvailable(true);
 		
-		$fields = array();
+		$fields = [];
 
 		if(is_array($all_fields))
 		foreach($all_fields as $field_key => $field_model) {
@@ -909,12 +903,12 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 	}
 	
 	function getSubtotalCounts($column) {
-		$counts = array();
+		$counts = [];
 		$fields = $this->getFields();
 		$context = Context_JiraIssue::ID;
 
 		if(!isset($fields[$column]))
-			return array();
+			return [];
 		
 		switch($column) {
 			case SearchFields_JiraIssue::JIRA_VERSIONS:
@@ -922,17 +916,17 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 				break;
 				
 			case SearchFields_JiraIssue::PROJECT_ID:
-				$label_map = array();
+				$label_map = [];
 				
 				$projects = DAO_JiraProject::getAll();
-				foreach($projects as $project_id => $project)
+				foreach($projects as $project)
 					$label_map[$project->jira_id] = $project->name;
 				
 				$counts = $this->_getSubtotalCountForStringColumn($context, $column, $label_map, 'in', 'options[]');
 				break;
 				
 			case SearchFields_JiraIssue::JIRA_STATUS_ID:
-				$label_map = array();
+				$label_map = [];
 				
 				$projects = DAO_JiraProject::getAll();
 				$project = current($projects);
@@ -946,7 +940,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 				break;
 				
 			case SearchFields_JiraIssue::JIRA_TYPE_ID:
-				$label_map = array();
+				$label_map = [];
 
 				$types = DAO_JiraProject::getAllTypes();
 				foreach($types as $type_id => $type) {
@@ -1100,7 +1094,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 		
 		// Engine/schema examples: Fulltext
 		
-		$ft_examples = array();
+		$ft_examples = [];
 		
 		if(false != ($schema = Extension_DevblocksSearchSchema::get(Search_JiraIssue::ID))) {
 			if(false != ($engine = $schema->getEngine())) {
@@ -1137,12 +1131,12 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 			case 'status':
 				$field_key = SearchFields_JiraIssue::JIRA_STATUS_ID;
 				$oper = null;
-				$patterns = array();
+				$patterns = [];
 				
 				CerbQuickSearchLexer::getOperArrayFromTokens($tokens, $oper, $patterns);
 				
 				$statuses = DAO_JiraProject::getAllStatuses();
-				$values = array();
+				$values = [];
 				
 				if(is_array($patterns))
 				foreach($patterns as $pattern) {
@@ -1162,12 +1156,12 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 			case 'type':
 				$field_key = SearchFields_JiraIssue::JIRA_TYPE_ID;
 				$oper = null;
-				$patterns = array();
+				$patterns = [];
 				
 				CerbQuickSearchLexer::getOperArrayFromTokens($tokens, $oper, $patterns);
 				
 				$types = DAO_JiraProject::getAllTypes();
-				$values = array();
+				$values = [];
 				
 				if(is_array($patterns))
 				foreach($patterns as $pattern) {
@@ -1226,7 +1220,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 
 		switch($field) {
 			case SearchFields_JiraIssue::PROJECT_ID:
-				$strings = array();
+				$strings = [];
 				$projects = DAO_JiraProject::getAll();
 				
 				foreach($values as $v) {
@@ -1238,7 +1232,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 				break;
 				
 			case SearchFields_JiraIssue::JIRA_STATUS_ID:
-				$strings = array();
+				$strings = [];
 				$projects = DAO_JiraProject::getAll();
 				$project = array_shift($projects);
 				
@@ -1251,7 +1245,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 				break;
 				
 			case SearchFields_JiraIssue::JIRA_TYPE_ID:
-				$strings = array();
+				$strings = [];
 				$projects = DAO_JiraProject::getAll();
 				
 				foreach($values as $v) {
@@ -1272,8 +1266,6 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 
 	function renderVirtualCriteria($param) {
 		$key = $param->field;
-		
-		$translate = DevblocksPlatform::getTranslationService();
 		
 		switch($key) {
 			case SearchFields_JiraIssue::VIRTUAL_CONTEXT_LINK:
@@ -1326,23 +1318,23 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 			case SearchFields_JiraIssue::PROJECT_ID:
 			case SearchFields_JiraIssue::JIRA_STATUS_ID:
 			case SearchFields_JiraIssue::JIRA_TYPE_ID:
-				@$options = DevblocksPlatform::importGPC($_REQUEST['options'],'array',array());
+				@$options = DevblocksPlatform::importGPC($_REQUEST['options'],'array',[]);
 				$options = DevblocksPlatform::sanitizeArray($options, 'integer', array('nonzero','unique'));
 				$criteria = new DevblocksSearchCriteria($field,$oper,$options);
 				break;
 				
 			case SearchFields_JiraIssue::VIRTUAL_CONTEXT_LINK:
-				@$context_links = DevblocksPlatform::importGPC($_REQUEST['context_link'],'array',array());
+				@$context_links = DevblocksPlatform::importGPC($_REQUEST['context_link'],'array',[]);
 				$criteria = new DevblocksSearchCriteria($field,DevblocksSearchCriteria::OPER_IN,$context_links);
 				break;
 				
 			case SearchFields_JiraIssue::VIRTUAL_HAS_FIELDSET:
-				@$options = DevblocksPlatform::importGPC($_REQUEST['options'],'array',array());
+				@$options = DevblocksPlatform::importGPC($_REQUEST['options'],'array',[]);
 				$criteria = new DevblocksSearchCriteria($field,DevblocksSearchCriteria::OPER_IN,$options);
 				break;
 				
 			case SearchFields_JiraIssue::VIRTUAL_WATCHERS:
-				@$worker_ids = DevblocksPlatform::importGPC($_REQUEST['worker_id'],'array',array());
+				@$worker_ids = DevblocksPlatform::importGPC($_REQUEST['worker_id'],'array',[]);
 				$criteria = new DevblocksSearchCriteria($field,$oper,$worker_ids);
 				break;
 				
@@ -1453,7 +1445,6 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 	
 	function getMeta($context_id) {
 		$jira_issue = DAO_JiraIssue::get($context_id);
-		$url_writer = DevblocksPlatform::services()->url();
 		
 		$url = $this->profileGetUrl($context_id);
 		$friendly = DevblocksPlatform::strToPermalink($jira_issue->summary);
@@ -1630,6 +1621,12 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 		];
 	}
 	
+	function getKeyMeta() {
+		$keys = parent::getKeyMeta();
+		
+		return $keys;
+	}
+	
 	function getDaoFieldsFromKeyAndValue($key, $value, &$out_fields, &$error) {
 		switch(DevblocksPlatform::strLower($key)) {
 			case 'links':
@@ -1638,6 +1635,22 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 		}
 		
 		return true;
+	}
+	
+	function lazyLoadGetKeys() {
+		$lazy_keys = parent::lazyLoadGetKeys();
+		
+		$lazy_keys['description'] = [
+			'label' => 'Description',
+			'type' => 'Text',
+		];
+		
+		$lazy_keys['discussion'] = [
+			'label' => 'Discussion',
+			'type' => 'HashMap',
+		];
+		
+		return $lazy_keys;
 	}
 
 	function lazyLoadContextValues($token, $dictionary) {
@@ -1648,10 +1661,10 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 		$context_id = $dictionary['id'];
 		
 		@$is_loaded = $dictionary['_loaded'];
-		$values = array();
+		$values = [];
 		
 		if(!$is_loaded) {
-			$labels = array();
+			$labels = [];
 			CerberusContexts::getContext($context, $context_id, $labels, $values, null, true, true);
 		}
 		
@@ -1690,8 +1703,6 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 	}
 	
 	function getChooserView($view_id=null) {
-		$active_worker = CerberusApplication::getActiveWorker();
-
 		if(empty($view_id))
 			$view_id = 'chooser_'.str_replace('.','_',$this->id).time().mt_rand(0,9999);
 	
@@ -1710,7 +1721,7 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 		return $view;
 	}
 	
-	function getView($context=null, $context_id=null, $options=array(), $view_id=null) {
+	function getView($context=null, $context_id=null, $options=[], $view_id=null) {
 		$view_id = !empty($view_id) ? $view_id : str_replace('.','_',$this->id);
 		
 		$defaults = C4_AbstractViewModel::loadFromClass($this->getViewClass());
@@ -1718,7 +1729,7 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 
 		$view = C4_AbstractViewLoader::getView($view_id, $defaults);
 		
-		$params_req = array();
+		$params_req = [];
 		
 		if(!empty($context) && !empty($context_id)) {
 			$params_req = array(
@@ -1751,8 +1762,8 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 		$tpl->assign('model', $jira_issue);
 		
 		// Dictionary
-		$labels = array();
-		$values = array();
+		$labels = [];
+		$values = [];
 		CerberusContexts::getContext($context, $jira_issue, $labels, $values, '', true, false);
 		$dict = DevblocksDictionaryDelegate::instance($values);
 		$tpl->assign('dict', $dict);

@@ -22,11 +22,6 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 		
 		// int(10) unsigned
 		$validation
-			->addField(self::CREATED)
-			->timestamp()
-			;
-		// int(10) unsigned
-		$validation
 			->addField(self::ID)
 			->id()
 			->setEditable(false)
@@ -44,39 +39,27 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 			->setMaxLength(32)
 			->setRequired(true)
 			;
-		// smallint(5) unsigned
-		$validation
-			->addField(self::JIRA_STATUS_ID)
-			->uint(2)
-			;
-		// smallint(5) unsigned
-		$validation
-			->addField(self::JIRA_TYPE_ID)
-			->uint(2)
-			;
 		// varchar(255)
 		$validation
-			->addField(self::JIRA_VERSIONS)
-			->string()
-			->setMaxLength(255)
-			;
-		// int(10) unsigned
-		$validation
-			->addField(self::PROJECT_ID)
-			->id()
-			->setRequired(true)
-			;
-		// varchar(255)
-		$validation
-			->addField(self::SUMMARY)
+			->addField(self::NAME)
 			->string()
 			->setMaxLength(255)
 			->setRequired(true)
 			;
 		// int(10) unsigned
 		$validation
-			->addField(self::UPDATED)
+			->addField(self::LAST_CHECKED_AT)
 			->timestamp()
+			;
+		// int(10) unsigned
+		$validation
+			->addField(self::LAST_SYNCED_AT)
+			->timestamp()
+			;
+		// varchar(255)
+		$validation
+			->addField(self::URL)
+			->url()
 			;
 		$validation
 			->addField('_links')
@@ -244,7 +227,7 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 		
 		$projects = DAO_JiraProject::getAll();
 		
-		foreach($projects as $project_id => $project) { /* @var $project Model_JiraProject */
+		foreach($projects as $project) { /* @var $project Model_JiraProject */
 			if($project->jira_id == $remote_id)
 				return $project;
 		}
@@ -260,7 +243,7 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 	static function getByJiraKey($jira_key) {
 		$projects = DAO_JiraProject::getAll();
 		
-		foreach($projects as $project_id => $project) { /* @var $project Model_JiraProject */
+		foreach($projects as $project) { /* @var $project Model_JiraProject */
 			if($project->jira_key == $jira_key)
 				return $project;
 		}
@@ -269,7 +252,7 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 	}
 	
 	static function getAllTypes() {
-		$results = array();
+		$results = [];
 		
 		$projects = DAO_JiraProject::getAll();
 		
@@ -283,7 +266,7 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 	}
 	
 	static function getAllStatuses() {
-		$results = array();
+		$results = [];
 		
 		$projects = DAO_JiraProject::getAll();
 		
@@ -301,7 +284,7 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 	 * @return Model_JiraProject[]
 	 */
 	static private function _getObjectsFromResult($rs) {
-		$objects = array();
+		$objects = [];
 		
 		if(!($rs instanceof mysqli_result))
 			return false;
@@ -369,7 +352,7 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 	public static function getSearchQueryComponents($columns, $params, $sortBy=null, $sortAsc=null) {
 		$fields = SearchFields_JiraProject::getFields();
 		
-		list($tables,$wheres) = parent::_parseSearchParams($params, $columns, 'SearchFields_JiraProject', $sortBy);
+		list(,$wheres) = parent::_parseSearchParams($params, $columns, 'SearchFields_JiraProject', $sortBy);
 		
 		$select_sql = sprintf("SELECT ".
 			"jira_project.id as %s, ".
@@ -397,14 +380,6 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 			
 		$sort_sql = self::_buildSortClause($sortBy, $sortAsc, $fields, $select_sql, 'SearchFields_JiraProject');
 	
-		// Virtuals
-		
-		$args = array(
-			'join_sql' => &$join_sql,
-			'where_sql' => &$where_sql,
-			'tables' => &$tables,
-		);
-		
 		return array(
 			'primary_table' => 'jira_project',
 			'select' => $select_sql,
@@ -454,7 +429,7 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 		if(!($rs instanceof mysqli_result))
 			return false;
 		
-		$results = array();
+		$results = [];
 		
 		while($row = mysqli_fetch_assoc($rs)) {
 			$object_id = intval($row[SearchFields_JiraProject::ID]);
@@ -610,9 +585,9 @@ class Model_JiraProject {
 	public $jira_key = null;
 	public $name = null;
 	public $url = null;
-	public $issue_types = array();
-	public $statuses = array();
-	public $versions = array();
+	public $issue_types = [];
+	public $statuses = [];
+	public $versions = [];
 	public $last_checked_at = 0;
 	public $last_synced_at = 0;
 	public $is_sync = false;
@@ -680,7 +655,7 @@ class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotal
 	function getSubtotalFields() {
 		$all_fields = $this->getParamsAvailable(true);
 		
-		$fields = array();
+		$fields = [];
 
 		if(is_array($all_fields))
 		foreach($all_fields as $field_key => $field_model) {
@@ -714,12 +689,12 @@ class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotal
 	}
 	
 	function getSubtotalCounts($column) {
-		$counts = array();
+		$counts = [];
 		$fields = $this->getFields();
 		$context = Context_JiraProject::ID;
 
 		if(!isset($fields[$column]))
-			return array();
+			return [];
 		
 		switch($column) {
 			case SearchFields_JiraProject::URL:
@@ -866,7 +841,6 @@ class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotal
 
 	function renderCriteriaParam($param) {
 		$field = $param->field;
-		$values = !is_array($param->value) ? array($param->value) : $param->value;
 
 		switch($field) {
 			default:
@@ -877,8 +851,6 @@ class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotal
 
 	function renderVirtualCriteria($param) {
 		$key = $param->field;
-		
-		$translate = DevblocksPlatform::getTranslationService();
 		
 		switch($key) {
 			case SearchFields_JiraProject::VIRTUAL_CONTEXT_LINK:
@@ -925,17 +897,17 @@ class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotal
 				break;
 				
 			case SearchFields_JiraProject::VIRTUAL_CONTEXT_LINK:
-				@$context_links = DevblocksPlatform::importGPC($_REQUEST['context_link'],'array',array());
+				@$context_links = DevblocksPlatform::importGPC($_REQUEST['context_link'],'array',[]);
 				$criteria = new DevblocksSearchCriteria($field,DevblocksSearchCriteria::OPER_IN,$context_links);
 				break;
 				
 			case SearchFields_JiraProject::VIRTUAL_HAS_FIELDSET:
-				@$options = DevblocksPlatform::importGPC($_REQUEST['options'],'array',array());
+				@$options = DevblocksPlatform::importGPC($_REQUEST['options'],'array',[]);
 				$criteria = new DevblocksSearchCriteria($field,DevblocksSearchCriteria::OPER_IN,$options);
 				break;
 				
 			case SearchFields_JiraProject::VIRTUAL_WATCHERS:
-				@$worker_ids = DevblocksPlatform::importGPC($_REQUEST['worker_id'],'array',array());
+				@$worker_ids = DevblocksPlatform::importGPC($_REQUEST['worker_id'],'array',[]);
 				$criteria = new DevblocksSearchCriteria($field,$oper,$worker_ids);
 				break;
 				
@@ -1019,7 +991,6 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 	
 	function getMeta($context_id) {
 		$jira_project = DAO_JiraProject::get($context_id);
-		$url_writer = DevblocksPlatform::services()->url();
 		
 		$url = $this->profileGetUrl($context_id);
 		$friendly = DevblocksPlatform::strToPermalink($jira_project->name);
@@ -1127,7 +1098,7 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 			$token_types = array_merge($token_types, $custom_field_types);
 		
 		// Token values
-		$token_values = array();
+		$token_values = [];
 		
 		$token_values['_context'] = Context_JiraProject::ID;
 		$token_values['_types'] = $token_types;
@@ -1167,6 +1138,12 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 		];
 	}
 	
+	function getKeyMeta() {
+		$keys = parent::getKeyMeta();
+		
+		return $keys;
+	}
+	
 	function getDaoFieldsFromKeyAndValue($key, $value, &$out_fields, &$error) {
 		switch(DevblocksPlatform::strLower($key)) {
 			case 'links':
@@ -1175,6 +1152,11 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 		}
 		
 		return true;
+	}
+	
+	function lazyLoadGetKeys() {
+		$lazy_keys = parent::lazyLoadGetKeys();
+		return $lazy_keys;
 	}
 
 	function lazyLoadContextValues($token, $dictionary) {
@@ -1185,10 +1167,10 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 		$context_id = $dictionary['id'];
 		
 		@$is_loaded = $dictionary['_loaded'];
-		$values = array();
+		$values = [];
 		
 		if(!$is_loaded) {
-			$labels = array();
+			$labels = [];
 			CerberusContexts::getContext($context, $context_id, $labels, $values, null, true, true);
 		}
 		
@@ -1217,8 +1199,6 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 	}
 
 	function getChooserView($view_id=null) {
-		$active_worker = CerberusApplication::getActiveWorker();
-
 		if(empty($view_id))
 			$view_id = 'chooser_'.str_replace('.','_',$this->id).time().mt_rand(0,9999);
 	
@@ -1237,7 +1217,7 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 		return $view;
 	}
 	
-	function getView($context=null, $context_id=null, $options=array(), $view_id=null) {
+	function getView($context=null, $context_id=null, $options=[], $view_id=null) {
 		$view_id = !empty($view_id) ? $view_id : str_replace('.','_',$this->id);
 		
 		$defaults = C4_AbstractViewModel::loadFromClass($this->getViewClass());
@@ -1246,7 +1226,7 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 		$view = C4_AbstractViewLoader::getView($view_id, $defaults);
 		$view->name = 'Jira Project';
 		
-		$params_req = array();
+		$params_req = [];
 		
 		if(!empty($context) && !empty($context_id)) {
 			$params_req = array(
