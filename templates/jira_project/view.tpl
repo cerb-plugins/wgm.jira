@@ -64,6 +64,14 @@
 
 	{* Column Data *}
 	{$object_watchers = DAO_ContextLink::getContextLinks($view_context, array_keys($data), CerberusContexts::CONTEXT_WORKER)}
+	
+	{$connected_account_ids = array_column($data, 'j_connected_account_id')}
+	{if $connected_account_ids}
+	{$connected_accounts = DAO_ConnectedAccount::getIds($connected_account_ids)}
+	{else}
+	{$connected_accounts = []}
+	{/if}
+	
 	{foreach from=$data item=result key=idx name=results}
 
 	{if $smarty.foreach.results.iteration % 2}
@@ -85,10 +93,13 @@
 				<a href="{devblocks_url}c=profiles&type=jira_project&id={$result.j_id}-{$result.j_name|devblocks_permalink}{/devblocks_url}" class="subject">{$result.j_name}</a>
 				<button type="button" class="peek" onclick="genericAjaxPopup('peek','c=internal&a=showPeekPopup&context={$view_context}&context_id={$result.j_id}&view_id={$view->id}',null,false,'50%');"><span class="glyphicons glyphicons-new-window-alt"></span></button>
 			</td>
-			{elseif $column=="j_is_sync"}
+			{elseif $column=="j_connected_account_id"}
 				<td data-column="{$column}">
-					{if $result.j_is_sync}
-						<span class="glyphicons glyphicons-circle-ok" style="font-size:16px;color:rgb(80,80,80);"></span>
+					{if $connected_accounts.{$result.$column}}
+						{$connected_account = $connected_accounts.{$result.$column}}
+						<a href="javascript:;" class="cerb-peek-trigger no-underline" data-context="{CerberusContexts::CONTEXT_CONNECTED_ACCOUNT}" data-context-id="{$connected_account->id}">{$connected_account->name}</a>
+					{elseif $result.$column}
+						{$result.$column}
 					{/if}
 				</td>
 			{elseif in_array($column, ["j_last_synced_at", "j_last_checked_at"])}

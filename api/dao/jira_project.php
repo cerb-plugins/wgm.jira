@@ -1,8 +1,8 @@
 <?php
 class DAO_JiraProject extends Cerb_ORMHelper {
+	const CONNECTED_ACCOUNT_ID = 'connected_account_id';
 	const ID = 'id';
 	const ISSUETYPES_JSON = 'issuetypes_json';
-	const IS_SYNC = 'is_sync';
 	const JIRA_ID = 'jira_id';
 	const JIRA_KEY = 'jira_key';
 	const LAST_CHECKED_AT = 'last_checked_at';
@@ -28,9 +28,15 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 			;
 		// int(10) unsigned
 		$validation
+			->addField(self::CONNECTED_ACCOUNT_ID)
+			->id()
+			->addValidator($validation->validators()->contextId(Context_ConnectedAccount::ID, true))
+			;
+		// int(10) unsigned
+		$validation
 			->addField(self::JIRA_ID)
 			->id()
-			->setRequired(true)
+			->setEditable(false)
 			;
 		// varchar(32)
 		$validation
@@ -50,10 +56,17 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 		$validation
 			->addField(self::LAST_CHECKED_AT)
 			->timestamp()
+			->setEditable(false)
 			;
 		// int(10) unsigned
 		$validation
 			->addField(self::LAST_SYNCED_AT)
+			->timestamp()
+			->setEditable(false)
+			;
+		// int(10) unsigned
+		$validation
+			->addField(self::UPDATED_AT)
 			->timestamp()
 			;
 		// varchar(255)
@@ -130,6 +143,15 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 		parent::_updateWhere('jira_project', $fields, $where);
 	}
 	
+	static public function onBeforeUpdateByActor($actor, &$fields, $id=null, &$error=null) {
+		$context = 'cerberusweb.contexts.jira.project';
+		
+		if(!self::_onBeforeUpdateByActorCheckContextPrivs($actor, $context, $id, $error))
+			return false;
+		
+		return true;
+	}
+	
 	/**
 	 * @param bool $nocache
 	 * @return Model_JiraProject[]
@@ -167,7 +189,7 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 		list($where_sql, $sort_sql, $limit_sql) = self::_getWhereSQL($where, $sortBy, $sortAsc, $limit);
 		
 		// SQL
-		$sql = "SELECT id, jira_id, jira_key, name, url, issuetypes_json, statuses_json, versions_json, last_checked_at, last_synced_at, last_synced_checkpoint, is_sync ".
+		$sql = "SELECT id, jira_id, jira_key, name, url, issuetypes_json, statuses_json, versions_json, updated_at, last_checked_at, last_synced_at, last_synced_checkpoint, connected_account_id ".
 			"FROM jira_project ".
 			$where_sql.
 			$sort_sql.
@@ -299,7 +321,7 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 			$object->last_checked_at = intval($row['last_checked_at']);
 			$object->last_synced_at = intval($row['last_synced_at']);
 			$object->last_synced_checkpoint = intval($row['last_synced_checkpoint']);
-			$object->is_sync = intval($row['is_sync']) ? true : false;
+			$object->connected_account_id = intval($row['connected_account_id']);
 			
 			if(false !== (@$obj = json_decode($row['issuetypes_json'], true))) {
 				$object->issue_types = $obj;
@@ -362,7 +384,7 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 			"jira_project.url as %s, ".
 			"jira_project.last_checked_at as %s, ".
 			"jira_project.last_synced_at as %s, ".
-			"jira_project.is_sync as %s ",
+			"jira_project.connected_account_id as %s ",
 				SearchFields_JiraProject::ID,
 				SearchFields_JiraProject::JIRA_ID,
 				SearchFields_JiraProject::JIRA_KEY,
@@ -370,7 +392,7 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 				SearchFields_JiraProject::URL,
 				SearchFields_JiraProject::LAST_CHECKED_AT,
 				SearchFields_JiraProject::LAST_SYNCED_AT,
-				SearchFields_JiraProject::IS_SYNC
+				SearchFields_JiraProject::CONNECTED_ACCOUNT_ID
 			);
 			
 		$join_sql = "FROM jira_project ";
@@ -472,7 +494,7 @@ class SearchFields_JiraProject extends DevblocksSearchFields {
 	const VERSIONS_JSON = 'j_versions_json';
 	const LAST_CHECKED_AT = 'j_last_checked_at';
 	const LAST_SYNCED_AT = 'j_last_synced_at';
-	const IS_SYNC = 'j_is_sync';
+	const CONNECTED_ACCOUNT_ID = 'j_connected_account_id';
 
 	const VIRTUAL_CONTEXT_LINK = '*_context_link';
 	const VIRTUAL_HAS_FIELDSET = '*_has_fieldset';
@@ -559,7 +581,7 @@ class SearchFields_JiraProject extends DevblocksSearchFields {
 			self::VERSIONS_JSON => new DevblocksSearchField(self::VERSIONS_JSON, 'jira_project', 'versions_json', $translate->_('dao.jira_project.versions_json'), null, false),
 			self::LAST_CHECKED_AT => new DevblocksSearchField(self::LAST_CHECKED_AT, 'jira_project', 'last_checked_at', $translate->_('dao.jira_project.last_checked_at'), Model_CustomField::TYPE_DATE, true),
 			self::LAST_SYNCED_AT => new DevblocksSearchField(self::LAST_SYNCED_AT, 'jira_project', 'last_synced_at', $translate->_('dao.jira_project.last_synced_at'), Model_CustomField::TYPE_DATE, true),
-			self::IS_SYNC => new DevblocksSearchField(self::IS_SYNC, 'jira_project', 'is_sync', $translate->_('dao.jira_project.is_sync'), Model_CustomField::TYPE_CHECKBOX, true),
+			self::CONNECTED_ACCOUNT_ID => new DevblocksSearchField(self::CONNECTED_ACCOUNT_ID, 'jira_project', 'connected_account_id', $translate->_('common.connected_account'), Model_CustomField::TYPE_NUMBER, true),
 
 			self::VIRTUAL_CONTEXT_LINK => new DevblocksSearchField(self::VIRTUAL_CONTEXT_LINK, '*', 'context_link', $translate->_('common.links'), null, false),
 			self::VIRTUAL_HAS_FIELDSET => new DevblocksSearchField(self::VIRTUAL_HAS_FIELDSET, '*', 'has_fieldset', $translate->_('common.fieldset'), null, false),
@@ -580,6 +602,7 @@ class SearchFields_JiraProject extends DevblocksSearchFields {
 };
 
 class Model_JiraProject {
+	public $connected_account_id = 0;
 	public $id = 0;
 	public $jira_id = null;
 	public $jira_key = null;
@@ -590,7 +613,13 @@ class Model_JiraProject {
 	public $versions = [];
 	public $last_checked_at = 0;
 	public $last_synced_at = 0;
-	public $is_sync = false;
+	
+	function getConnectedAccount() {
+		if(!$this->connected_account_id)
+			return null;
+		
+		return DAO_ConnectedAccount::get($this->connected_account_id);
+	}
 };
 
 class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotals, IAbstractView_QuickSearch {
@@ -609,9 +638,9 @@ class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotal
 			SearchFields_JiraProject::NAME,
 			SearchFields_JiraProject::JIRA_KEY,
 			SearchFields_JiraProject::URL,
+			SearchFields_JiraProject::CONNECTED_ACCOUNT_ID,
 			SearchFields_JiraProject::LAST_CHECKED_AT,
 			SearchFields_JiraProject::LAST_SYNCED_AT,
-			SearchFields_JiraProject::IS_SYNC,
 		);
 
 		$this->addColumnsHidden(array(
@@ -742,10 +771,13 @@ class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotal
 						['type' => 'chooser', 'context' => Context_JiraProject::ID, 'q' => ''],
 					]
 				),
-			'isSync' => 
+			'account.id' => 
 				array(
-					'type' => DevblocksSearchCriteria::TYPE_BOOL,
-					'options' => array('param_key' => SearchFields_JiraProject::IS_SYNC),
+					'type' => DevblocksSearchCriteria::TYPE_NUMBER,
+					'options' => array('param_key' => SearchFields_JiraProject::CONNECTED_ACCOUNT_ID),
+					'examples' => [
+						['type' => 'chooser', 'context' => Context_ConnectedAccount::ID, 'q' => ''],
+					]
 				),
 			'fieldset' =>
 				array(
@@ -834,7 +866,7 @@ class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotal
 		// Custom fields
 		$custom_fields = DAO_CustomField::getByContext(Context_JiraProject::ID);
 		$tpl->assign('custom_fields', $custom_fields);
-
+		
 		$tpl->assign('view_template', 'devblocks:wgm.jira::jira_project/view.tpl');
 		$tpl->display('devblocks:cerberusweb.core::internal/views/subtotals_and_view.tpl');
 	}
@@ -883,17 +915,13 @@ class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotal
 				
 			case SearchFields_JiraProject::ID:
 			case SearchFields_JiraProject::JIRA_ID:
+			case SearchFields_JiraProject::CONNECTED_ACCOUNT_ID:
 				$criteria = new DevblocksSearchCriteria($field,$oper,$value);
 				break;
 				
 			case SearchFields_JiraProject::LAST_CHECKED_AT:
 			case SearchFields_JiraProject::LAST_SYNCED_AT:
 				$criteria = $this->_doSetCriteriaDate($field, $oper);
-				break;
-				
-			case SearchFields_JiraProject::IS_SYNC:
-				@$bool = DevblocksPlatform::importGPC($_REQUEST['bool'],'integer',1);
-				$criteria = new DevblocksSearchCriteria($field,$oper,$bool);
 				break;
 				
 			case SearchFields_JiraProject::VIRTUAL_CONTEXT_LINK:
@@ -968,10 +996,13 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 			],
 		);
 		
-		$properties['is_sync'] = array(
-			'label' => mb_ucfirst($translate->_('dao.jira_project.is_sync')),
-			'type' => Model_CustomField::TYPE_CHECKBOX,
-			'value' => $model->is_sync,
+		$properties['connected_account'] = array(
+			'label' => mb_ucfirst($translate->_('common.connected_account')),
+			'type' => Model_CustomField::TYPE_LINK,
+			'value' => $model->connected_account_id,
+			'params' => [
+				'context' => Context_ConnectedAccount::ID,
+			],
 		);
 		
 		$properties['last_synced_at'] = array(
@@ -1030,7 +1061,7 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 	function getDefaultProperties() {
 		return array(
 			'jira_key',
-			'is_sync',
+			'connected_account__label',
 			'last_checked_at',
 			'last_synced_at',
 			'url',
@@ -1068,7 +1099,6 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 			'_label' => $prefix,
 			'id' => $prefix.$translate->_('common.id'),
 			'jira_key' => $prefix.$translate->_('dao.jira_project.jira_key'),
-			'is_sync' => $prefix.$translate->_('dao.jira_project.is_sync'),
 			'last_checked_at' => $prefix.$translate->_('dao.jira_project.last_checked_at'),
 			'last_synced_at' => $prefix.$translate->_('dao.jira_project.last_synced_at'),
 			'name' => $prefix.$translate->_('common.name'),
@@ -1081,7 +1111,6 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 			'_label' => 'context_url',
 			'id' => Model_CustomField::TYPE_NUMBER,
 			'jira_key' => Model_CustomField::TYPE_SINGLE_LINE,
-			'is_sync' => Model_CustomField::TYPE_CHECKBOX,
 			'last_checked_at' => Model_CustomField::TYPE_DATE,
 			'last_synced_at' => Model_CustomField::TYPE_DATE,
 			'name' => Model_CustomField::TYPE_SINGLE_LINE,
@@ -1106,9 +1135,9 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 		if($jira_project) {
 			$token_values['_loaded'] = true;
 			$token_values['_label'] = $jira_project->name;
+			$token_values['connected_account_id'] = $jira_project->connected_account_id;
 			$token_values['id'] = $jira_project->id;
 			$token_values['jira_key'] = $jira_project->jira_key;
-			$token_values['is_sync'] = $jira_project->is_sync;
 			$token_values['last_checked_at'] = $jira_project->last_checked_at;
 			$token_values['last_synced_at'] = $jira_project->last_synced_at;
 			$token_values['name'] = $jira_project->name;
@@ -1122,13 +1151,26 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 			$token_values['record_url'] = $url_writer->writeNoProxy(sprintf("c=profiles&type=jira_project&id=%d-%s",$jira_project->id, DevblocksPlatform::strToPermalink($jira_project->name)), true);
 		}
 		
+		// Connected account
+		$merge_token_labels = $merge_token_values = [];
+		CerberusContexts::getContext(CerberusContexts::CONTEXT_CONNECTED_ACCOUNT, null, $merge_token_labels, $merge_token_values, '', true);
+
+			CerberusContexts::merge(
+				'connected_account_',
+				$prefix.'Connected Account:',
+				$merge_token_labels,
+				$merge_token_values,
+				$token_labels,
+				$token_values
+			);
+		
 		return true;
 	}
 	
 	function getKeyToDaoFieldMap() {
 		return [
+			'connected_account_id' => DAO_JiraProject::CONNECTED_ACCOUNT_ID,
 			'id' => DAO_JiraProject::ID,
-			'is_sync' => DAO_JiraProject::IS_SYNC,
 			'jira_key' => DAO_JiraProject::JIRA_KEY,
 			'last_checked_at' => DAO_JiraProject::LAST_CHECKED_AT,
 			'last_synced_at' => DAO_JiraProject::LAST_SYNCED_AT,

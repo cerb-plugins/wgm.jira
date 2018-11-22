@@ -1,49 +1,4 @@
 <?php
-class WgmJira_SetupPageSection extends Extension_PageSection {
-	const ID = 'wgm.jira.setup.section';
-	
-	function render() {
-		$tpl = DevblocksPlatform::services()->template();
-
-		$visit = CerberusApplication::getVisit();
-		$visit->set(ChConfigurationPage::ID, 'jira');
-		
-		$sync_account_id = DevblocksPlatform::getPluginSetting('wgm.jira','sync_account_id',0);
-		
-		if(!empty($sync_account_id)) {
-			if(false != ($sync_account = DAO_ConnectedAccount::get($sync_account_id)))
-				$tpl->assign('sync_account', $sync_account);
-		}
-		
-		$tpl->display('devblocks:wgm.jira::setup/index.tpl');
-	}
-	
-	function saveJsonAction() {
-		try {
-			@$sync_account_id = DevblocksPlatform::importGPC($_REQUEST['sync_account_id'],'integer',0);
-			
-			DevblocksPlatform::setPluginSetting('wgm.jira', 'sync_account_id', $sync_account_id);
-			
-			echo json_encode(array('status'=>true, 'message'=>'Saved!'));
-			return;
-			
-		} catch (Exception $e) {
-			echo json_encode(array('status'=>false, 'error'=>$e->getMessage()));
-			return;
-		}
-	}
-};
-
-class WgmJira_SetupPluginsMenuItem extends Extension_PageMenuItem {
-	const ID = 'wgm.jira.setup.menu.plugins';
-	
-	function render() {
-		$tpl = DevblocksPlatform::services()->template();
-		$tpl->display('devblocks:wgm.jira::setup/menu_item.tpl');
-	}
-};
-
-
 class WgmJira_API {
 	private $_base_url = '';
 	private $_user = '';

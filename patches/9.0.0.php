@@ -34,4 +34,36 @@ EOD;
 	}
 }
 
+// ===========================================================================
+// Add connected accounts to JIRA Project records
+
+if(!isset($tables['jira_project'])) {
+	$logger->error("The 'jira_project' table does not exist.");
+	return FALSE;
+}
+
+list($columns,) = $db->metaTable('jira_project');
+
+if(!isset($columns['connected_account_id'])) {
+	$db->ExecuteMaster("ALTER TABLE jira_project ADD COLUMN connected_account_id INT UNSIGNED NOT NULL DEFAULT 0");
+	
+	// Migrate sync setting to JIRA Project records
+	
+	if(false !== ($sync_account_id = $db->GetOneMaster("SELECT value FROM devblocks_setting WHERE plugin_id = 'wgm.jira' AND setting = 'sync_account_id'"))) {
+		$sql = sprintf("UPDATE jira_project SET connected_account_id = %d WHERE is_sync = 1",
+			$sync_account_id
+		);
+		$db->ExecuteMaster($sql);
+		
+		$db->ExecuteMaster("DELETE FROM devblocks_setting WHERE plugin_id = 'wgm.jira' AND setting = 'sync_account_id'");
+	}
+}
+
+if(isset($columns['is_sync'])) {
+	$db->ExecuteMaster("ALTER TABLE jira_project DROP COLUMN is_sync");
+}
+
+// ===========================================================================
+// Finish
+
 return TRUE;
