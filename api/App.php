@@ -48,7 +48,7 @@ class WgmJira_API {
 	private $_base_url = '';
 	private $_user = '';
 	private $_password = '';
-	private $_errors = array();
+	private $_errors = [];
 	
 	public function setBaseUrl($url) {
 		$this->_base_url = rtrim($url,'/');
@@ -125,7 +125,7 @@ class WgmJira_API {
 		return current($this->_errors);
 	}
 	
-	function execute($verb, $path, $params=array(), $json=null) {
+	function execute($verb, $path, $params=[], $json=null) {
 		$response = null;
 		
 		switch($verb) {
@@ -148,7 +148,7 @@ class WgmJira_API {
 		return $response;
 	}
 	
-	private function _postJson($path, $params=array(), $json=null, $verb='post') {
+	private function _postJson($path, $params=[], $json=null, $verb='post') {
 		if(empty($this->_base_url))
 			return false;
 		
@@ -159,7 +159,7 @@ class WgmJira_API {
 		
 		$ch = DevblocksPlatform::curlInit($url);
 		
-		$headers = array();
+		$headers = [];
 		
 		$headers[] = 'Content-Type: application/json';
 		
@@ -188,7 +188,7 @@ class WgmJira_API {
 		
 		$out = DevblocksPlatform::curlExec($ch);
 		
-		$info = curl_getinfo($ch);
+		//$info = curl_getinfo($ch);
 
 		// [TODO] This can fail without HTTPS
 		
@@ -201,14 +201,14 @@ class WgmJira_API {
 			$json = false;
 			
 		} else {
-			$this->_errors = array();
+			$this->_errors = [];
 		}
 		
 		curl_close($ch);
 		return $json;
 	}
 	
-	private function _get($path, $params=array()) {
+	private function _get($path, $params=[]) {
 		if(empty($this->_base_url))
 			return false;
 		
@@ -227,7 +227,7 @@ class WgmJira_API {
 		
 		$out = DevblocksPlatform::curlExec($ch);
 
-		$info = curl_getinfo($ch);
+		//$info = curl_getinfo($ch);
 		
 		// [TODO] This can fail without HTTPS
 		
@@ -240,7 +240,7 @@ class WgmJira_API {
 			$json = false;
 			
 		} else {
-			$this->_errors = array();
+			$this->_errors = [];
 		}
 		
 		curl_close($ch);
@@ -249,7 +249,8 @@ class WgmJira_API {
 	
 	// Special handling for API responses (e.g. recache)
 	private function _reimportApiChanges($verb, $path, $response) {
-
+		$matches = [];
+		
 		// Create issue
 		if($verb == 'post' && $path == '/rest/api/2/issue') {
 			if(isset($response['key'])) {
@@ -279,7 +280,7 @@ class WgmJira_API {
 		
 		// Fields
 		
-		$fields = array(
+		$fields = [
 			DAO_JiraIssue::JIRA_ID => $object['id'],
 			DAO_JiraIssue::JIRA_KEY => $object['key'],
 			DAO_JiraIssue::JIRA_STATUS_ID => $object['fields']['status']['id'],
@@ -289,7 +290,7 @@ class WgmJira_API {
 			DAO_JiraIssue::SUMMARY => $object['fields']['summary'],
 			DAO_JiraIssue::CREATED => strtotime($object['fields']['created']),
 			DAO_JiraIssue::UPDATED => strtotime($object['fields']['updated']),
-		);
+		];
 		
 		$local_issue = DAO_JiraIssue::getByJiraId($object['id']);
 		
