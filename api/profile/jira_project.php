@@ -28,60 +28,108 @@ class PageSection_ProfilesJiraProject extends Extension_PageSection {
 		Page_Profiles::renderProfile($context, $context_id, $stack);
 	}
 	
-	function savePeekAction() {
+		function savePeekJsonAction() {
 		@$view_id = DevblocksPlatform::importGPC($_REQUEST['view_id'], 'string', '');
 		
 		@$id = DevblocksPlatform::importGPC($_REQUEST['id'], 'integer', 0);
-		
-		@$is_sync = DevblocksPlatform::importGPC($_REQUEST['is_sync'], 'integer', 0);
-		
-		//@$name = DevblocksPlatform::importGPC($_REQUEST['name'], 'string', '');
-		//@$do_delete = DevblocksPlatform::importGPC($_REQUEST['do_delete'], 'string', '');
+		@$do_delete = DevblocksPlatform::importGPC($_REQUEST['do_delete'], 'string', '');
 		
 		$active_worker = CerberusApplication::getActiveWorker();
 		
-		if(!empty($id) && !empty($do_delete)) { // Delete
-			//DAO_JiraProject::delete($id);
-			
-		} else {
-			if(empty($id)) { // New
-				/*
-				$fields = array(
-					DAO_JiraProject::UPDATED_AT => time(),
-					DAO_JiraProject::NAME => $name,
-				);
-				$id = DAO_JiraProject::create($fields);
+		header('Content-Type: application/json; charset=utf-8');
+		
+		try {
+			if(!empty($id) && !empty($do_delete)) { // Delete
+				if(!$active_worker->hasPriv(sprintf("contexts.%s.delete", 'cerberusweb.contexts.jira.project')))
+					throw new Exception_DevblocksAjaxValidationError(DevblocksPlatform::translate('error.core.no_acl.delete'));
 				
-				if(!empty($view_id) && !empty($id))
-					C4_AbstractView::setMarqueeContextCreated($view_id, Context_JiraProject::ID, $id);
-				*/
+				DAO_JiraProject::delete($id);
 				
-			} else { // Edit
-				$fields = array(
-					DAO_JiraProject::IS_SYNC => $is_sync,
-				);
-				DAO_JiraProject::update($id, $fields);
+				echo json_encode(array(
+					'status' => true,
+					'id' => $id,
+					'view_id' => $view_id,
+				));
+				return;
+				
+			} else {
+				@$name = DevblocksPlatform::importGPC($_REQUEST['name'], 'string', '');
+				@$jira_key = DevblocksPlatform::importGPC($_REQUEST['jira_key'], 'string', '');
+				@$connected_account_id = DevblocksPlatform::importGPC($_REQUEST['connected_account_id'], 'integer', 0);
+				@$url = DevblocksPlatform::importGPC($_REQUEST['url'], 'string', '');
+				
+				$error = null;
+				
+				if(empty($id)) { // New
+					$fields = array(
+						DAO_JiraProject::CONNECTED_ACCOUNT_ID => $connected_account_id,
+						DAO_JiraProject::JIRA_KEY => $jira_key,
+						DAO_JiraProject::NAME => $name,
+						DAO_JiraProject::UPDATED_AT => time(),
+						DAO_JiraProject::URL => $url,
+					);
+					
+					if(!DAO_JiraProject::validate($fields, $error))
+						throw new Exception_DevblocksAjaxValidationError($error);
+						
+					if(!DAO_JiraProject::onBeforeUpdateByActor($active_worker, $fields, null, $error))
+						throw new Exception_DevblocksAjaxValidationError($error);
+					
+					$id = DAO_JiraProject::create($fields);
+					DAO_JiraProject::onUpdateByActor($active_worker, $id, $fields);
+					
+					if(!empty($view_id) && !empty($id))
+						C4_AbstractView::setMarqueeContextCreated($view_id, 'cerberusweb.contexts.jira.project', $id);
+					
+				} else { // Edit
+					$fields = array(
+						DAO_JiraProject::CONNECTED_ACCOUNT_ID => $connected_account_id,
+						DAO_JiraProject::JIRA_KEY => $jira_key,
+						DAO_JiraProject::NAME => $name,
+						DAO_JiraProject::UPDATED_AT => time(),
+						DAO_JiraProject::URL => $url,
+					);
+					
+					if(!DAO_JiraProject::validate($fields, $error, $id))
+						throw new Exception_DevblocksAjaxValidationError($error);
+						
+					if(!DAO_JiraProject::onBeforeUpdateByActor($active_worker, $fields, $id, $error))
+						throw new Exception_DevblocksAjaxValidationError($error);
+					
+					DAO_JiraProject::update($id, $fields);
+					DAO_JiraProject::onUpdateByActor($active_worker, $id, $fields);
+					
+				}
+				
+				// Custom field saves
+				@$field_ids = DevblocksPlatform::importGPC($_POST['field_ids'], 'array', []);
+				if(!DAO_CustomFieldValue::handleFormPost('cerberusweb.contexts.jira.project', $id, $field_ids, $error))
+					throw new Exception_DevblocksAjaxValidationError($error);
+				
+				echo json_encode(array(
+					'status' => true,
+					'id' => $id,
+					'label' => $name,
+					'view_id' => $view_id,
+				));
+				return;
 			}
-
-			// If we're adding a comment
-			if(!empty($comment)) {
-				$also_notify_worker_ids = array_keys(CerberusApplication::getWorkersByAtMentionsText($comment));
-				
-				$fields = array(
-					DAO_Comment::CREATED => time(),
-					DAO_Comment::CONTEXT => Context_JiraProject::ID,
-					DAO_Comment::CONTEXT_ID => $id,
-					DAO_Comment::COMMENT => $comment,
-					DAO_Comment::OWNER_CONTEXT => CerberusContexts::CONTEXT_WORKER,
-					DAO_Comment::OWNER_CONTEXT_ID => $active_worker->id,
-				);
-				$comment_id = DAO_Comment::create($fields, $also_notify_worker_ids);
-			}
 			
-			// Custom field saves
-			@$field_ids = DevblocksPlatform::importGPC($_POST['field_ids'], 'array', []);
-			if(!DAO_CustomFieldValue::handleFormPost(Context_JiraProject::ID, $id, $field_ids, $error))
-				throw new Exception_DevblocksAjaxValidationError($error);
+		} catch (Exception_DevblocksAjaxValidationError $e) {
+			echo json_encode(array(
+				'status' => false,
+				'error' => $e->getMessage(),
+				'field' => $e->getFieldName(),
+			));
+			return;
+			
+		} catch (Exception $e) {
+			echo json_encode(array(
+				'status' => false,
+				'error' => 'An error occurred.',
+			));
+			return;
+			
 		}
 	}
 	
@@ -158,9 +206,8 @@ class PageSection_ProfilesJiraProject extends Extension_PageSection {
 	}
 	
 	function showIssuesTabAction() {
-		@$context = DevblocksPlatform::importGPC($_REQUEST['context'],'string','');
+		//@$context = DevblocksPlatform::importGPC($_REQUEST['context'],'string','');
 		@$context_id = DevblocksPlatform::importGPC($_REQUEST['context_id'],'integer',0);
-		@$point = DevblocksPlatform::importGPC($_REQUEST['point'],'string','contact.history');
 		
 		$tpl = DevblocksPlatform::services()->template();
 		$translate = DevblocksPlatform::getTranslationService();

@@ -63,6 +63,11 @@ if(isset($columns['is_sync'])) {
 	$db->ExecuteMaster("ALTER TABLE jira_project DROP COLUMN is_sync");
 }
 
+if(!isset($columns['updated_at'])) {
+	$db->ExecuteMaster("ALTER TABLE jira_project ADD COLUMN updated_at int unsigned not null default 0");
+	$db->ExecuteMaster(sprintf("UPDATE jira_project SET updated_at = %d", time()));
+}
+
 // ===========================================================================
 // Finish
 

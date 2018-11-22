@@ -11,6 +11,7 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 	const NAME = 'name';
 	const STATUSES_JSON = 'statuses_json';
 	const URL = 'url';
+	const UPDATED_AT = 'updated_at';
 	const VERSIONS_JSON = 'versions_json';
 	
 	const _CACHE_ALL = 'cache_jira_project_all';
@@ -221,6 +222,40 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 		return null;
 	}
 	
+	/**
+	 * 
+	 * @param array $ids
+	 * @return Model_JiraProject[]
+	 */
+	static function getIds($ids) {
+		if(!is_array($ids))
+			$ids = array($ids);
+
+		if(empty($ids))
+			return [];
+
+		if(!method_exists(get_called_class(), 'getWhere'))
+			return [];
+
+		$ids = DevblocksPlatform::importVar($ids, 'array:integer');
+
+		$models = [];
+
+		$results = static::getWhere(sprintf("id IN (%s)",
+			implode(',', $ids)
+		));
+
+		// Sort $models in the same order as $ids
+		foreach($ids as $id) {
+			if(isset($results[$id]))
+				$models[$id] = $results[$id];
+		}
+
+		unset($results);
+
+		return $models;
+	}
+	
 	static function random() {
 		return self::_getRandom('jira_project');
 	}
@@ -322,6 +357,7 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 			$object->last_synced_at = intval($row['last_synced_at']);
 			$object->last_synced_checkpoint = intval($row['last_synced_checkpoint']);
 			$object->connected_account_id = intval($row['connected_account_id']);
+			$object->updated_at = intval($row['updated_at']);
 			
 			if(false !== (@$obj = json_decode($row['issuetypes_json'], true))) {
 				$object->issue_types = $obj;
@@ -382,6 +418,7 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 			"jira_project.jira_key as %s, ".
 			"jira_project.name as %s, ".
 			"jira_project.url as %s, ".
+			"jira_project.updated_at as %s, ".
 			"jira_project.last_checked_at as %s, ".
 			"jira_project.last_synced_at as %s, ".
 			"jira_project.connected_account_id as %s ",
@@ -390,6 +427,7 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 				SearchFields_JiraProject::JIRA_KEY,
 				SearchFields_JiraProject::NAME,
 				SearchFields_JiraProject::URL,
+				SearchFields_JiraProject::UPDATED_AT,
 				SearchFields_JiraProject::LAST_CHECKED_AT,
 				SearchFields_JiraProject::LAST_SYNCED_AT,
 				SearchFields_JiraProject::CONNECTED_ACCOUNT_ID
@@ -495,6 +533,7 @@ class SearchFields_JiraProject extends DevblocksSearchFields {
 	const LAST_CHECKED_AT = 'j_last_checked_at';
 	const LAST_SYNCED_AT = 'j_last_synced_at';
 	const CONNECTED_ACCOUNT_ID = 'j_connected_account_id';
+	const UPDATED_AT = 'j_updated_at';
 
 	const VIRTUAL_CONTEXT_LINK = '*_context_link';
 	const VIRTUAL_HAS_FIELDSET = '*_has_fieldset';
@@ -582,6 +621,7 @@ class SearchFields_JiraProject extends DevblocksSearchFields {
 			self::LAST_CHECKED_AT => new DevblocksSearchField(self::LAST_CHECKED_AT, 'jira_project', 'last_checked_at', $translate->_('dao.jira_project.last_checked_at'), Model_CustomField::TYPE_DATE, true),
 			self::LAST_SYNCED_AT => new DevblocksSearchField(self::LAST_SYNCED_AT, 'jira_project', 'last_synced_at', $translate->_('dao.jira_project.last_synced_at'), Model_CustomField::TYPE_DATE, true),
 			self::CONNECTED_ACCOUNT_ID => new DevblocksSearchField(self::CONNECTED_ACCOUNT_ID, 'jira_project', 'connected_account_id', $translate->_('common.connected_account'), Model_CustomField::TYPE_NUMBER, true),
+			self::UPDATED_AT => new DevblocksSearchField(self::UPDATED_AT, 'jira_project', 'updated_at', $translate->_('common.updated'), Model_CustomField::TYPE_DATE, true),
 
 			self::VIRTUAL_CONTEXT_LINK => new DevblocksSearchField(self::VIRTUAL_CONTEXT_LINK, '*', 'context_link', $translate->_('common.links'), null, false),
 			self::VIRTUAL_HAS_FIELDSET => new DevblocksSearchField(self::VIRTUAL_HAS_FIELDSET, '*', 'has_fieldset', $translate->_('common.fieldset'), null, false),
@@ -613,6 +653,7 @@ class Model_JiraProject {
 	public $versions = [];
 	public $last_checked_at = 0;
 	public $last_synced_at = 0;
+	public $updated_at = 0;
 	
 	function getConnectedAccount() {
 		if(!$this->connected_account_id)
@@ -639,6 +680,7 @@ class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotal
 			SearchFields_JiraProject::JIRA_KEY,
 			SearchFields_JiraProject::URL,
 			SearchFields_JiraProject::CONNECTED_ACCOUNT_ID,
+			SearchFields_JiraProject::UPDATED_AT,
 			SearchFields_JiraProject::LAST_CHECKED_AT,
 			SearchFields_JiraProject::LAST_SYNCED_AT,
 		);
@@ -1286,24 +1328,71 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 		$tpl = DevblocksPlatform::services()->template();
 		$tpl->assign('view_id', $view_id);
 		
-		if(!empty($context_id) && null != ($jira_project = DAO_JiraProject::get($context_id))) {
-			$tpl->assign('model', $jira_project);
-		}
-		
-		$custom_fields = DAO_CustomField::getByContext(Context_JiraProject::ID, false);
-		$tpl->assign('custom_fields', $custom_fields);
+		$context = 'cerberusweb.contexts.jira.project';
 		
 		if(!empty($context_id)) {
-			$custom_field_values = DAO_CustomFieldValue::getValuesByContextIds(Context_JiraProject::ID, $context_id);
+			$model = DAO_JiraProject::get($context_id);
+		}
+		
+		if(empty($context_id) || $edit) {
+			if(isset($model))
+				$tpl->assign('model', $model);
+			
+			// Custom fields
+			$custom_fields = DAO_CustomField::getByContext($context, false);
+			$tpl->assign('custom_fields', $custom_fields);
+	
+			$custom_field_values = DAO_CustomFieldValue::getValuesByContextIds($context, $context_id);
 			if(isset($custom_field_values[$context_id]))
 				$tpl->assign('custom_field_values', $custom_field_values[$context_id]);
-		}
+			
+			$types = Model_CustomField::getTypes();
+			$tpl->assign('types', $types);
+			
+			// View
+			$tpl->assign('id', $context_id);
+			$tpl->assign('view_id', $view_id);
+			$tpl->display('devblocks:wgm.jira::jira_project/peek_edit.tpl');
+			
+		} else {
+			// Links
+			$links = array(
+				$context => array(
+					$context_id => 
+						DAO_ContextLink::getContextLinkCounts(
+							$context,
+							$context_id,
+							[]
+						),
+				),
+			);
+			$tpl->assign('links', $links);
+			
+			// Timeline
+			if($context_id) {
+				$timeline_json = Page_Profiles::getTimelineJson(Extension_DevblocksContext::getTimelineComments($context, $context_id));
+				$tpl->assign('timeline_json', $timeline_json);
+			}
 
-		// Comments
-		$comments = DAO_Comment::getByContext(Context_JiraProject::ID, $context_id);
-		$comments = array_reverse($comments, true);
-		$tpl->assign('comments', $comments);
-		
-		$tpl->display('devblocks:wgm.jira::jira_project/peek.tpl');
+			// Context
+			if(false == ($context_ext = Extension_DevblocksContext::get($context)))
+				return;
+			
+			// Dictionary
+			$labels = [];
+			$values = [];
+			CerberusContexts::getContext($context, $model, $labels, $values, '', true, false);
+			$dict = DevblocksDictionaryDelegate::instance($values);
+			$tpl->assign('dict', $dict);
+			
+			$properties = $context_ext->getCardProperties();
+			$tpl->assign('properties', $properties);
+			
+			// Card search buttons
+			$search_buttons = $context_ext->getCardSearchButtons($dict, []);
+			$tpl->assign('search_buttons', $search_buttons);
+			
+			$tpl->display('devblocks:wgm.jira::jira_project/peek.tpl');
+		}
 	}
 };
