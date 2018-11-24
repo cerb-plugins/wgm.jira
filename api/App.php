@@ -221,8 +221,12 @@ class WgmJira_API {
 		}
 	}
 	
-	static public function importIssue($object) {
+	static public function importIssue($object, Model_JiraProject $project=null) {
 		$is_new = false;
+		
+		if(is_null($project)) {
+			$project = DAO_JiraProject::getByJiraId($object['fields']['project']['id']);
+		}
 		
 		// Fix versions
 		
@@ -233,6 +237,8 @@ class WgmJira_API {
 			$fix_versions[$fix_version['id']] = $fix_version['name'];
 		}
 		
+		$local_issue = DAO_JiraIssue::getByJiraIdAndProject($object['id'], $project->jira_id);
+		
 		// Fields
 		
 		$fields = [
@@ -241,13 +247,13 @@ class WgmJira_API {
 			DAO_JiraIssue::JIRA_STATUS_ID => $object['fields']['status']['id'],
 			DAO_JiraIssue::JIRA_VERSIONS => implode(', ', $fix_versions),
 			DAO_JiraIssue::JIRA_TYPE_ID => $object['fields']['issuetype']['id'],
-			DAO_JiraIssue::PROJECT_ID => $object['fields']['project']['id'],
+			DAO_JiraIssue::JIRA_PROJECT_ID => $project->jira_id,
+			DAO_JiraIssue::PROJECT_ID => $project->id,
 			DAO_JiraIssue::SUMMARY => $object['fields']['summary'],
+			DAO_JiraIssue::DESCRIPTION => $object['fields']['description'],
 			DAO_JiraIssue::CREATED => strtotime($object['fields']['created']),
 			DAO_JiraIssue::UPDATED => strtotime($object['fields']['updated']),
 		];
-		
-		$local_issue = DAO_JiraIssue::getByJiraId($object['id']);
 		
 		if(!empty($local_issue)) {
 			$local_issue_id = $local_issue->id;
@@ -258,33 +264,19 @@ class WgmJira_API {
 			$is_new = true;
 		}
 
-		// Versions
-		
-		DAO_JiraIssue::setVersions($local_issue_id, array_keys($fix_versions));
-		
-		// Store description content
-		
-		DAO_JiraIssue::setDescription($object['id'], $object['fields']['description']);
-		
 		// Comments
 		
 		if(isset($object['fields']['comment']['comments']) && is_array($object['fields']['comment']['comments']))
 		foreach($object['fields']['comment']['comments'] as $comment) {
-			$result = DAO_JiraIssue::saveComment(
+			DAO_JiraIssue::saveComment(
 				$comment['id'],
 				$object['id'],
+				$local_issue_id,
 				@strtotime($comment['created']),
 				$comment['author']['displayName'],
 				$comment['body']
 			);
-			
-			// If we inserted, trigger 'New JIRA issue comment' event
-			if($result == 1)
-				Event_JiraIssueCommented::trigger($local_issue_id, $comment['id']);
 		}
-		
-		// Links
-		// [TODO]
 		
 		// Trigger 'New JIRA issue created' event
 		if($is_new) {
@@ -420,7 +412,7 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 			))) {
 				if(isset($response['issues']))
 				foreach($response['issues'] as $object) {
-					WgmJira_API::importIssue($object);
+					WgmJira_API::importIssue($object, $jira_project);
 					
 					$last_synced_at = strtotime($object['fields']['updated']);
 					$last_synced_checkpoint = strtotime($object['fields']['created']);

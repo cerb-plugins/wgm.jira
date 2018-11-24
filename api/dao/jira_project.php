@@ -1119,15 +1119,7 @@ class Context_JiraProject extends Extension_DevblocksContext implements IDevbloc
 
 		// Polymorph
 		if(is_numeric($jira_project)) {
-			$jira_project_id = $jira_project;
-			
-			// [TODO] Can we standardize how we request this?
-			
-			// Try JIRA ID first
-			if(false == ($jira_project = DAO_JiraProject::getByJiraId($jira_project_id)))
-				// Then Cerb ID
-				$jira_project = DAO_JiraProject::get($jira_project_id);
-			
+			$jira_project = DAO_JiraProject::get($jira_project);
 		} elseif($jira_project instanceof Model_JiraProject) {
 			// It's what we want already.
 		} elseif(is_array($jira_project)) {

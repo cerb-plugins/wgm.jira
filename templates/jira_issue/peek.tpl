@@ -91,7 +91,7 @@
 {* Description *}
 <fieldset class="peek">
 	<legend>{'common.description'|devblocks_translate|capitalize}</legend>
-	<pre class="emailbody">{$model->getDescription()|escape:'html'|devblocks_hyperlinks nofilter}</pre>
+	<pre class="emailbody">{$model->description|escape:'html'|devblocks_hyperlinks nofilter}</pre>
 </fieldset>
 
 {if $active_worker->hasPriv("contexts.{$peek_context}.comment")}

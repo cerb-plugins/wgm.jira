@@ -24,7 +24,6 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 	 * @return Model_DevblocksEvent
 	 */
 	function generateSampleEventModel(Model_TriggerEvent $trigger, $context_id=null, $comment_id=null) {
-
 		// If this is the 'new comment on jira issue' event, simulate a comment
 		if(empty($comment_id) && get_class($this) == 'Event_JiraIssueCommented') {
 			// [TODO] This should get a comment where the context_id is related
@@ -35,11 +34,11 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 			// If we have a comment, use its context_id
 			if(!empty($comment_id)) {
 				if(false !== ($comment = DAO_JiraIssue::getComment($comment_id))) {
-					if(false !== ($issue = DAO_JiraIssue::getByJiraId($comment['jira_issue_id'])))
+					if(false !== ($issue = DAO_JiraIssue::get($comment['issue_id'])))
 						$context_id = $issue->id;
 				}
 			}
-				
+			
 			// Otherwise, pick a random issue
 			if(empty($context_id)) {
 				list($results) = DAO_JiraIssue::search(
@@ -77,8 +76,8 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 		 * Behavior
 		 */
 		
-		$merge_labels = array();
-		$merge_values = array();
+		$merge_labels = $merge_values = [];
+		
 		CerberusContexts::getContext(CerberusContexts::CONTEXT_BEHAVIOR, $trigger, $merge_labels, $merge_values, null, true);
 
 			// Merge
@@ -98,18 +97,9 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 		 * Issue
 		 */
 		
-		$merge_labels = array();
-		$merge_values = array();
+		$merge_labels = $merge_values = [];
 		
-		if(false == ($context_ext = Extension_DevblocksContext::get(Context_JiraIssue::ID)))
-			return;
-		
-		$context_ext->getContext($model, $merge_labels, $merge_values);
-		
-		unset($merge_values['_labels']);
-		unset($merge_values['_types']);
-		
-		//CerberusContexts::getContext(Context_JiraIssue::ID, $model, $merge_labels, $merge_values, null, true);
+		CerberusContexts::getContext(Context_JiraIssue::ID, $model, $merge_labels, $merge_values, null, true);
 		
 			// Merge
 			CerberusContexts::merge(
@@ -120,11 +110,11 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 				$labels,
 				$values
 			);
-
+		
 		/**
 		 * Comment
 		 */
-			
+		
 		@$comment_id = $event_model->params['comment_id'];
 		
 		if(get_class($this) == 'Event_JiraIssueCommented') {
@@ -405,6 +395,8 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 				break;
 				
 			default:
+				$matches = [];
+				
 				if(preg_match('#set_cf_(.*?_*)custom_([0-9]+)#', $token, $matches)) {
 					$field_id = $matches[2];
 					$custom_field = DAO_CustomField::get($field_id);

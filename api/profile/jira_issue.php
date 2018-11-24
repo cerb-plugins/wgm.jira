@@ -139,12 +139,9 @@ class PageSection_ProfilesJiraIssue extends Extension_PageSection {
 	}
 	
 	function showDiscussionTabAction() {
-		@$context = DevblocksPlatform::importGPC($_REQUEST['context'],'string','');
 		@$context_id = DevblocksPlatform::importGPC($_REQUEST['context_id'],'integer',0);
-		@$point = DevblocksPlatform::importGPC($_REQUEST['point'],'string','contact.history');
 		
 		$tpl = DevblocksPlatform::services()->template();
-		$translate = DevblocksPlatform::getTranslationService();
 		
 		if(empty($context_id))
 			return;
@@ -160,7 +157,7 @@ class PageSection_ProfilesJiraIssue extends Extension_PageSection {
 	
 	function getIssueCreateFieldsAction() {
 		@$name_prefix = DevblocksPlatform::importGPC($_REQUEST['name_prefix'],'string','');
-		@$params = DevblocksPlatform::importGPC($_REQUEST[$name_prefix],'array',array());
+		@$params = DevblocksPlatform::importGPC($_REQUEST[$name_prefix],'array',[]);
 
 		@$project_key = $params['project_key'];
 		

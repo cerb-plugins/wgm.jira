@@ -4,11 +4,13 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 	const ID = 'id';
 	const JIRA_ID = 'jira_id';
 	const JIRA_KEY = 'jira_key';
+	const JIRA_PROJECT_ID = 'jira_project_id';
 	const JIRA_STATUS_ID = 'jira_status_id';
 	const JIRA_TYPE_ID = 'jira_type_id';
 	const JIRA_VERSIONS = 'jira_versions';
 	const PROJECT_ID = 'project_id';
 	const SUMMARY = 'summary';
+	const DESCRIPTION = 'description';
 	const UPDATED = 'updated';
 	
 	private function __construct() {}
@@ -20,6 +22,12 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 		$validation
 			->addField(self::CREATED)
 			->timestamp()
+			;
+		// text
+		$validation
+			->addField(self::DESCRIPTION)
+			->string()
+			->setMaxLength(65535)
 			;
 		// int(10) unsigned
 		$validation
@@ -37,6 +45,11 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 			->addField(self::JIRA_KEY)
 			->string()
 			->setMaxLength(32)
+			;
+		// int(10) unsigned
+		$validation
+			->addField(self::JIRA_PROJECT_ID)
+			->id()
 			;
 		// smallint(5) unsigned
 		$validation
@@ -189,7 +202,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 		list($where_sql, $sort_sql, $limit_sql) = self::_getWhereSQL($where, $sortBy, $sortAsc, $limit);
 		
 		// SQL
-		$sql = "SELECT id, project_id, jira_id, jira_key, jira_versions, jira_type_id, jira_status_id, summary, created, updated ".
+		$sql = "SELECT id, jira_project_id, project_id, jira_id, jira_key, jira_versions, jira_type_id, jira_status_id, summary, description, created, updated ".
 			"FROM jira_issue ".
 			$where_sql.
 			$sort_sql.
@@ -226,10 +239,10 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 		$db = DevblocksPlatform::services()->database();
 		
 		// With a specific issue ID?
-		if($issue_id && false != ($comment_id = $db->GetOneSlave(sprintf("SELECT jira_comment_id FROM jira_issue_comment WHERE jira_issue_id = %d ORDER BY RAND() LIMIT 1", $issue_id))))
+		if($issue_id && false != ($comment_id = $db->GetOneSlave(sprintf("SELECT id FROM jira_issue_comment WHERE issue_id = %d ORDER BY RAND() LIMIT 1", $issue_id))))
 			return $comment_id;
 		
-		return $db->GetOneSlave("SELECT jira_comment_id FROM jira_issue_comment ORDER BY RAND() LIMIT 1");
+		return $db->GetOneSlave("SELECT id FROM jira_issue_comment ORDER BY RAND() LIMIT 1");
 	}
 	
 	static function getByJiraId($remote_id) {
@@ -241,62 +254,72 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 		return current($results);
 	}
 	
-	static function getDescription($issue_id) {
-		$db = DevblocksPlatform::services()->database();
-		
-		return $db->GetOneSlave(sprintf("SELECT description FROM jira_issue_description WHERE jira_issue_id = %d", $issue_id));
-	}
-	
-	static function setDescription($issue_id, $description) {
-		$db = DevblocksPlatform::services()->database();
-		
-		$db->ExecuteMaster(sprintf("REPLACE INTO jira_issue_description (jira_issue_id, description) VALUES (%d, %s)",
-			$issue_id,
-			$db->qstr($description)
+	static function getByJiraIdAndProject($remote_id, $remote_project_id) {
+		$results = self::getWhere(sprintf("%s = %d AND %s = %d",
+			self::JIRA_ID,
+			$remote_id,
+			self::JIRA_PROJECT_ID,
+			$remote_project_id
 		));
 		
-		return TRUE;
+		if(empty($results))
+			return NULL;
+		
+		return current($results);
 	}
 	
-	static function setVersions($issue_id, $fix_version_ids) {
-		if(!is_array($fix_version_ids)) $fix_version_ids = array($fix_version_ids);
+	static function getByJiraKey($issue_key) {
+		$results = self::getWhere(sprintf("%s = %s",
+			self::JIRA_KEY,
+			Cerb_ORMHelper::qstr($issue_key)
+		));
+		
+		if(empty($results))
+			return NULL;
+		
+		return current($results);
+	}
+	
+	static function saveComment($jira_comment_id, $jira_issue_id, $issue_id, $created, $author, $body) {
 		$db = DevblocksPlatform::services()->database();
 		
-		$db->ExecuteMaster(sprintf("DELETE FROM jira_issue_to_version WHERE jira_issue_id = %d", $issue_id));
+		$comment_id = $db->GetOne(sprintf('SELECT id FROM jira_issue_comment WHERE jira_comment_id = %d AND issue_id = %d',
+			$jira_comment_id,
+			$issue_id
+		));
 		
-		foreach($fix_version_ids as $fix_version_id) {
-			$db->ExecuteMaster(sprintf("INSERT INTO jira_issue_to_version (jira_issue_id, jira_version_id) VALUES (%d, %d)",
-				$issue_id,
-				$fix_version_id
+		if($comment_id) {
+			$db->ExecuteMaster(sprintf("UPDATE jira_issue_comment SET body = %s WHERE id = %d",
+				$db->qstr($body),
+				$comment_id
 			));
+			
+		} else {
+			$db->ExecuteMaster(sprintf("INSERT INTO jira_issue_comment (jira_comment_id, jira_issue_id, issue_id, created, jira_author, body) ".
+				"VALUES (%d, %d, %d, %d, %s, %s) ",
+				$jira_comment_id,
+				$jira_issue_id,
+				$issue_id,
+				$created,
+				$db->qstr($author),
+				$db->qstr($body)
+			));
+			
+			$comment_id = $db->LastInsertId();
+			
+			// If we inserted, trigger 'New JIRA issue comment' event
+			Event_JiraIssueCommented::trigger($issue_id, $comment_id);
 		}
 		
-		return TRUE;
+		return $comment_id;
 	}
 	
-	static function saveComment($comment_id, $issue_id, $created, $author, $body) {
-		$db = DevblocksPlatform::services()->database();
-		
-		$db->ExecuteMaster(sprintf("INSERT INTO jira_issue_comment (jira_comment_id, jira_issue_id, created, jira_author, body) ".
-			"VALUES (%d, %d, %d, %s, %s) ".
-			"ON DUPLICATE KEY UPDATE body = %s",
-			$comment_id,
-			$issue_id,
-			$created,
-			$db->qstr($author),
-			$db->qstr($body),
-			$db->qstr($body)
-		));
-		
-		return $db->Affected_Rows();
-	}
-	
-	static function getComments($issue_id) {
+	static function getCommentsByIssueId($issue_id) {
 		$db = DevblocksPlatform::services()->database();
 
 		$results = $db->GetArraySlave(sprintf("SELECT jira_comment_id, jira_issue_id, created, jira_author, body ".
 			"FROM jira_issue_comment ".
-			"WHERE jira_issue_id = %d ".
+			"WHERE issue_id = %d ".
 			"ORDER BY created DESC",
 			$issue_id
 		));
@@ -307,9 +330,9 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 	static function getComment($comment_id) {
 		$db = DevblocksPlatform::services()->database();
 
-		$results = $db->GetRowSlave(sprintf("SELECT jira_comment_id, jira_issue_id, created, jira_author, body ".
+		$results = $db->GetRowSlave(sprintf("SELECT id, issue_id, jira_comment_id, jira_issue_id, created, jira_author, body ".
 			"FROM jira_issue_comment ".
-			"WHERE jira_comment_id = %d ".
+			"WHERE id = %d ".
 			"ORDER BY created DESC",
 			$comment_id
 		));
@@ -333,10 +356,12 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 			$object->project_id = $row['project_id'];
 			$object->jira_id = $row['jira_id'];
 			$object->jira_key = $row['jira_key'];
+			$object->jira_project_id = $row['jira_project_id'];
 			$object->jira_versions = $row['jira_versions'];
 			$object->jira_type_id = $row['jira_type_id'];
 			$object->jira_status_id = $row['jira_status_id'];
 			$object->summary = $row['summary'];
+			$object->description = $row['description'];
 			$object->created = $row['created'];
 			$object->updated = $row['updated'];
 			$objects[$object->id] = $object;
@@ -359,9 +384,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 		$db->ExecuteMaster(sprintf("DELETE FROM jira_issue WHERE id IN (%s)", $ids_list));
 		
 		// Cascade delete to linked tables
-		$db->ExecuteMaster("DELETE FROM jira_issue_comment WHERE jira_issue_id NOT IN (SELECT jira_id FROM jira_issue)");
-		$db->ExecuteMaster("DELETE FROM jira_issue_description WHERE jira_issue_id NOT IN (SELECT jira_id FROM jira_issue)");
-		$db->ExecuteMaster("DELETE FROM jira_issue_to_version WHERE jira_issue_id NOT IN (SELECT jira_id FROM jira_issue)");
+		$db->ExecuteMaster("DELETE FROM jira_issue_comment WHERE issue_id NOT IN (SELECT id FROM jira_issue)");
 		
 		// [TODO] Maint
 		
@@ -387,9 +410,10 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 		
 		$select_sql = sprintf("SELECT ".
 			"jira_issue.id as %s, ".
-			"jira_issue.project_id as %s, ".
 			"jira_issue.jira_id as %s, ".
 			"jira_issue.jira_key as %s, ".
+			"jira_issue.project_id as %s, ".
+			"jira_issue.jira_project_id as %s, ".
 			"jira_issue.jira_versions as %s, ".
 			"jira_issue.jira_type_id as %s, ".
 			"jira_issue.jira_status_id as %s, ".
@@ -397,9 +421,10 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 			"jira_issue.created as %s, ".
 			"jira_issue.updated as %s ",
 				SearchFields_JiraIssue::ID,
-				SearchFields_JiraIssue::PROJECT_ID,
 				SearchFields_JiraIssue::JIRA_ID,
 				SearchFields_JiraIssue::JIRA_KEY,
+				SearchFields_JiraIssue::PROJECT_ID,
+				SearchFields_JiraIssue::JIRA_PROJECT_ID,
 				SearchFields_JiraIssue::JIRA_VERSIONS,
 				SearchFields_JiraIssue::JIRA_TYPE_ID,
 				SearchFields_JiraIssue::JIRA_STATUS_ID,
@@ -496,6 +521,7 @@ class SearchFields_JiraIssue extends DevblocksSearchFields {
 	const PROJECT_ID = 'j_project_id';
 	const JIRA_ID = 'j_jira_id';
 	const JIRA_KEY = 'j_jira_key';
+	const JIRA_PROJECT_ID = 'j_jira_project_id';
 	const JIRA_VERSIONS = 'j_jira_versions';
 	const JIRA_TYPE_ID = 'j_jira_type_id';
 	const JIRA_STATUS_ID = 'j_jira_status_id';
@@ -605,6 +631,7 @@ class SearchFields_JiraIssue extends DevblocksSearchFields {
 			self::PROJECT_ID => new DevblocksSearchField(self::PROJECT_ID, 'jira_issue', 'project_id', $translate->_('dao.jira_issue.project_id'), null, true),
 			self::JIRA_ID => new DevblocksSearchField(self::JIRA_ID, 'jira_issue', 'jira_id', $translate->_('dao.jira_issue.jira_id'), null, true),
 			self::JIRA_KEY => new DevblocksSearchField(self::JIRA_KEY, 'jira_issue', 'jira_key', $translate->_('dao.jira_issue.jira_key'), Model_CustomField::TYPE_SINGLE_LINE, true),
+			self::JIRA_PROJECT_ID => new DevblocksSearchField(self::JIRA_PROJECT_ID, 'jira_issue', 'jira_project_id', null, null, true),
 			self::JIRA_VERSIONS => new DevblocksSearchField(self::JIRA_VERSIONS, 'jira_issue', 'jira_versions', $translate->_('dao.jira_issue.jira_versions'), Model_CustomField::TYPE_SINGLE_LINE, true),
 			self::JIRA_TYPE_ID => new DevblocksSearchField(self::JIRA_TYPE_ID, 'jira_issue', 'jira_type_id', $translate->_('dao.jira_issue.jira_type_id'), null, true),
 			self::JIRA_STATUS_ID => new DevblocksSearchField(self::JIRA_STATUS_ID, 'jira_issue', 'jira_status_id', $translate->_('dao.jira_issue.jira_status_id'), null, true),
@@ -735,7 +762,7 @@ class Search_JiraIssue extends Extension_DevblocksSearchSchema {
 					'content' => implode("\n", array(
 						$issue->jira_key,
 						$issue->summary,
-						$issue->getDescription(),
+						$issue->description,
 					))
 				);
 				
@@ -773,15 +800,17 @@ class Model_JiraIssue {
 	public $project_id;
 	public $jira_id;
 	public $jira_key;
+	public $jira_project_id;
 	public $jira_versions;
 	public $jira_type_id;
 	public $jira_status_id;
 	public $summary;
+	public $description;
 	public $created;
 	public $updated;
 	
 	function getProject() {
-		return DAO_JiraProject::getByJiraId($this->project_id);
+		return DAO_JiraProject::get($this->project_id);
 	}
 	
 	function getType() {
@@ -798,12 +827,8 @@ class Model_JiraIssue {
 		return @$project->statuses[$this->jira_status_id];
 	}
 	
-	function getDescription() {
-		return DAO_JiraIssue::getDescription($this->jira_id);
-	}
-	
 	function getComments() {
-		return DAO_JiraIssue::getComments($this->jira_id);
+		return DAO_JiraIssue::getCommentsByIssueId($this->id);
 	}
 };
 
@@ -920,7 +945,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 				
 				$projects = DAO_JiraProject::getAll();
 				foreach($projects as $project)
-					$label_map[$project->jira_id] = $project->name;
+					$label_map[$project->id] = $project->name;
 				
 				$counts = $this->_getSubtotalCountForStringColumn($context, $column, $label_map, 'in', 'options[]');
 				break;
@@ -1224,7 +1249,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 				$projects = DAO_JiraProject::getAll();
 				
 				foreach($values as $v) {
-					if(false != (@$project = DAO_JiraProject::getByJiraId($v)))
+					if(false != (@$project = DAO_JiraProject::getById($v)))
 						$strings[] = DevblocksPlatform::strEscapeHtml($project->name);
 				}
 				
@@ -1316,6 +1341,7 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 				break;
 				
 			case SearchFields_JiraIssue::PROJECT_ID:
+			case SearchFields_JiraIssue::JIRA_PROJECT_ID:
 			case SearchFields_JiraIssue::JIRA_STATUS_ID:
 			case SearchFields_JiraIssue::JIRA_TYPE_ID:
 				@$options = DevblocksPlatform::importGPC($_REQUEST['options'],'array',[]);
@@ -1401,7 +1427,7 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 			'value' => $model->jira_key,
 		);
 		
-		$properties['jira_project_id'] = array(
+		$properties['project_id'] = array(
 			'label' => mb_ucfirst($translate->_('dao.jira_issue.project_id')),
 			'type' => Model_CustomField::TYPE_LINK,
 			'value' => $model->getProject()->id,
@@ -1409,6 +1435,17 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 				'context' => Context_JiraProject::ID,
 			],
 		);
+		
+		/*
+		$properties['jira_project_id'] = array(
+			'label' => mb_ucfirst($translate->_('dao.jira_issue.jira_project_id')),
+			'type' => Model_CustomField::TYPE_LINK,
+			'value' => $model->getProject()->id,
+			'params' => [
+				'context' => Context_JiraProject::ID,
+			],
+		);
+		*/
 		
 		$properties['jira_versions'] = array(
 			'label' => mb_ucfirst($translate->_('dao.jira_issue.jira_versions')),
@@ -1559,7 +1596,6 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 		$token_values['_types'] = $token_types;
 		
 		if($jira_issue) {
-			$project = $jira_issue->getProject();
 			$type = $jira_issue->getType();
 			$status = $jira_issue->getStatus();
 			
@@ -1570,15 +1606,15 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 			$token_values['jira_key'] = $jira_issue->jira_key;
 			$token_values['jira_type_id'] = $jira_issue->jira_type_id;
 			$token_values['jira_type'] = (is_array($type) ? $type['name'] : '');
-			$token_values['jira_project_id'] = $jira_issue->project_id;
+			$token_values['jira_project_id'] = $jira_issue->jira_project_id;
 			$token_values['jira_status_id'] = $jira_issue->jira_status_id;
 			$token_values['jira_status'] = (is_array($status) ? $status['name'] : '');
+			$token_values['project_id'] = $jira_issue->project_id;
 			$token_values['summary'] = $jira_issue->summary;
+			$token_values['description'] = $jira_issue->description;
 			$token_values['created'] = $jira_issue->created;
 			$token_values['updated'] = $jira_issue->updated;
 			$token_values['jira_versions'] = $jira_issue->jira_versions;
-			
-			$token_values['project_id'] = $project->id;
 			
 			// Custom fields
 			$token_values = $this->_importModelCustomFieldsAsValues($jira_issue, $token_values);
@@ -1617,6 +1653,7 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 			'links' => '_links',
 			'project_id' => DAO_JiraIssue::PROJECT_ID,
 			'summary' => DAO_JiraIssue::SUMMARY,
+			'description' => DAO_JiraIssue::DESCRIPTION,
 			'updated' => DAO_JiraIssue::UPDATED,
 		];
 	}
@@ -1669,14 +1706,8 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 		}
 		
 		switch($token) {
-			case 'description':
-				if(isset($dictionary['jira_id']))
-					$values['description'] = DAO_JiraIssue::getDescription($dictionary['jira_id']);
-				break;
-
 			case 'discussion':
-				if(isset($dictionary['jira_id']))
-					$values['discussion'] = DAO_JiraIssue::getComments($dictionary['jira_id']);
+				$values['discussion'] = DAO_JiraIssue::getCommentsByIssueId($context_id);
 				break;
 				
 			case 'links':

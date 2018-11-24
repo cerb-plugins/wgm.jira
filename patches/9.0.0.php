@@ -35,6 +35,60 @@ EOD;
 }
 
 // ===========================================================================
+// Migrate `jira_issue.project_id` to `jira_issue.jira_project_id`
+
+if(!isset($tables['jira_issue'])) {
+	$logger->error("The 'jira_issue' table does not exist.");
+	return FALSE;
+}
+
+list($columns,) = $db->metaTable('jira_issue');
+
+if(!isset($columns['jira_project_id'])) {
+	$db->ExecuteMaster('ALTER TABLE jira_issue ADD COLUMN jira_project_id INT UNSIGNED NOT NULL DEFAULT 0, ADD INDEX (jira_project_id)');
+	$db->ExecuteMaster('UPDATE jira_issue SET jira_project_id = project_id');
+	$db->ExecuteMaster('UPDATE jira_issue ji INNER JOIN jira_project jp ON (ji.jira_project_id=jp.jira_id) SET ji.project_id = jp.id');
+}
+
+// ===========================================================================
+// Drop `jira_issue_to_version`
+
+if(isset($tables['jira_issue_to_version'])) {
+	$db->ExecuteMaster("DROP TABLE jira_issue_to_version");
+	unset($tables['jira_issue_to_version']);
+}
+
+// ===========================================================================
+// Drop `jira_issue_description`
+
+if(isset($tables['jira_issue_description'])) {
+	$db->ExecuteMaster('ALTER TABLE jira_issue ADD COLUMN description TEXT');
+	$db->ExecuteMaster('UPDATE jira_issue ji INNER JOIN jira_issue_description jid ON (ji.jira_id=jid.jira_issue_id) SET ji.description=jid.description');
+	
+	$db->ExecuteMaster("DROP TABLE jira_issue_description");
+	unset($tables['jira_issue_description']);
+}
+
+// ===========================================================================
+// Add `jira_issue_comment.id`
+
+if(!isset($tables['jira_issue_comment'])) {
+	$logger->error("The 'jira_issue_comment' table does not exist.");
+	return FALSE;
+}
+
+list($columns,) = $db->metaTable('jira_issue_comment');
+
+if(!isset($columns['id'])) {
+	$db->ExecuteMaster('ALTER TABLE jira_issue_comment DROP PRIMARY KEY, ADD COLUMN id INT UNSIGNED AUTO_INCREMENT FIRST, ADD PRIMARY KEY (id)');
+}
+
+if(!isset($columns['issue_id'])) {
+	$db->ExecuteMaster('ALTER TABLE jira_issue_comment ADD COLUMN issue_id INT UNSIGNED NOT NULL DEFAULT 0 AFTER id, ADD INDEX (issue_id)');
+	$db->ExecuteMaster('UPDATE jira_issue_comment jic INNER JOIN jira_issue ji ON (jic.jira_issue_id=ji.jira_id) SET jic.issue_id=ji.id');
+}
+
+// ===========================================================================
 // Add connected accounts to JIRA Project records
 
 if(!isset($tables['jira_project'])) {
