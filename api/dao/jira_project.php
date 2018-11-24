@@ -314,6 +314,7 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 		$projects = DAO_JiraProject::getAll();
 		
 		foreach($projects as $project) {
+			if(isset($project->issue_types) && is_array($project->issue_types))
 			foreach($project->issue_types as $type_id => $type) {
 				$results[$type_id] = $type;
 			}
@@ -328,6 +329,7 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 		$projects = DAO_JiraProject::getAll();
 		
 		foreach($projects as $project) {
+			if(isset($project->statuses) && is_array($project->statuses))
 			foreach($project->statuses as $status_id => $status) {
 				$results[$status_id] = $status;
 			}

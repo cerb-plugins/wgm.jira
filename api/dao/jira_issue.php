@@ -564,7 +564,7 @@ class SearchFields_JiraIssue extends DevblocksSearchFields {
 				break;
 			
 			case self::VIRTUAL_PROJECT_SEARCH:
-				$sql = "SELECT jira_id FROM jira_project WHERE id IN (%s)";
+				$sql = "SELECT id FROM jira_project WHERE id IN (%s)";
 				return self::_getWhereSQLFromVirtualSearchSqlField($param, Context_JiraProject::ID, $sql, 'jira_issue.project_id');
 				break;
 				
@@ -951,27 +951,12 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 				break;
 				
 			case SearchFields_JiraIssue::JIRA_STATUS_ID:
-				$label_map = [];
-				
-				$projects = DAO_JiraProject::getAll();
-				$project = current($projects);
-				
-				if(isset($project->statuses))
-				foreach($project->statuses as $status_id => $status) {
-					$label_map[$status_id] = $status['name'];
-				}
-				
+				$label_map = array_column(DAO_JiraProject::getAllStatuses(), 'name', 'id');
 				$counts = $this->_getSubtotalCountForStringColumn($context, $column, $label_map, 'in', 'options[]');
 				break;
 				
 			case SearchFields_JiraIssue::JIRA_TYPE_ID:
-				$label_map = [];
-
-				$types = DAO_JiraProject::getAllTypes();
-				foreach($types as $type_id => $type) {
-					$label_map[$type_id] = $type['name'];
-				}
-				
+				$label_map = array_column(DAO_JiraProject::getAllTypes(), 'name', 'id');
 				$counts = $this->_getSubtotalCountForStringColumn($context, $column, $label_map, 'in', 'options[]');
 				break;
 				
@@ -1249,8 +1234,8 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 				$projects = DAO_JiraProject::getAll();
 				
 				foreach($values as $v) {
-					if(false != (@$project = DAO_JiraProject::getById($v)))
-						$strings[] = DevblocksPlatform::strEscapeHtml($project->name);
+					if(array_key_exists($v, $projects))
+						$strings[] = DevblocksPlatform::strEscapeHtml($projects[$v]->name);
 				}
 				
 				echo implode(' or ', $strings);
@@ -1258,12 +1243,11 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 				
 			case SearchFields_JiraIssue::JIRA_STATUS_ID:
 				$strings = [];
-				$projects = DAO_JiraProject::getAll();
-				$project = array_shift($projects);
+				$statuses = DAO_JiraProject::getAllStatuses();
 				
 				foreach($values as $v) {
-					if(isset($project->statuses[$v]))
-						$strings[] = DevblocksPlatform::strEscapeHtml($project->statuses[$v]['name']);
+					if(array_key_exists($v, $statuses))
+						$strings[] = DevblocksPlatform::strEscapeHtml($statuses[$v]['name']);
 				}
 				
 				echo implode(' or ', $strings);
@@ -1271,13 +1255,11 @@ class View_JiraIssue extends C4_AbstractView implements IAbstractView_Subtotals,
 				
 			case SearchFields_JiraIssue::JIRA_TYPE_ID:
 				$strings = [];
-				$projects = DAO_JiraProject::getAll();
+				$types = DAO_JiraProject::getAllTypes();
 				
 				foreach($values as $v) {
-					foreach($projects as $project) {
-						if(isset($project->issue_types[$v]))
-							$strings[] = DevblocksPlatform::strEscapeHtml($project->issue_types[$v]['name']);
-					}
+					if(array_key_exists($v, $types))
+						$strings[] = DevblocksPlatform::strEscapeHtml($types[$v]['name']);
 				}
 				
 				echo implode(' or ', $strings);
