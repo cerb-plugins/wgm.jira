@@ -1764,16 +1764,17 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 		$context = Context_JiraIssue::ID;
 		$active_worker = CerberusApplication::getActiveWorker();
 		
-		// Params
-		
-		$tpl->assign('jira_base_url', DevblocksPlatform::getPluginSetting('wgm.jira','base_url',''));
-		
 		// Model
 		
 		if(empty($context_id) || null == ($jira_issue = DAO_JiraIssue::get($context_id)))
 			return;
 		
 		$tpl->assign('model', $jira_issue);
+		
+		if($jira_issue) {
+			if(false != ($jira_project = $jira_issue->getProject()))
+				$tpl->assign('jira_base_url', $jira_project->getBaseUrl());
+		}
 		
 		// Dictionary
 		$labels = [];
