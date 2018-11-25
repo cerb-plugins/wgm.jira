@@ -657,11 +657,36 @@ class Model_JiraProject {
 	public $last_synced_at = 0;
 	public $updated_at = 0;
 	
+	private $_base_url = null;
+	
 	function getConnectedAccount() {
 		if(!$this->connected_account_id)
 			return null;
 		
 		return DAO_ConnectedAccount::get($this->connected_account_id);
+	}
+	
+	function getBaseUrl() {
+		if(!is_null($this->_base_url))
+			return $this->_base_url;
+		
+		if(method_exists($this, 'getConnectedService')) {
+			if(false == ($service = $this->getConnectedService()))
+				return null;
+			
+			$service_params = $service->decryptParams();
+			$this->_base_url = @$service_params['base_url'];
+			return $this->_base_url;
+			
+		// [TODO] Remove in 9.1
+		} else {
+			if(false == ($account = $this->getConnectedAccount()))
+				return null;
+			
+			$account_params = $account->decryptParams();
+			$this->_base_url = @$account_params['base_url'];
+			return $this->_base_url;
+		}
 	}
 };
 

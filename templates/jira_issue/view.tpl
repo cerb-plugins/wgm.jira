@@ -70,7 +70,7 @@
 	{foreach from=$data item=result key=idx name=results}
 
 	{$project = $jira_projects.{$result.j_project_id}}
-
+	
 	{if $smarty.foreach.results.iteration % 2}
 		{$tableRowClass = "even"}
 	{else}
@@ -120,7 +120,7 @@
 				</td>
 			{elseif $column=="j_jira_key"}
 				<td data-column="{$column}">
-					{$base_url = DevblocksPlatform::getPluginSetting('wgm.jira','base_url','')}
+					{$base_url = $project->getBaseUrl()}
 					{if !empty($base_url)}
 						<a href="{$base_url}/browse/{$result.j_jira_key}" target="_blank" rel="noopener noreferrer">{$result.$column}</a>
 					{else}
