@@ -237,7 +237,7 @@ class WgmJira_API {
 			$fix_versions[$fix_version['id']] = $fix_version['name'];
 		}
 		
-		$local_issue = DAO_JiraIssue::getByJiraIdAndProject($object['id'], $project->jira_id);
+		$local_issue = DAO_JiraIssue::getByJiraIdForBackend($object['id'], $project->connected_account_id);
 		
 		// Fields
 		

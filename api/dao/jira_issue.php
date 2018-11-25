@@ -254,18 +254,19 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 		return current($results);
 	}
 	
-	static function getByJiraIdAndProject($remote_id, $remote_project_id) {
-		$results = self::getWhere(sprintf("%s = %d AND %s = %d",
-			self::JIRA_ID,
-			$remote_id,
-			self::JIRA_PROJECT_ID,
-			$remote_project_id
-		));
+	static function getByJiraIdForBackend($remote_id, $account_id) {
+		$db = DevblocksPlatform::services()->database();
 		
-		if(empty($results))
+		$sql = sprintf("SELECT id FROM jira_issue WHERE jira_id = %d AND project_id IN (SELECT id FROM jira_project WHERE connected_account_id = %d)",
+			$remote_id,
+			$account_id
+		);
+		$local_id = $db->GetOneSlave($sql);
+		
+		if(empty($local_id))
 			return NULL;
 		
-		return current($results);
+		return DAO_JiraIssue::get($local_id);
 	}
 	
 	static function getByJiraKey($issue_key) {
