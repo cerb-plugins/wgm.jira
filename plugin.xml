@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugin xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.devblocks.com/schema/plugin.xsd">
 	<id>wgm.jira</id>
-	<name>JIRA Integration</name>
+	<name>JIRA Integration (Legacy)</name>
 	<description>This plugin provides integration with Atlassian JIRA via their REST API.  It is intended to be a bridge used by other plugins to communicate with JIRA services.</description>
 	<author>Webgroup Media, LLC.</author>
 	<version>0.6.8</version>
@@ -170,25 +170,6 @@
 			</params>
 		</extension>
 		
-		<!-- Service Providers -->
-		
-		<extension point="cerb.service.provider">
-			<id>wgm.jira.service.provider</id>
-			<name>JIRA</name>
-			<class>
-				<file>api/App.php</file>
-				<name>ServiceProvider_Jira</name>
-			</class>
-			<params>
-				<param key="contexts">
-					<value>
-						<data key="cerberusweb.contexts.app" />
-						<data key="cerberusweb.contexts.worker" />
-					</value>
-				</param>
-			</params>
-		</extension>
-		
 		<!-- Setup Page Sections -->
 		
 		<extension point="cerberusweb.ui.page.section">
@@ -270,25 +251,6 @@
 				<name>WgmJira_Cron</name>
 			</class>
 			<params />
-		</extension>
-		
-		<!-- VA Actions -->
-		
-		<extension point="devblocks.event.action">
-			<id>wgmjira.event.action.api_call</id>
-			<name>JIRA API</name>
-			<class>
-				<file>api/App.php</file>
-				<name>WgmJira_EventActionApiCall</name>
-			</class>
-			<params>
-				<param key="label" value="Execute API request to JIRA" />
-				<param key="events">
-					<value>
-						<data key="*" />
-					</value>
-				</param>
-			</params>
 		</extension>
 		
 		<!-- Event Triggers -->

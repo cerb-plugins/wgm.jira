@@ -320,11 +320,14 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 			if(false == ($connected_account = $jira_project->getConnectedAccount()))
 				continue;
 			
-			$credentials = $connected_account->decryptParams();
+			$account_params = $connected_account->decryptParams();
+			
+			$service = $connected_account->getService();
+			$service_params = $service->decryptParams();
 			
 			$jira = new WgmJira_API();
-			$jira->setBaseUrl($credentials['base_url']);
-			$jira->setAuth($credentials['jira_user'], $credentials['jira_password']);
+			$jira->setBaseUrl($service_params['base_url']);
+			$jira->setAuth($account_params['username'], $account_params['password']);
 			
 			if(false == ($json = $jira->getMyself()) || !isset($json['displayName'])) {
 				$logger->error('Failed to connect to JIRA API using account: '. $connected_account->name);
@@ -454,168 +457,3 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 		*/
 	}
 };
-
-class WgmJira_EventActionApiCall extends Extension_DevblocksEventAction {
-	function render(Extension_DevblocksEvent $event, Model_TriggerEvent $trigger, $params=array(), $seq=null) {
-		$active_worker = CerberusApplication::getActiveWorker();
-		$tpl = DevblocksPlatform::services()->template();
-		$tpl->assign('params', $params);
-		
-		if(!is_null($seq))
-			$tpl->assign('namePrefix', 'action'.$seq);
-		
-		if(isset($params['connected_account_id'])) {
-			if(false != ($connected_account = DAO_ConnectedAccount::get($params['connected_account_id']))) {
-				if(Context_ConnectedAccount::isReadableByActor($connected_account, $active_worker))
-					$tpl->assign('connected_account', $connected_account);
-			}
-		}
-		
-		$tpl->display('devblocks:wgm.jira::events/action_jira_api_call.tpl');
-	}
-	
-	function simulate($token, Model_TriggerEvent $trigger, $params, DevblocksDictionaryDelegate $dict) {
-		$tpl_builder = DevblocksPlatform::services()->templateBuilder();
-		
-		$out = null;
-		
-		@$api_verb = $params['api_verb'];
-		@$api_path = $tpl_builder->build($params['api_path'], $dict);
-		@$json = $tpl_builder->build($params['json'], $dict);
-		@$response_placeholder = $params['response_placeholder'];
-		@$run_in_simulator = $params['run_in_simulator'];
-		@$connected_account_id = $params['connected_account_id'];
-		
-		if(empty($api_verb))
-			return "[ERROR] API verb is required.";
-		
-		if(empty($api_path))
-			return "[ERROR] API path is required.";
-		
-		if(empty($response_placeholder))
-			return "[ERROR] No result placeholder given.";
-		
-		if(empty($connected_account_id))
-			return "[ERROR] No connected account is configured.";
-		
-		if(false == ($connected_account = DAO_ConnectedAccount::get($connected_account_id)))
-			return "[ERROR] No connected account is configured.";
-			
-		if(!Context_ConnectedAccount::isReadableByActor($connected_account, $trigger->getBot()))
-			return "[ERROR] This bot is now allowed to use this connected account.";
-		
-		// Output
-		$out = sprintf(">>> Sending request to JIRA API:\n%s %s\n%s\n",
-			mb_convert_case($api_verb, MB_CASE_UPPER),
-			$api_path,
-			(in_array($api_verb, array('post','put')) ? ("\n" . $json . "\n") : "")
-		);
-		
-		// Run in simulator?
-		
-		if($run_in_simulator) {
-			$this->run($token, $trigger, $params, $dict);
-			
-			$out .= sprintf(">>> API response is:\n\n%s\n\n",
-				DevblocksPlatform::strFormatJson($dict->$response_placeholder)
-			);
-			
-			// Placeholder
-			$out .= sprintf(">>> Saving response to placeholder:\n%s\n",
-				$response_placeholder
-			);
-		}
-		
-		return $out;
-	}
-	
-	function run($token, Model_TriggerEvent $trigger, $params, DevblocksDictionaryDelegate $dict) {
-		$tpl_builder = DevblocksPlatform::services()->templateBuilder();
-		
-		@$api_verb = $params['api_verb'];
-		@$api_path = $tpl_builder->build($params['api_path'], $dict);
-		@$json = $tpl_builder->build($params['json'], $dict);
-		@$response_placeholder = $params['response_placeholder'];
-		@$connected_account_id = $params['connected_account_id'];
-		
-		if(empty($api_verb) || empty($api_path))
-			return false;
-		
-		if(empty($response_placeholder))
-			return false;
-		
-		if(empty($connected_account_id))
-			return false;
-		
-		if(false == ($connected_account = DAO_ConnectedAccount::get($connected_account_id)))
-			return false;
-			
-		if(!Context_ConnectedAccount::isReadableByActor($connected_account, $trigger->getBot()))
-			return false;
-		
-		$credentials = $connected_account->decryptParams();
-		
-		$jira = new WgmJira_API();
-		$jira->setBaseUrl($credentials['base_url']);
-		$jira->setAuth($credentials['jira_user'], $credentials['jira_password']);
-		
-		$response = $jira->execute($api_verb, $api_path, array(), $json);
-		
-		if(is_array($response)) {
-			$dict->$response_placeholder = $response;
-		}
-	}
-};
-
-class ServiceProvider_Jira extends Extension_ServiceProvider implements IServiceProvider_HttpRequestSigner {
-	const ID = 'wgm.jira.service.provider';
-	
-	function renderConfigForm(Model_ConnectedAccount $account) {
-		$tpl = DevblocksPlatform::services()->template();
-		$active_worker = CerberusApplication::getActiveWorker();
-		
-		$params = $account->decryptParams($active_worker);
-		$tpl->assign('params', $params);
-		
-		$tpl->display('devblocks:wgm.jira::provider/edit_params.tpl');
-	}
-	
-	function saveConfigForm(Model_ConnectedAccount $account, array &$params) {
-		@$edit_params = DevblocksPlatform::importGPC($_POST['params'], 'array', array());
-	
-		$active_worker = CerberusApplication::getActiveWorker();
-		
-		if(!isset($edit_params['base_url']) || empty($edit_params['base_url']))
-			return "The 'Base URL' is required.";
-		
-		if(!isset($edit_params['jira_user']) || empty($edit_params['jira_user']))
-			return "The 'JIRA User' is required.";
-		
-		if(!isset($edit_params['jira_password']) || empty($edit_params['jira_password']))
-			return "The 'JIRA Password' is required.";
-		
-		// Test the credentials
-		
-		$jira = new WgmJira_API();
-		$jira->setBaseUrl($edit_params['base_url']);
-		$jira->setAuth($edit_params['jira_user'], $edit_params['jira_password']);
-		
-		if(false == ($json = $jira->getMyself()) || !isset($json['displayName']))
-			return "Failed to authenticate to the JIRA API.";
-		
-		foreach($edit_params as $k => $v)
-			$params[$k] = $v;
-		
-		return true;
-	}
-	
-	function authenticateHttpRequest(Model_ConnectedAccount $account, &$ch, &$verb, &$url, &$body, &$headers) {
-		$credentials = $account->decryptParams();
-		
-		if(!isset($credentials['jira_user']) && !isset($credentials['jira_password']))
-			return false;
-		
-		$headers[] = 'Authorization: Basic ' . base64_encode(sprintf("%s:%s", $credentials['jira_user'], $credentials['jira_password']));
-		return true;
-	}
-}

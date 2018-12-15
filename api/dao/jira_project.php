@@ -666,6 +666,13 @@ class Model_JiraProject {
 		return DAO_ConnectedAccount::get($this->connected_account_id);
 	}
 	
+	function getConnectedService() {
+		if(false == ($account = $this->getConnectedAccount()))
+			return null;
+		
+		return $account->getService();
+	}
+	
 	function getBaseUrl() {
 		if(!is_null($this->_base_url))
 			return $this->_base_url;
