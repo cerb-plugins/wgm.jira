@@ -13,6 +13,8 @@ if(!isset($tables['jira_project'])) {
 
 list($columns, $indexes) = $db->metaTable('jira_project');
 
+$changes = [];
+
 if(!isset($columns['last_checked_at']))
 	$changes[] = 'ADD COLUMN last_checked_at INT UNSIGNED NOT NULL DEFAULT 0';
 
@@ -35,6 +37,5 @@ if(!empty($changes)) {
 	$sql = sprintf("ALTER TABLE jira_project %s", implode(', ', $changes));
 	$db->ExecuteMaster($sql) or die("[MySQL Error] " . $db->ErrorMsgMaster());
 }
-
 
 return TRUE;

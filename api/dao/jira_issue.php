@@ -284,7 +284,7 @@ class DAO_JiraIssue extends Cerb_ORMHelper {
 	static function saveComment($jira_comment_id, $jira_issue_id, $issue_id, $created, $author, $body) {
 		$db = DevblocksPlatform::services()->database();
 		
-		$comment_id = $db->GetOne(sprintf('SELECT id FROM jira_issue_comment WHERE jira_comment_id = %d AND issue_id = %d',
+		$comment_id = $db->GetOneMaster(sprintf('SELECT id FROM jira_issue_comment WHERE jira_comment_id = %d AND issue_id = %d',
 			$jira_comment_id,
 			$issue_id
 		));
