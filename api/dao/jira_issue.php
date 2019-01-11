@@ -1631,6 +1631,7 @@ class Context_JiraIssue extends Extension_DevblocksContext implements IDevblocks
 			'id' => DAO_JiraIssue::ID,
 			'jira_id' => DAO_JiraIssue::JIRA_ID,
 			'jira_key' => DAO_JiraIssue::JIRA_KEY,
+			'jira_project_id' => DAO_JiraIssue::JIRA_PROJECT_ID,
 			'jira_status_id' => DAO_JiraIssue::JIRA_STATUS_ID,
 			'jira_type_id' => DAO_JiraIssue::JIRA_TYPE_ID,
 			'links' => '_links',
