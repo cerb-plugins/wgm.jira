@@ -280,7 +280,7 @@
 		
 		<extension point="devblocks.event">
 			<id>event.macro.jira_issue</id>
-			<name>Custom behavior on JIRA issue</name>
+			<name>Record custom behavior on JIRA issue</name>
 			<class>
 				<file>api/events/jira_issue_macro.php</file>
 				<name>Event_JiraIssueMacro</name>
@@ -305,7 +305,7 @@
 		
 		<extension point="devblocks.event">
 			<id>event.macro.jira_project</id>
-			<name>Custom behavior on JIRA project</name>
+			<name>Record custom behavior on JIRA project</name>
 			<class>
 				<file>api/events/jira_project_macro.php</file>
 				<name>Event_JiraProjectMacro</name>
