@@ -2,17 +2,14 @@
 class DAO_JiraProject extends Cerb_ORMHelper {
 	const CONNECTED_ACCOUNT_ID = 'connected_account_id';
 	const ID = 'id';
-	const ISSUETYPES_JSON = 'issuetypes_json';
 	const JIRA_ID = 'jira_id';
 	const JIRA_KEY = 'jira_key';
 	const LAST_CHECKED_AT = 'last_checked_at';
 	const LAST_SYNCED_AT = 'last_synced_at';
 	const LAST_SYNCED_CHECKPOINT = 'last_synced_checkpoint';
 	const NAME = 'name';
-	const STATUSES_JSON = 'statuses_json';
 	const URL = 'url';
 	const UPDATED_AT = 'updated_at';
-	const VERSIONS_JSON = 'versions_json';
 	
 	const _CACHE_ALL = 'cache_jira_project_all';
 
@@ -190,7 +187,7 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 		list($where_sql, $sort_sql, $limit_sql) = self::_getWhereSQL($where, $sortBy, $sortAsc, $limit);
 		
 		// SQL
-		$sql = "SELECT id, jira_id, jira_key, name, url, issuetypes_json, statuses_json, versions_json, updated_at, last_checked_at, last_synced_at, last_synced_checkpoint, connected_account_id ".
+		$sql = "SELECT id, jira_id, jira_key, name, url, updated_at, last_checked_at, last_synced_at, last_synced_checkpoint, connected_account_id ".
 			"FROM jira_project ".
 			$where_sql.
 			$sort_sql.
@@ -308,36 +305,6 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 		return null;
 	}
 	
-	static function getAllTypes() {
-		$results = [];
-		
-		$projects = DAO_JiraProject::getAll();
-		
-		foreach($projects as $project) {
-			if(isset($project->issue_types) && is_array($project->issue_types))
-			foreach($project->issue_types as $type_id => $type) {
-				$results[$type_id] = $type;
-			}
-		}
-		
-		return $results;
-	}
-	
-	static function getAllStatuses() {
-		$results = [];
-		
-		$projects = DAO_JiraProject::getAll();
-		
-		foreach($projects as $project) {
-			if(isset($project->statuses) && is_array($project->statuses))
-			foreach($project->statuses as $status_id => $status) {
-				$results[$status_id] = $status;
-			}
-		}
-		
-		return $results;
-	}
-	
 	/**
 	 * @param resource $rs
 	 * @return Model_JiraProject[]
@@ -361,18 +328,6 @@ class DAO_JiraProject extends Cerb_ORMHelper {
 			$object->connected_account_id = intval($row['connected_account_id']);
 			$object->updated_at = intval($row['updated_at']);
 			
-			if(false !== (@$obj = json_decode($row['issuetypes_json'], true))) {
-				$object->issue_types = $obj;
-			}
-			
-			if(false !== (@$obj = json_decode($row['statuses_json'], true))) {
-				$object->statuses = $obj;
-			}
-			
-			if(false !== (@$obj = json_decode($row['versions_json'], true))) {
-				$object->versions = $obj;
-			}
-
 			$objects[$object->id] = $object;
 		}
 		
@@ -529,9 +484,6 @@ class SearchFields_JiraProject extends DevblocksSearchFields {
 	const JIRA_KEY = 'j_jira_key';
 	const NAME = 'j_name';
 	const URL = 'j_url';
-	const ISSUETYPES_JSON = 'j_issuetypes_json';
-	const STATUSES_JSON = 'j_statuses_json';
-	const VERSIONS_JSON = 'j_versions_json';
 	const LAST_CHECKED_AT = 'j_last_checked_at';
 	const LAST_SYNCED_AT = 'j_last_synced_at';
 	const CONNECTED_ACCOUNT_ID = 'j_connected_account_id';
@@ -617,9 +569,6 @@ class SearchFields_JiraProject extends DevblocksSearchFields {
 			self::JIRA_KEY => new DevblocksSearchField(self::JIRA_KEY, 'jira_project', 'jira_key', $translate->_('dao.jira_project.jira_key'), Model_CustomField::TYPE_SINGLE_LINE, true),
 			self::NAME => new DevblocksSearchField(self::NAME, 'jira_project', 'name', $translate->_('common.name'), Model_CustomField::TYPE_SINGLE_LINE, true),
 			self::URL => new DevblocksSearchField(self::URL, 'jira_project', 'url', $translate->_('common.url'), Model_CustomField::TYPE_URL, true),
-			self::ISSUETYPES_JSON => new DevblocksSearchField(self::ISSUETYPES_JSON, 'jira_project', 'issuetypes_json', $translate->_('dao.jira_project.issuetypes_json'), null, false),
-			self::STATUSES_JSON => new DevblocksSearchField(self::STATUSES_JSON, 'jira_project', 'statuses_json', $translate->_('dao.jira_project.statuses_json'), null, false),
-			self::VERSIONS_JSON => new DevblocksSearchField(self::VERSIONS_JSON, 'jira_project', 'versions_json', $translate->_('dao.jira_project.versions_json'), null, false),
 			self::LAST_CHECKED_AT => new DevblocksSearchField(self::LAST_CHECKED_AT, 'jira_project', 'last_checked_at', $translate->_('dao.jira_project.last_checked_at'), Model_CustomField::TYPE_DATE, true),
 			self::LAST_SYNCED_AT => new DevblocksSearchField(self::LAST_SYNCED_AT, 'jira_project', 'last_synced_at', $translate->_('dao.jira_project.last_synced_at'), Model_CustomField::TYPE_DATE, true),
 			self::CONNECTED_ACCOUNT_ID => new DevblocksSearchField(self::CONNECTED_ACCOUNT_ID, 'jira_project', 'connected_account_id', $translate->_('common.connected_account'), Model_CustomField::TYPE_NUMBER, true),
@@ -721,10 +670,7 @@ class View_JiraProject extends C4_AbstractView implements IAbstractView_Subtotal
 
 		$this->addColumnsHidden(array(
 			SearchFields_JiraProject::ID,
-			SearchFields_JiraProject::ISSUETYPES_JSON,
 			SearchFields_JiraProject::JIRA_ID,
-			SearchFields_JiraProject::STATUSES_JSON,
-			SearchFields_JiraProject::VERSIONS_JSON,
 			SearchFields_JiraProject::VIRTUAL_CONTEXT_LINK,
 			SearchFields_JiraProject::VIRTUAL_HAS_FIELDSET,
 			SearchFields_JiraProject::VIRTUAL_WATCHERS,

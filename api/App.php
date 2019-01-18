@@ -244,9 +244,9 @@ class WgmJira_API {
 		$fields = [
 			DAO_JiraIssue::JIRA_ID => $object['id'],
 			DAO_JiraIssue::JIRA_KEY => $object['key'],
-			DAO_JiraIssue::JIRA_STATUS_ID => $object['fields']['status']['id'],
 			DAO_JiraIssue::JIRA_VERSIONS => implode(', ', $fix_versions),
-			DAO_JiraIssue::JIRA_TYPE_ID => $object['fields']['issuetype']['id'],
+			DAO_JiraIssue::STATUS => $object['fields']['status']['name'],
+			DAO_JiraIssue::TYPE => $object['fields']['issuetype']['name'],
 			DAO_JiraIssue::JIRA_PROJECT_ID => $project->jira_id,
 			DAO_JiraIssue::PROJECT_ID => $project->id,
 			DAO_JiraIssue::SUMMARY => $object['fields']['summary'],
@@ -334,61 +334,26 @@ class WgmJira_Cron extends CerberusCronPageExtension {
 				continue;
 			}
 			
-			// Pull the full record for each project and merge with createmeta
-			if(false == ($project = $jira->getProject($jira_project->jira_key)) || array_key_exists('errors', $project)) {
-				$logger->info(sprintf("Couldn't find project with key '%s'", $jira_project->jira_key));
-				continue;
-			}
-			
-			$logger->info(sprintf("Updating local project record for %s [%s]", $project['name'], $project['key']));
-			
-			// Sync statuses
-			if(false == ($results = $jira->getStatuses()))
-				continue;
-			
-			$statuses = [];
-			
-			if(is_array($results))
-			foreach($results as $object) {
-				unset($object['description']);
-				unset($object['iconUrl']);
-				unset($object['self']);
-				$statuses[$object['id']] = $object;
-			}
-			
-			unset($results);
-			
-			$fields = [
-				DAO_JiraProject::JIRA_ID => $project['id'],
-				DAO_JiraProject::NAME => $project['name'],
-			];
-			
-			if(empty($jira_project->url))
-				$fields[DAO_JiraProject::URL] = isset($project['url']) ? $project['url'] : '';
-			
-			// Only store the JSON info if we're syncing this project
-			$issue_types = [];
-			$versions = [];
-			
-			if(isset($project['issueTypes']) && is_array($project['issueTypes'])) {
-				foreach($project['issueTypes'] as $object) {
-					unset($object['self']);
-					$issue_types[$object['id']] = $object;
+			// Update the local JIRA record if we don't have an internal ID
+			if(!$jira_project->jira_id) {
+				// Pull the full record for each project and merge with createmeta
+				if(false == ($project = $jira->getProject($jira_project->jira_key)) || array_key_exists('errors', $project)) {
+					$logger->info(sprintf("Couldn't find project with key '%s'", $jira_project->jira_key));
+					continue;
 				}
+				
+				$logger->info(sprintf("Updating local project record for %s [%s]", $project['name'], $project['key']));
+				
+				$fields = [
+					DAO_JiraProject::JIRA_ID => $project['id'],
+					DAO_JiraProject::NAME => $project['name'],
+				];
+				
+				if(empty($jira_project->url))
+					$fields[DAO_JiraProject::URL] = isset($project['url']) ? $project['url'] : '';
+				
+				DAO_JiraProject::update($jira_project->id, $fields, false);
 			}
-			
-			if(isset($project['versions']) && is_array($project['versions'])) {
-				foreach($project['versions'] as $object) {
-					unset($object['self']);
-					$versions[$object['id']] = $object;
-				}
-			}
-			
-			$fields[DAO_JiraProject::ISSUETYPES_JSON] = json_encode($issue_types);
-			$fields[DAO_JiraProject::STATUSES_JSON] = json_encode($statuses);
-			$fields[DAO_JiraProject::VERSIONS_JSON] = json_encode($versions);
-			
-			DAO_JiraProject::update($jira_project->id, $fields, false);
 			
 			$logger->info(sprintf("Syncing issues for project %s [%s]", $jira_project->name, $jira_project->jira_key));
 			

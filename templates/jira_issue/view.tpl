@@ -96,21 +96,7 @@
 				<td data-column="{$column}">
 					{if !empty($project)}{$project->name}{/if}
 				</td>
-			{elseif $column=="j_jira_type_id"}
-				<td data-column="{$column}">
-					{if !empty($project)}
-						{$type = $project->issue_types.{$result.$column}}
-						{if !empty($type)}{$type.name}{/if}
-					{/if}
-				</td>
-			{elseif $column=="j_jira_status_id"}
-				<td data-column="{$column}">
-					{if !empty($project)}
-						{$status = $project->statuses.{$result.$column}}
-						{if !empty($status)}{$status.name}{/if}
-					{/if}
-				</td>
-			{elseif $column=="j_jira_versions"}
+			{elseif in_array($column, ["j_jira_versions","j_status","j_type"])}
 				<td data-column="{$column}">{$result.$column}</td>
 			{elseif $column=="j_created" || $column=="j_updated"}
 				<td data-column="{$column}" title="{$result.$column|devblocks_date}">

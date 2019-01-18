@@ -41,17 +41,15 @@
 		</td>
 	</tr>
 	<tr>
-		<td width="1%" nowrap="nowrap" valign="top"><b>{'dao.jira_issue.jira_type_id'|devblocks_translate|capitalize}:</b></td>
+		<td width="1%" nowrap="nowrap" valign="top"><b>{'common.type'|devblocks_translate|capitalize}:</b></td>
 		<td width="99%">
-			{$type = $model->getType()}
-			{$type.name}
+			{$model->type}
 		</td>
 	</tr>
 	<tr>
-		<td width="1%" nowrap="nowrap" valign="top"><b>{'dao.jira_issue.jira_status_id'|devblocks_translate|capitalize}:</b></td>
+		<td width="1%" nowrap="nowrap" valign="top"><b>{'common.status'|devblocks_translate|capitalize}:</b></td>
 		<td width="99%">
-			{$status = $model->getStatus()}
-			{$status.name}
+			{$model->status}
 		</td>
 	</tr>
 	<tr>
