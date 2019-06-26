@@ -340,19 +340,15 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 	
 	function getActionExtensions(Model_TriggerEvent $trigger) {
 		$actions =
-			array(
-				'add_watchers' => array('label' =>'Add watchers'),
-				'create_comment' => array('label' =>'Create comment'),
-				'create_notification' => array('label' =>'Create notification'),
-				'create_task' => array('label' =>'Create task'),
-				'create_ticket' => array('label' =>'Create ticket'),
-				'send_email' => array('label' => 'Send email'),
-				'set_links' => array('label' => 'Set links'),
-			)
+			[]
 			+ DevblocksEventHelper::getActionCustomFieldsFromLabels($this->getLabels($trigger))
 			;
 			
 		return $actions;
+	}
+	
+	function getActionDefaultOn() {
+		return 'issue_id';
 	}
 	
 	function renderActionExtension($token, $trigger, $params=array(), $seq=null) {
@@ -366,34 +362,6 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 		$tpl->assign('token_labels', $labels);
 			
 		switch($token) {
-			case 'add_watchers':
-				DevblocksEventHelper::renderActionAddWatchers($trigger);
-				break;
-			
-			case 'create_comment':
-				DevblocksEventHelper::renderActionCreateComment($trigger);
-				break;
-				
-			case 'create_notification':
-				DevblocksEventHelper::renderActionCreateNotification($trigger);
-				break;
-				
-			case 'create_task':
-				DevblocksEventHelper::renderActionCreateTask($trigger);
-				break;
-				
-			case 'create_ticket':
-				DevblocksEventHelper::renderActionCreateTicket($trigger);
-				break;
-				
-			case 'send_email':
-				DevblocksEventHelper::renderActionSendEmail($trigger);
-				break;
-
-			case 'set_links':
-				DevblocksEventHelper::renderActionSetLinks($trigger);
-				break;
-				
 			default:
 				$matches = [];
 				
@@ -417,27 +385,6 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 			return;
 		
 		switch($token) {
-			case 'add_watchers':
-				return DevblocksEventHelper::simulateActionAddWatchers($params, $dict, 'issue_id');
-				break;
-			case 'create_comment':
-				return DevblocksEventHelper::simulateActionCreateComment($params, $dict, 'issue_id');
-				break;
-			case 'create_notification':
-				return DevblocksEventHelper::simulateActionCreateNotification($params, $dict, 'issue_id');
-				break;
-			case 'create_task':
-				return DevblocksEventHelper::simulateActionCreateTask($params, $dict, 'issue_id');
-				break;
-			case 'create_ticket':
-				return DevblocksEventHelper::simulateActionCreateTicket($params, $dict);
-				break;
-			case 'send_email':
-				return DevblocksEventHelper::simulateActionSendEmail($params, $dict);
-				break;
-			case 'set_links':
-				return DevblocksEventHelper::simulateActionSetLinks($trigger, $params, $dict);
-				break;
 			default:
 				if(preg_match('#set_cf_(.*?_*)custom_([0-9]+)#', $token))
 					return DevblocksEventHelper::simulateActionSetCustomField($token, $params, $dict);
@@ -452,34 +399,6 @@ abstract class AbstractEvent_JiraIssue extends Extension_DevblocksEvent {
 			return;
 		
 		switch($token) {
-			case 'add_watchers':
-				DevblocksEventHelper::runActionAddWatchers($params, $dict, 'issue_id');
-				break;
-			
-			case 'create_comment':
-				DevblocksEventHelper::runActionCreateComment($params, $dict, 'issue_id');
-				break;
-				
-			case 'create_notification':
-				DevblocksEventHelper::runActionCreateNotification($params, $dict, 'issue_id');
-				break;
-				
-			case 'create_task':
-				DevblocksEventHelper::runActionCreateTask($params, $dict, 'issue_id');
-				break;
-
-			case 'create_ticket':
-				DevblocksEventHelper::runActionCreateTicket($params, $dict);
-				break;
-				
-			case 'send_email':
-				DevblocksEventHelper::runActionSendEmail($params, $dict);
-				break;
-				
-			case 'set_links':
-				DevblocksEventHelper::runActionSetLinks($trigger, $params, $dict);
-				break;
-				
 			default:
 				if(preg_match('#set_cf_(.*?_*)custom_([0-9]+)#', $token))
 					return DevblocksEventHelper::runActionSetCustomField($token, $params, $dict);

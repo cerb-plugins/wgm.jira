@@ -4,14 +4,14 @@
 	<name>JIRA Integration (Legacy)</name>
 	<description>This plugin provides integration with Atlassian JIRA via their REST API.  It is intended to be a bridge used by other plugins to communicate with JIRA services.</description>
 	<author>Webgroup Media, LLC.</author>
-	<version>0.10.0</version>
+	<version>0.10.1</version>
 	<link>http://www.cerbweb.com/book/latest/plugins/wgm.jira</link>
 	<image>plugin.png</image>
 
 	<!-- Requirements -->
 
 	<requires>
-		<app_version min="9.3" max="9.3.99" />
+		<app_version min="9.3.2" max="9.3.99" />
 		<php_extension name="curl" />
 	</requires>
 
@@ -242,6 +242,7 @@
 						<data key="cerberusweb.contexts.role" />
 					</value>
 				</param>
+				<param key="menu_key" value="JIRA:New issue" />
 			</params>
 		</extension>
 		
@@ -259,6 +260,7 @@
 						<data key="cerberusweb.contexts.role" />
 					</value>
 				</param>
+				<param key="menu_key" value="JIRA:New comment on issue" />
 			</params>
 		</extension>
 		
@@ -276,6 +278,7 @@
 						<data key="cerberusweb.contexts.role" />
 					</value>
 				</param>
+				<param key="menu_key" value="JIRA:New status on issue" />
 			</params>
 		</extension>
 		
@@ -296,6 +299,7 @@
 						<data key="cerberusweb.contexts.worker" />
 					</value>
 				</param>
+				<param key="menu_key" value="Records:Custom Behavior:JIRA issue" />
 				<param key="options">
 					<value>
 						<data key="visibility" />
@@ -321,6 +325,7 @@
 						<data key="cerberusweb.contexts.worker" />
 					</value>
 				</param>
+				<param key="menu_key" value="Records:Custom Behavior:JIRA project" />
 				<param key="options">
 					<value>
 						<data key="visibility" />
